@@ -3,6 +3,7 @@
 let currentCategoryId = null;
 let currentSearchQuery = "";
 let allFiles = [];
+let expandedCategoryIds = new Set();
 let inactivityTimer = null;
 const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
 
@@ -101,16 +102,24 @@ async function loadCategories() {
       let treeHtml = '';
       (nodes || []).forEach(cat => {
         const isCatActive = currentCategoryId === cat.id;
+        const isExpanded = expandedCategoryIds.has(cat.id);
         const iconClass = cat.icon || (depth === 0 ? 'folder' : 'folder-minus');
         const paddingLeft = depth > 0 ? `style="padding-left: ${0.75 + depth * 0.75}rem;"` : '';
+        const hasChildren = cat.children && cat.children.length > 0;
 
         treeHtml += `<li class="category-item">
-          <button class="category-btn ${isCatActive ? 'active' : ''}" ${paddingLeft} onclick="selectCategory(${cat.id})">
-            <span><i class="fa-solid fa-${iconClass}"></i> ${escapeHtml(cat.name)}</span>
-            ${cat.children && cat.children.length > 0 ? '<i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; opacity: 0.6;"></i>' : ''}
-          </button>`;
+          <div style="display: flex; align-items: center; width: 100%;">
+            <button class="category-btn ${isCatActive ? 'active' : ''}" ${paddingLeft} style="flex: 1;" onclick="selectCategory(${cat.id})">
+              <span><i class="fa-solid fa-${iconClass}"></i> ${escapeHtml(cat.name)}</span>
+            </button>
+            ${hasChildren ? `
+              <button onclick="toggleCategoryExpand(event, ${cat.id})" style="background: transparent; border: none; color: var(--text-secondary); padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.85rem;" title="Toggle folder contents">
+                <i class="fa-solid ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'}"></i>
+              </button>
+            ` : ''}
+          </div>`;
 
-        if (cat.children && cat.children.length > 0) {
+        if (hasChildren && isExpanded) {
           treeHtml += `<ul class="subcategory-list" style="padding-left: 0.5rem;">`;
           treeHtml += buildCategoryTreeHtml(cat.children, depth + 1);
           treeHtml += `</ul>`;
@@ -127,8 +136,21 @@ async function loadCategories() {
   }
 }
 
+function toggleCategoryExpand(event, catId) {
+  if (event) event.stopPropagation();
+  if (expandedCategoryIds.has(catId)) {
+    expandedCategoryIds.delete(catId);
+  } else {
+    expandedCategoryIds.add(catId);
+  }
+  loadCategories();
+}
+
 function selectCategory(catId) {
   currentCategoryId = catId;
+  if (catId !== null) {
+    expandedCategoryIds.add(catId);
+  }
   loadCategories();
   loadFiles();
 }
@@ -181,7 +203,7 @@ function renderFiles(files) {
     gridEl.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 3rem;">
       <i class="fa-solid fa-folder-open fa-3x" style="margin-bottom: 1rem; opacity: 0.5;"></i>
       <h3>No tools found</h3>
-      <p style="font-size: 0.9rem; margin-top: 0.5rem;">No files uploaded in this folder yet, or search term returned zero matches.</p>
+      <p style="font-size: 0.9rem; margin-top: 0.5rem;">No files uploaded directly in this folder yet, or search term returned zero matches.</p>
     </div>`;
     return;
   }
