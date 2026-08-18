@@ -179,23 +179,30 @@ def init_db():
         for name, pid, icon, desc, order in categories_data:
             cursor.execute('INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES (?, ?, ?, ?, ?)',
                            (name, pid, icon, desc, order))
-            
-        # Add subcategories specifically under Printers
-        cursor.execute("SELECT id FROM categories WHERE name = 'Printers'")
-        printers_cat = cursor.fetchone()
-        if printers_cat:
-            printers_id = printers_cat['id']
-            cursor.execute('INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES (?, ?, ?, ?, ?)',
-                           ('Resetters', printers_id, 'refresh-cw', 'Printer waste ink resetters & EEPROM clearers', 1))
-            cursor.execute('INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES (?, ?, ?, ?, ?)',
-                           ('Drivers', printers_id, 'file-text', 'Universal and specific printer drivers & setup packs', 2))
 
-    # Clean up / fix any mismatched parent_id for Resetters & Drivers to ensure they belong under Printers
+    # Explicitly enforce parent_id for Resetters & Drivers under Printers
     cursor.execute("SELECT id FROM categories WHERE name = 'Printers'")
     printers_row = cursor.fetchone()
     if printers_row:
         p_id = printers_row['id']
-        cursor.execute("UPDATE categories SET parent_id = ? WHERE name IN ('Resetters', 'Drivers')", (p_id,))
+        
+        # Ensure Resetters exists under Printers
+        cursor.execute("SELECT id FROM categories WHERE name = 'Resetters'")
+        res_row = cursor.fetchone()
+        if res_row:
+            cursor.execute("UPDATE categories SET parent_id = ? WHERE id = ?", (p_id, res_row['id']))
+        else:
+            cursor.execute('INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES (?, ?, ?, ?, ?)',
+                           ('Resetters', p_id, 'refresh-cw', 'Printer waste ink resetters & EEPROM clearers', 1))
+
+        # Ensure Drivers exists under Printers
+        cursor.execute("SELECT id FROM categories WHERE name = 'Drivers'")
+        drv_row = cursor.fetchone()
+        if drv_row:
+            cursor.execute("UPDATE categories SET parent_id = ? WHERE id = ?", (p_id, drv_row['id']))
+        else:
+            cursor.execute('INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES (?, ?, ?, ?, ?)',
+                           ('Drivers', p_id, 'file-text', 'Universal and specific printer drivers & setup packs', 2))
 
     conn.commit()
     conn.close()
