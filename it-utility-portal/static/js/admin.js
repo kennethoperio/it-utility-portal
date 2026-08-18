@@ -178,8 +178,8 @@ function getCategoryIconClass(categoryName, iconName) {
     return iconName.startsWith('fa-') ? iconName : `fa-${iconName}`;
   }
   const name = (categoryName || '').toLowerCase();
-  if (name.includes('print')) return 'fa-print';
   if (name.includes('driver')) return 'fa-microchip';
+  if (name.includes('print')) return 'fa-print';
   if (name.includes('reset')) return 'fa-rotate-left';
   if (name.includes('recover') || name.includes('undelete')) return 'fa-life-ring';
   if (name.includes('tool') || name.includes('install')) return 'fa-toolbox';
@@ -247,7 +247,7 @@ async function loadAdminCategories() {
           <td><i class="fa-solid ${iconClass}" style="color: var(--accent-color);"></i> <code>${iconClass}</code></td>
           <td>${escapeHtml(c.description || '-')}</td>
           <td>
-            <button class="btn btn-secondary btn-sm" onclick="editCategory(${c.id}, '${escapeJs(c.name)}', ${c.parent_id || 'null'}, '${escapeJs(c.description || '')}')">
+            <button class="btn btn-secondary btn-sm" onclick="openEditCategoryModal(${c.id}, '${escapeJs(c.name)}', ${c.parent_id || 'null'}, '${escapeJs(c.icon || 'auto')}', '${escapeJs(c.description || '')}')">
               <i class="fa-solid fa-pen"></i> Edit
             </button>
             <button class="btn btn-danger btn-sm" onclick="deleteCategory(${c.id}, '${escapeJs(c.name)}')">
@@ -292,40 +292,57 @@ async function handleCreateCategory(e) {
   }
 }
 
-async function editCategory(id, currentName, currentParentId, currentDesc) {
-  const newName = prompt("Edit Category / Folder Name:", currentName);
-  if (!newName || !newName.trim()) return;
+function openEditCategoryModal(id, name, parentId, icon, description) {
+  document.getElementById('edit-cat-id').value = id;
+  document.getElementById('edit-cat-name').value = name || '';
+  document.getElementById('edit-cat-icon').value = icon || 'auto';
+  document.getElementById('edit-cat-description').value = description || '';
 
-  const parentOptionsStr = categoriesList
-    .filter(c => c.id !== id)
-    .map(c => `ID ${c.id}: ${'  '.repeat(c.depth || 0)}${c.name}`)
-    .join('\n');
+  const editParentSelect = document.getElementById('edit-cat-parent');
+  let parentHtml = '<option value="">-- Main Folder (Top Level) --</option>';
+  categoriesList.forEach(c => {
+    if (c.id !== id) {
+      const depth = c.depth || 0;
+      const prefix = depth > 0 ? '&nbsp;&nbsp;'.repeat(depth) + '└── ' : '';
+      parentHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)}</option>`;
+    }
+  });
+  editParentSelect.innerHTML = parentHtml;
+  editParentSelect.value = parentId ? parentId : '';
 
-  const newParentInput = prompt(
-    `Move folder "${newName}" under a parent folder?\n\nAvailable Parent Folders:\n0 = Main Top-Level Folder\n${parentOptionsStr}\n\nEnter Parent Folder ID:`,
-    currentParentId || 0
-  );
+  document.getElementById('edit-category-modal').classList.add('active');
+}
 
-  if (newParentInput === null) return;
-  const parent_id = parseInt(newParentInput) > 0 ? parseInt(newParentInput) : null;
-  const description = prompt("Edit Description:", currentDesc) || "";
+function closeEditCategoryModal() {
+  document.getElementById('edit-category-modal').classList.remove('active');
+}
+
+async function handleSaveCategoryEdit(e) {
+  e.preventDefault();
+  const id = document.getElementById('edit-cat-id').value;
+  const name = document.getElementById('edit-cat-name').value.trim();
+  const parent_id = document.getElementById('edit-cat-parent').value || null;
+  const icon = document.getElementById('edit-cat-icon').value || 'auto';
+  const description = document.getElementById('edit-cat-description').value.trim();
 
   try {
     const res = await fetch(`/api/categories/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newName.trim(), parent_id, description })
+      body: JSON.stringify({ name, parent_id, icon, description })
     });
     const data = await res.json();
+
     if (data.success) {
       alert(data.message);
+      closeEditCategoryModal();
       loadAdminCategories();
       loadAdminFiles();
     } else {
       alert(data.error || 'Failed to update category.');
     }
   } catch (err) {
-    alert('Server error editing category.');
+    alert('Server error updating category.');
   }
 }
 
