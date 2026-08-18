@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IT Troubleshooting Utility Hub</title>
-  <link rel="stylesheet" href="css/style.css?v=1.2">
+  <link rel="stylesheet" href="css/style.css?v=3.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -193,6 +193,20 @@
     </div>
   </div>
 
+  <!-- Download Limit Reached Modal -->
+  <div class="modal-overlay" id="download-limit-modal">
+    <div class="modal-card" style="text-align: center;">
+      <div style="width: 60px; height: 60px; border-radius: 50%; background-color: rgba(245, 158, 11, 0.15); color: var(--warning-color); display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1rem;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h2 style="font-size: 1.3rem; margin-bottom: 0.5rem;">Download Limit Reached</h2>
+      <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem;" id="download-limit-msg">
+        Your temporary passcode has reached its maximum download limit. You can continue browsing tools and running network diagnostics, but additional file downloads require a new passcode from your IT administrator.
+      </p>
+      <button class="btn btn-primary" onclick="closeDownloadLimitModal()" style="width: 100%;"><i class="fa-solid fa-check"></i> Got It</button>
+    </div>
+  </div>
+
   <!-- QR Code Modal -->
   <div class="modal-overlay" id="qrcode-modal">
     <div class="modal-card" style="text-align: center;">
@@ -210,6 +224,6 @@
     </div>
   </div>
 
-  <script src="js/app.js?v=1.2"></script>
+  <script src="js/app.js?v=3.0"></script>
 </body>
 </html>
