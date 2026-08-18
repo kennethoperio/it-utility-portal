@@ -75,7 +75,6 @@ def upload_db_to_s3():
     s3_client = get_s3_client()
     if s3_client and S3_BUCKET and os.path.exists(DB_PATH):
         try:
-            # Checkpoint SQLite WAL to ensure main .db file contains all committed writes
             try:
                 conn = sqlite3.connect(DB_PATH)
                 conn.execute("PRAGMA wal_checkpoint(FULL)")
@@ -470,6 +469,28 @@ def delete_category(cat_id):
     log_audit('CATEGORY_DELETED', f"Deleted category '{cat['name']}' (ID: {cat_id})")
     return jsonify({'success': True, 'message': f"Category '{cat['name']}' deleted."})
 
+# --- Audit Logs Management API ---
+@app.route('/api/admin/audit-logs/<int:log_id>', methods=['DELETE'])
+@admin_required
+def delete_audit_log(log_id):
+    conn = get_db()
+    conn.execute('DELETE FROM audit_logs WHERE id = ?', (log_id,))
+    conn.commit()
+    conn.close()
+    upload_db_to_s3()
+    return jsonify({'success': True, 'message': f'Audit log #{log_id} deleted.'})
+
+@app.route('/api/admin/audit-logs', methods=['DELETE'])
+@admin_required
+def clear_all_audit_logs():
+    conn = get_db()
+    conn.execute('DELETE FROM audit_logs')
+    conn.commit()
+    conn.close()
+    upload_db_to_s3()
+    log_audit('AUDIT_LOGS_CLEARED', 'Admin cleared all activity audit logs')
+    return jsonify({'success': True, 'message': 'All audit logs cleared successfully.'})
+
 # --- Force Sync & Repair Database Endpoint ---
 @app.route('/api/admin/force-sync-db', methods=['POST'])
 @admin_required
@@ -498,7 +519,6 @@ def test_s3_connection():
 
     try:
         bucket = (S3_BUCKET or '').strip()
-        # Test listing objects in Backblaze bucket
         res = s3_client.list_objects_v2(Bucket=bucket)
         objs = [o['Key'] for o in res.get('Contents', [])]
         
@@ -731,7 +751,6 @@ def delete_file(file_id):
     if s3_client and S3_BUCKET:
         try:
             bucket_name = S3_BUCKET.strip()
-            # Delete object and all historical version markers permanently from Backblaze B2
             try:
                 versions = s3_client.list_object_versions(Bucket=bucket_name, Prefix=unique_key)
                 for ver in versions.get('Versions', []):
@@ -841,7 +860,7 @@ def get_cmd_scripts():
 def admin_settings():
     if request.method == 'GET':
         conn = get_db()
-        logs = conn.execute('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 50').fetchall()
+        logs = conn.execute('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 500').fetchall()
         guest_codes = conn.execute('SELECT * FROM guest_passcodes ORDER BY created_at DESC').fetchall()
         
         # Stats summary
