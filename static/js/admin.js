@@ -2,6 +2,9 @@
 
 let categoriesList = [];
 let adminFilesList = [];
+let allAuditLogsList = [];
+let currentLogsPage = 1;
+let logsPerPage = 10;
 
 document.addEventListener('DOMContentLoaded', () => {
   checkAdminAuth();
@@ -452,7 +455,7 @@ async function deleteFile(id, name) {
   }
 }
 
-// Settings & Guest Passcodes
+// Settings, Guest Passcodes & Audit Logs Pagination
 async function loadAdminSettingsData() {
   try {
     const res = await fetch('/api/admin/settings');
@@ -488,24 +491,113 @@ async function loadAdminSettingsData() {
     });
     if (passTable) passTable.innerHTML = passHtml || '<tr><td colspan="5" style="text-align:center;">No temporary passcodes created.</td></tr>';
 
-    // Audit logs table
-    const logsTable = document.getElementById('admin-audit-logs-body');
-    let logsHtml = '';
-    (data.audit_logs || []).forEach(l => {
-      logsHtml += `
-        <tr>
-          <td>#${l.id}</td>
-          <td><span class="badge badge-info">${escapeHtml(l.action)}</span></td>
-          <td>${escapeHtml(l.details)}</td>
-          <td>${escapeHtml(l.ip_address)}</td>
-          <td>${escapeHtml(l.created_at)}</td>
-        </tr>
-      `;
-    });
-    if (logsTable) logsTable.innerHTML = logsHtml || '<tr><td colspan="5" style="text-align:center;">No activity logged yet.</td></tr>';
+    // Store full audit logs for pagination
+    allAuditLogsList = data.audit_logs || [];
+    renderAuditLogsTable();
 
   } catch (err) {
     console.error('Error loading admin settings:', err);
+  }
+}
+
+// Audit Logs Pagination & Actions
+function changeLogsPerPage(val) {
+  logsPerPage = parseInt(val) || 10;
+  currentLogsPage = 1;
+  renderAuditLogsTable();
+}
+
+function prevLogsPage() {
+  if (currentLogsPage > 1) {
+    currentLogsPage--;
+    renderAuditLogsTable();
+  }
+}
+
+function nextLogsPage() {
+  const maxPage = Math.ceil(allAuditLogsList.length / logsPerPage) || 1;
+  if (currentLogsPage < maxPage) {
+    currentLogsPage++;
+    renderAuditLogsTable();
+  }
+}
+
+function renderAuditLogsTable() {
+  const logsTable = document.getElementById('admin-audit-logs-body');
+  if (!logsTable) return;
+
+  const totalLogs = allAuditLogsList.length;
+  const maxPage = Math.ceil(totalLogs / logsPerPage) || 1;
+  if (currentLogsPage > maxPage) currentLogsPage = maxPage;
+
+  const startIndex = (currentLogsPage - 1) * logsPerPage;
+  const endIndex = Math.min(startIndex + logsPerPage, totalLogs);
+  const pageLogs = allAuditLogsList.slice(startIndex, endIndex);
+
+  let logsHtml = '';
+  pageLogs.forEach(l => {
+    logsHtml += `
+      <tr>
+        <td>#${l.id}</td>
+        <td><span class="badge badge-info">${escapeHtml(l.action)}</span></td>
+        <td>${escapeHtml(l.details)}</td>
+        <td>${escapeHtml(l.ip_address)}</td>
+        <td>${escapeHtml(l.created_at)}</td>
+        <td>
+          <button class="btn btn-danger btn-sm" onclick="deleteSingleAuditLog(${l.id})" title="Delete Log Entry"><i class="fa-solid fa-trash-can"></i></button>
+        </td>
+      </tr>
+    `;
+  });
+
+  logsTable.innerHTML = logsHtml || '<tr><td colspan="6" style="text-align:center;">No activity logged yet.</td></tr>';
+
+  // Update pagination info controls
+  const infoEl = document.getElementById('logs-pagination-info');
+  const pageNumberEl = document.getElementById('logs-page-number');
+  const prevBtn = document.getElementById('logs-prev-btn');
+  const nextBtn = document.getElementById('logs-next-btn');
+
+  if (infoEl) {
+    infoEl.innerText = totalLogs > 0 ? `Showing ${startIndex + 1} to ${endIndex} of ${totalLogs} logs` : 'Showing 0 logs';
+  }
+  if (pageNumberEl) {
+    pageNumberEl.innerText = `Page ${currentLogsPage} of ${maxPage}`;
+  }
+  if (prevBtn) prevBtn.disabled = (currentLogsPage <= 1);
+  if (nextBtn) nextBtn.disabled = (currentLogsPage >= maxPage);
+}
+
+async function deleteSingleAuditLog(id) {
+  if (!confirm(`Are you sure you want to delete audit log #${id}?`)) return;
+  try {
+    const res = await fetch(`/api/admin/audit-logs/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      allAuditLogsList = allAuditLogsList.filter(l => l.id !== id);
+      renderAuditLogsTable();
+    } else {
+      alert(data.error || 'Failed to delete audit log.');
+    }
+  } catch (err) {
+    alert('Server error deleting audit log.');
+  }
+}
+
+async function clearAllAuditLogs() {
+  if (!confirm('Are you sure you want to CLEAR ALL AUDIT LOGS?\nWarning: This action cannot be undone!')) return;
+  try {
+    const res = await fetch('/api/admin/audit-logs', { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message);
+      allAuditLogsList = [];
+      renderAuditLogsTable();
+    } else {
+      alert(data.error || 'Failed to clear audit logs.');
+    }
+  } catch (err) {
+    alert('Server error clearing audit logs.');
   }
 }
 
