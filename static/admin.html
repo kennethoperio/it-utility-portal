@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Portal</title>
-  <link rel="stylesheet" href="/css/style.css?v=4.0">
+  <link rel="stylesheet" href="/css/style.css?v=4.5">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -417,6 +417,65 @@
 
   </div>
 
+  <!-- Edit Category Modal -->
+  <div class="modal-overlay" id="edit-category-modal">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-pen-to-square" style="color: var(--accent-color);"></i> Edit Category / Folder</h3>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="closeEditCategoryModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="edit-category-form" onsubmit="handleSaveCategoryEdit(event)">
+        <input type="hidden" id="edit-cat-id">
+
+        <div class="form-group">
+          <label for="edit-cat-name">Category / Folder Name *</label>
+          <input type="text" id="edit-cat-name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-cat-parent">Parent Category (Optional)</label>
+          <select id="edit-cat-parent">
+            <option value="">-- Main Folder (Top Level) --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-cat-icon">Folder Icon Style</label>
+          <select id="edit-cat-icon">
+            <option value="auto">✨ Auto-Detect Icon from Category Name</option>
+            <option value="folder">📁 Standard Folder</option>
+            <option value="print">🖨️ Printer / Scanner</option>
+            <option value="microchip">🎛️ Driver / Microchip</option>
+            <option value="rotate-left">🔄 Resetter / Reset Tool</option>
+            <option value="screwdriver-wrench">🛠️ Windows Repair / Wrench</option>
+            <option value="life-ring">🛟 Data Recovery / Rescue</option>
+            <option value="toolbox">🧰 Utilities / Toolbox</option>
+            <option value="key">🔑 License Key / Activator</option>
+            <option value="network-wired">🌐 Network & Connectivity</option>
+            <option value="shield-virus">🛡️ Antivirus & Security</option>
+            <option value="hard-drive">💾 Hard Drive & Disk Tools</option>
+            <option value="desktop">🖥️ Remote Desktop / Display</option>
+            <option value="database">🗄️ Database & SQL Tools</option>
+            <option value="gear">⚙️ System Configuration</option>
+            <option value="mobile-screen">📱 Mobile & Android Utilities</option>
+            <option value="bolt">⚡ Quick Diagnostics & Scripts</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-cat-description">Description & Purpose</label>
+          <textarea id="edit-cat-description" rows="3" style="width: 100%; padding: 0.65rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 0.9rem; outline: none;"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+          <button type="button" class="btn btn-secondary" onclick="closeEditCategoryModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Admin Login Modal -->
   <div class="modal-overlay active" id="admin-login-modal">
     <div class="modal-card">
@@ -446,6 +505,6 @@
     </div>
   </div>
 
-  <script src="/js/admin.js?v=4.0"></script>
+  <script src="/js/admin.js?v=4.5"></script>
 </body>
 </html>
