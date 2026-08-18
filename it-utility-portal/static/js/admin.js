@@ -1,6 +1,7 @@
 // Admin Dashboard JavaScript Logic
 
 let categoriesList = [];
+let adminFilesList = [];
 
 document.addEventListener('DOMContentLoaded', () => {
   checkAdminAuth();
@@ -126,20 +127,28 @@ async function loadAdminCategories() {
     // Populate category select dropdowns
     const selectEl = document.getElementById('upload-category');
     const parentSelectEl = document.getElementById('cat-parent');
+    const filterSelectEl = document.getElementById('admin-file-category-filter');
 
     let selectHtml = '<option value="">-- Select Category --</option>';
     let parentHtml = '<option value="">-- Main Folder (Top Level) --</option>';
+    let filterHtml = '<option value="">All Categories & Folders</option>';
 
     categoriesList.forEach(c => {
       const prefix = c.parent_id ? '&nbsp;&nbsp;└── ' : '';
       selectHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)}</option>`;
+      filterHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)}</option>`;
       if (!c.parent_id) {
         parentHtml += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
       }
     });
 
-    selectEl.innerHTML = selectHtml;
-    parentSelectEl.innerHTML = parentHtml;
+    if (selectEl) selectEl.innerHTML = selectHtml;
+    if (parentSelectEl) parentSelectEl.innerHTML = parentHtml;
+    if (filterSelectEl) {
+      const selectedVal = filterSelectEl.value;
+      filterSelectEl.innerHTML = filterHtml;
+      filterSelectEl.value = selectedVal;
+    }
 
     // Populate Categories Table
     const tableBody = document.getElementById('admin-categories-table-body');
@@ -161,7 +170,7 @@ async function loadAdminCategories() {
       `;
     });
 
-    tableBody.innerHTML = tableHtml || '<tr><td colspan="4" style="text-align:center;">No categories created yet.</td></tr>';
+    if (tableBody) tableBody.innerHTML = tableHtml || '<tr><td colspan="4" style="text-align:center;">No categories created yet.</td></tr>';
   } catch (err) {
     console.error('Error loading admin categories:', err);
   }
@@ -324,40 +333,62 @@ function handleFileUpload(e) {
   xhr.send(formData);
 }
 
-// Manage Files Table
+// Manage Files Table with Category & Search Filtering
 async function loadAdminFiles() {
+  const catFilter = document.getElementById('admin-file-category-filter')?.value;
   try {
-    const res = await fetch('/api/files');
+    let url = '/api/files';
+    if (catFilter) url += `?category_id=${catFilter}`;
+
+    const res = await fetch(url);
     const data = await res.json();
-
-    const tableBody = document.getElementById('admin-files-table-body');
-    let html = '';
-
-    (data.files || []).forEach(f => {
-      const sizeMB = (f.file_size / (1024 * 1024)).toFixed(2);
-      const dateStr = f.created_at ? f.created_at.split(' ')[0] : '-';
-
-      html += `
-        <tr>
-          <td>#${f.id}</td>
-          <td><strong>${escapeHtml(f.original_name)}</strong></td>
-          <td><span class="badge badge-info">${escapeHtml(f.category_name)}</span></td>
-          <td>${sizeMB} MB</td>
-          <td>v${escapeHtml(f.version || '1.0')}</td>
-          <td>${f.download_count || 0}</td>
-          <td>${dateStr}</td>
-          <td>
-            <a href="/api/files/download/${f.id}" class="btn btn-secondary btn-sm" title="Download"><i class="fa-solid fa-download"></i></a>
-            <button class="btn btn-danger btn-sm" onclick="deleteFile(${f.id}, '${escapeJs(f.original_name)}')"><i class="fa-solid fa-trash"></i></button>
-          </td>
-        </tr>
-      `;
-    });
-
-    tableBody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;">No files uploaded yet.</td></tr>';
+    adminFilesList = data.files || [];
+    renderAdminFilesTable(adminFilesList);
   } catch (err) {
     console.error('Error loading admin files:', err);
   }
+}
+
+function filterAdminFilesTable() {
+  const searchQuery = document.getElementById('admin-file-search-filter')?.value.trim().toLowerCase() || '';
+  let filtered = adminFilesList;
+  if (searchQuery) {
+    filtered = adminFilesList.filter(f => 
+      f.original_name.toLowerCase().includes(searchQuery) ||
+      (f.description && f.description.toLowerCase().includes(searchQuery)) ||
+      (f.category_name && f.category_name.toLowerCase().includes(searchQuery))
+    );
+  }
+  renderAdminFilesTable(filtered);
+}
+
+function renderAdminFilesTable(files) {
+  const tableBody = document.getElementById('admin-files-table-body');
+  if (!tableBody) return;
+
+  let html = '';
+  files.forEach(f => {
+    const sizeMB = (f.file_size / (1024 * 1024)).toFixed(2);
+    const dateStr = f.created_at ? f.created_at.split(' ')[0] : '-';
+
+    html += `
+      <tr>
+        <td>#${f.id}</td>
+        <td><strong>${escapeHtml(f.original_name)}</strong></td>
+        <td><span class="badge badge-info">${escapeHtml(f.category_name)}</span></td>
+        <td>${sizeMB} MB</td>
+        <td>v${escapeHtml(f.version || '1.0')}</td>
+        <td>${f.download_count || 0}</td>
+        <td>${dateStr}</td>
+        <td>
+          <a href="/api/files/download/${f.id}" class="btn btn-secondary btn-sm" title="Download"><i class="fa-solid fa-download"></i></a>
+          <button class="btn btn-danger btn-sm" onclick="deleteFile(${f.id}, '${escapeJs(f.original_name)}')"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `;
+  });
+
+  tableBody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;">No files found matching criteria.</td></tr>';
 }
 
 async function deleteFile(id, name) {
@@ -411,7 +442,7 @@ async function loadAdminSettingsData() {
         </tr>
       `;
     });
-    passTable.innerHTML = passHtml || '<tr><td colspan="5" style="text-align:center;">No temporary passcodes created.</td></tr>';
+    if (passTable) passTable.innerHTML = passHtml || '<tr><td colspan="5" style="text-align:center;">No temporary passcodes created.</td></tr>';
 
     // Audit logs table
     const logsTable = document.getElementById('admin-audit-logs-body');
@@ -427,7 +458,7 @@ async function loadAdminSettingsData() {
         </tr>
       `;
     });
-    logsTable.innerHTML = logsHtml || '<tr><td colspan="5" style="text-align:center;">No activity logged yet.</td></tr>';
+    if (logsTable) logsTable.innerHTML = logsHtml || '<tr><td colspan="5" style="text-align:center;">No activity logged yet.</td></tr>';
 
   } catch (err) {
     console.error('Error loading admin settings:', err);
