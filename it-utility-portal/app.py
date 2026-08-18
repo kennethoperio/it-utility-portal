@@ -103,7 +103,6 @@ def fix_categories_hierarchy():
         conn = get_db()
         cursor = conn.cursor()
         
-        # Ensure Printers category exists with icon
         cursor.execute("SELECT id FROM categories WHERE name = 'Printers'")
         p_row = cursor.fetchone()
         if not p_row:
@@ -113,7 +112,6 @@ def fix_categories_hierarchy():
             printers_id = p_row['id']
             cursor.execute("UPDATE categories SET icon = 'print' WHERE id = ?", (printers_id,))
 
-        # Update specific icons for default categories
         cursor.execute("UPDATE categories SET icon = 'print' WHERE name = 'Printers'")
         cursor.execute("UPDATE categories SET icon = 'microchip' WHERE name = 'Drivers'")
         cursor.execute("UPDATE categories SET icon = 'rotate-left' WHERE name = 'Resetters'")
@@ -125,7 +123,6 @@ def fix_categories_hierarchy():
         cursor.execute("UPDATE categories SET icon = 'shield-virus' WHERE name = 'Antivirus & Malware Removal'")
         cursor.execute("UPDATE categories SET icon = 'microchip' WHERE name = 'Hardware Diagnostics'")
 
-        # Force Resetters and Drivers to have parent_id = Printers ID if unparented
         cursor.execute("UPDATE categories SET parent_id = ? WHERE name IN ('Resetters', 'Drivers') AND (parent_id IS NULL OR parent_id = '')", (printers_id,))
         
         conn.commit()
@@ -343,7 +340,6 @@ def verify_passcode():
         log_audit('PASSCODE_ACCESS', 'Unlocked via Primary Passcode')
         return jsonify({'success': True, 'message': 'Access granted!'})
 
-    # Check guest passcodes (Allow logging in as long as passcode exists and not expired)
     conn = get_db()
     now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     guest = conn.execute('''
@@ -437,7 +433,7 @@ def create_category():
         except (ValueError, TypeError):
             parent_id = None
 
-    icon = data.get('icon', 'folder')
+    icon = data.get('icon', 'auto')
     description = (data.get('description') or '').strip()
     
     if not name:
@@ -469,20 +465,21 @@ def update_category(cat_id):
         except (ValueError, TypeError):
             parent_id = None
 
+    icon = data.get('icon', 'auto')
     description = (data.get('description') or '').strip()
     
     if not name:
         return jsonify({'error': 'Category name is required.'}), 400
 
     conn = get_db()
-    conn.execute('UPDATE categories SET name = ?, parent_id = ?, description = ? WHERE id = ?',
-                 (name, parent_id, description, cat_id))
+    conn.execute('UPDATE categories SET name = ?, parent_id = ?, icon = ?, description = ? WHERE id = ?',
+                 (name, parent_id, icon, description, cat_id))
     conn.commit()
     conn.close()
     upload_db_to_s3()
     
     log_audit('CATEGORY_UPDATED', f"Updated category '{name}' (ID: {cat_id})")
-    return jsonify({'success': True, 'message': f"Folder '{name}' updated."})
+    return jsonify({'success': True, 'message': f"Folder '{name}' updated successfully!"})
 
 @app.route('/api/categories/<int:cat_id>', methods=['DELETE'])
 @admin_required
@@ -796,12 +793,10 @@ def upload_file():
     unique_key = f"{uuid.uuid4().hex}_{original_filename}"
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
 
-    # Save file locally
     file.save(filepath)
     file_size = os.path.getsize(filepath)
     sha256_hash = compute_sha256(filepath)
 
-    # Upload to Cloudflare R2 / S3 / Backblaze B2 bucket
     s3_client = get_s3_client()
     if s3_client and S3_BUCKET:
         try:
@@ -840,7 +835,6 @@ def upload_file():
 def download_file(file_id):
     conn = get_db()
     
-    # Enforce Guest Passcode Download Limit
     if session.get('is_guest') and session.get('guest_passcode_id'):
         g_id = session.get('guest_passcode_id')
         g_row = conn.execute('SELECT * FROM guest_passcodes WHERE id = ?', (g_id,)).fetchone()
@@ -858,7 +852,6 @@ def download_file(file_id):
                 'current_uses': g_row['current_uses']
             }), 403
             
-        # Increment download count for guest passcode
         new_uses = g_row['current_uses'] + 1
         conn.execute('UPDATE guest_passcodes SET current_uses = ? WHERE id = ?', (new_uses, g_id))
         conn.commit()
@@ -872,7 +865,6 @@ def download_file(file_id):
     unique_key = file_record['file_key']
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
 
-    # Check Cloudflare R2 / S3 / Backblaze first if local file missing
     s3_client = get_s3_client()
     if not os.path.exists(filepath) and s3_client and S3_BUCKET:
         try:
@@ -884,7 +876,6 @@ def download_file(file_id):
         conn.close()
         return jsonify({'error': 'Physical file missing from server storage.'}), 404
 
-    # Increment download counter
     conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
     conn.commit()
     conn.close()
@@ -921,7 +912,6 @@ def download_all_zip():
             file_key = f['file_key']
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], file_key)
             
-            # Fetch from S3/R2/B2 if missing locally
             s3_client = get_s3_client()
             if not os.path.exists(filepath) and s3_client and S3_BUCKET:
                 try:
@@ -1032,7 +1022,6 @@ def admin_settings():
         logs = conn.execute('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 500').fetchall()
         guest_codes = conn.execute('SELECT * FROM guest_passcodes ORDER BY created_at DESC').fetchall()
         
-        # Stats summary
         file_stats = conn.execute('''
             SELECT COUNT(*) as total_files, COALESCE(SUM(file_size), 0) as total_bytes, COALESCE(SUM(download_count), 0) as total_downloads
             FROM files
