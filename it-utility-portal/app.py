@@ -38,21 +38,36 @@ def get_s3_client():
     if S3_ENDPOINT and S3_ACCESS_KEY and S3_SECRET_KEY:
         try:
             import boto3
+            from botocore.client import Config
+
+            endpoint = S3_ENDPOINT.strip()
+            if not endpoint.startswith('http://') and not endpoint.startswith('https://'):
+                endpoint = f"https://{endpoint}"
+
+            # Auto-extract region name (e.g. s3.us-west-004.backblazeb2.com -> us-west-004)
+            region = 'us-west-004'
+            clean_host = endpoint.replace('https://', '').replace('http://', '')
+            parts = clean_host.split('.')
+            if len(parts) >= 2 and parts[0] == 's3':
+                region = parts[1]
+
             return boto3.client(
                 's3',
-                endpoint_url=S3_ENDPOINT,
-                aws_access_key_id=S3_ACCESS_KEY,
-                aws_secret_access_key=S3_SECRET_KEY
+                endpoint_url=endpoint,
+                aws_access_key_id=S3_ACCESS_KEY.strip(),
+                aws_secret_access_key=S3_SECRET_KEY.strip(),
+                region_name=region,
+                config=Config(signature_version='s3v4')
             )
         except Exception as e:
-            print(f"S3 client error: {e}")
+            print(f"Backblaze B2 S3 client init error: {e}")
     return None
 
 def download_db_from_s3():
     s3_client = get_s3_client()
     if s3_client and S3_BUCKET:
         try:
-            s3_client.download_file(S3_BUCKET, 'it_vault.db', DB_PATH)
+            s3_client.download_file(S3_BUCKET.strip(), 'it_vault.db', DB_PATH)
             print("Successfully downloaded latest database from cloud storage!")
         except Exception as e:
             print(f"No existing database found in cloud storage (or initial boot): {e}")
@@ -61,7 +76,7 @@ def upload_db_to_s3():
     s3_client = get_s3_client()
     if s3_client and S3_BUCKET and os.path.exists(DB_PATH):
         try:
-            s3_client.upload_file(DB_PATH, S3_BUCKET, 'it_vault.db')
+            s3_client.upload_file(DB_PATH, S3_BUCKET.strip(), 'it_vault.db')
             print("Uploaded updated database to cloud storage!")
         except Exception as e:
             print(f"Error syncing DB to S3: {e}")
@@ -116,7 +131,8 @@ def resync_cloud_files_to_db():
         default_cat_id = cat_row['id'] if cat_row else 1
 
         # List objects in Backblaze bucket
-        response = s3_client.list_objects_v2(Bucket=S3_BUCKET)
+        bucket_name = S3_BUCKET.strip()
+        response = s3_client.list_objects_v2(Bucket=bucket_name)
         objects = response.get('Contents', [])
 
         for obj in objects:
@@ -129,7 +145,7 @@ def resync_cloud_files_to_db():
             if not cursor.fetchone():
                 file_size = obj['Size']
                 orig_name = file_key
-                # If key has uuid prefix, clean it for display
+                # Clean prefix if uuid format
                 if '_' in file_key:
                     orig_name = file_key.split('_', 1)[1]
 
@@ -549,14 +565,17 @@ def upload_file():
     file_size = os.path.getsize(filepath)
     sha256_hash = compute_sha256(filepath)
 
-    # If Cloudflare R2 / S3 / Backblaze is configured, upload to cloud bucket
+    # Upload to Cloudflare R2 / S3 / Backblaze B2 bucket
     s3_client = get_s3_client()
     if s3_client and S3_BUCKET:
         try:
-            s3_client.upload_file(filepath, S3_BUCKET, unique_key)
-            print(f"Uploaded {unique_key} to Cloudflare R2 / S3 / Backblaze bucket {S3_BUCKET}")
+            bucket_name = S3_BUCKET.strip()
+            s3_client.upload_file(filepath, bucket_name, unique_key)
+            print(f"SUCCESS: Uploaded {unique_key} to Backblaze B2 bucket '{bucket_name}'")
         except Exception as e:
-            print(f"Error uploading to S3/R2/B2: {e}")
+            print(f"ERROR uploading to Backblaze B2: {e}")
+    else:
+        print(f"WARNING: S3_CLIENT or S3_BUCKET missing. S3_ENDPOINT={S3_ENDPOINT}, S3_BUCKET={S3_BUCKET}")
 
     conn = get_db()
     cursor = conn.cursor()
@@ -598,7 +617,7 @@ def download_file(file_id):
     s3_client = get_s3_client()
     if not os.path.exists(filepath) and s3_client and S3_BUCKET:
         try:
-            s3_client.download_file(S3_BUCKET, unique_key, filepath)
+            s3_client.download_file(S3_BUCKET.strip(), unique_key, filepath)
         except Exception as e:
             print(f"Error downloading from S3/R2/B2: {e}")
 
@@ -647,7 +666,7 @@ def download_all_zip():
             s3_client = get_s3_client()
             if not os.path.exists(filepath) and s3_client and S3_BUCKET:
                 try:
-                    s3_client.download_file(S3_BUCKET, file_key, filepath)
+                    s3_client.download_file(S3_BUCKET.strip(), file_key, filepath)
                 except Exception as e:
                     print(f"S3 download error for zip: {e}")
 
@@ -696,7 +715,7 @@ def delete_file(file_id):
     s3_client = get_s3_client()
     if s3_client and S3_BUCKET:
         try:
-            s3_client.delete_object(Bucket=S3_BUCKET, Key=unique_key)
+            s3_client.delete_object(Bucket=S3_BUCKET.strip(), Key=unique_key)
         except Exception as e:
             print(f"Error deleting from S3/R2/B2: {e}")
 
