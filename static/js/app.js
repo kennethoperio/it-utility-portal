@@ -113,14 +113,14 @@ async function loadCategories() {
               <span><i class="fa-solid fa-${iconClass}"></i> ${escapeHtml(cat.name)}</span>
             </button>
             ${hasChildren ? `
-              <button onclick="toggleCategoryExpand(event, ${cat.id})" style="background: transparent; border: none; color: var(--text-secondary); padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.85rem;" title="Toggle folder contents">
-                <i class="fa-solid ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'}"></i>
+              <button class="toggle-folder-btn" onclick="toggleCategoryExpand(event, ${cat.id})" title="Toggle subfolders">
+                <i class="fa-solid fa-chevron-right chevron-icon ${isExpanded ? 'rotated' : ''}"></i>
               </button>
             ` : ''}
           </div>`;
 
-        if (hasChildren && isExpanded) {
-          treeHtml += `<ul class="subcategory-list" style="padding-left: 0.5rem;">`;
+        if (hasChildren) {
+          treeHtml += `<ul class="subcategory-list ${isExpanded ? 'open' : ''}" style="padding-left: 0.5rem;">`;
           treeHtml += buildCategoryTreeHtml(cat.children, depth + 1);
           treeHtml += `</ul>`;
         }
@@ -239,9 +239,9 @@ function renderFiles(files) {
         </div>
 
         <div class="file-actions">
-          <a href="/api/files/download/${f.id}" class="btn btn-primary" style="flex: 1;" onclick="handleDownloadClick(event, ${f.id})">
+          <button class="btn btn-primary" style="flex: 1;" onclick="handleDownloadClick(event, ${f.id})">
             <i class="fa-solid fa-download"></i> Download
-          </a>
+          </button>
           <button class="btn btn-secondary btn-icon" onclick="copyHash('${f.sha256_hash}')" title="Copy SHA-256 Hash">
             <i class="fa-solid fa-fingerprint"></i>
           </button>
@@ -256,10 +256,43 @@ function renderFiles(files) {
   gridEl.innerHTML = html;
 }
 
-function handleDownloadClick(e, fileId) {
-  setTimeout(() => {
-    checkAuthStatus();
-  }, 1200);
+async function handleDownloadClick(e, fileId) {
+  if (e) e.preventDefault();
+  
+  try {
+    // Check download permission first
+    const checkRes = await fetch(`/api/files/check-download/${fileId}`);
+    const checkData = await checkRes.json();
+
+    if (!checkRes.ok || checkData.allowed === false) {
+      const msg = checkData.error || 'Your temporary passcode download limit has been reached.';
+      document.getElementById('download-limit-msg').innerText = msg;
+      document.getElementById('download-limit-modal').classList.add('active');
+      return;
+    }
+
+    // Permission granted! Initiate browser download smoothly
+    const downloadUrl = `/api/files/download/${fileId}`;
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // Refresh file download counter after 1.5 seconds
+    setTimeout(() => {
+      loadFiles();
+    }, 1500);
+
+  } catch (err) {
+    console.error('Error triggering download:', err);
+    window.location.href = `/api/files/download/${fileId}`;
+  }
+}
+
+function closeDownloadLimitModal() {
+  document.getElementById('download-limit-modal').classList.remove('active');
 }
 
 function copyHash(hash) {
