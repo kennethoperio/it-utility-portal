@@ -260,7 +260,6 @@ def init_db():
     conn.close()
 
     fix_categories_hierarchy()
-    resync_cloud_files_to_db()
 
 init_db()
 
@@ -537,7 +536,6 @@ def test_s3_connection():
 @app.route('/api/files', methods=['GET'])
 @passcode_required
 def list_files():
-    resync_cloud_files_to_db()
     cat_id = request.args.get('category_id')
     search = request.args.get('search', '').strip()
     
@@ -749,7 +747,18 @@ def delete_file(file_id):
     s3_client = get_s3_client()
     if s3_client and S3_BUCKET:
         try:
-            s3_client.delete_object(Bucket=S3_BUCKET.strip(), Key=unique_key)
+            bucket_name = S3_BUCKET.strip()
+            # Delete object and all historical version markers permanently from Backblaze B2
+            try:
+                versions = s3_client.list_object_versions(Bucket=bucket_name, Prefix=unique_key)
+                for ver in versions.get('Versions', []):
+                    s3_client.delete_object(Bucket=bucket_name, Key=unique_key, VersionId=ver['VersionId'])
+                for dm in versions.get('DeleteMarkers', []):
+                    s3_client.delete_object(Bucket=bucket_name, Key=unique_key, VersionId=dm['VersionId'])
+            except Exception as ve:
+                print(f"B2 version cleanup note: {ve}")
+
+            s3_client.delete_object(Bucket=bucket_name, Key=unique_key)
         except Exception as e:
             print(f"Error deleting from S3/R2/B2: {e}")
 
@@ -759,7 +768,7 @@ def delete_file(file_id):
     upload_db_to_s3()
 
     log_audit('FILE_DELETED', f"Deleted file '{file_record['original_name']}' (ID: {file_id})")
-    return jsonify({'success': True, 'message': f"File '{file_record['original_name']}' deleted."})
+    return jsonify({'success': True, 'message': f"File '{file_record['original_name']}' deleted permanently."})
 
 # --- QR Code & Shareable Utilities ---
 @app.route('/api/files/qrcode/<int:file_id>', methods=['GET'])
