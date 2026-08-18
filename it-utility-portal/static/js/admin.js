@@ -123,6 +123,8 @@ async function loadAdminCategories() {
     const data = await res.json();
 
     categoriesList = data.flat_list || [];
+    const catMap = {};
+    categoriesList.forEach(c => catMap[c.id] = c.name);
 
     // Populate category select dropdowns
     const selectEl = document.getElementById('upload-category');
@@ -134,9 +136,12 @@ async function loadAdminCategories() {
     let filterHtml = '<option value="">All Categories & Folders</option>';
 
     categoriesList.forEach(c => {
+      const parentName = c.parent_id ? catMap[c.parent_id] : null;
+      const label = parentName ? `${parentName} └── ${c.name}` : c.name;
       const prefix = c.parent_id ? '&nbsp;&nbsp;└── ' : '';
-      selectHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)}</option>`;
-      filterHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)}</option>`;
+
+      selectHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)} ${parentName ? '('+escapeHtml(parentName)+')' : ''}</option>`;
+      filterHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)} ${parentName ? '('+escapeHtml(parentName)+')' : ''}</option>`;
       if (!c.parent_id) {
         parentHtml += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
       }
@@ -155,13 +160,16 @@ async function loadAdminCategories() {
     let tableHtml = '';
 
     categoriesList.forEach(c => {
-      const parentName = c.parent_id ? (categoriesList.find(p => p.id === c.parent_id)?.name || 'Main') : 'Main Folder';
+      const parentName = c.parent_id ? (catMap[c.parent_id] || 'Main') : 'Main Folder';
       tableHtml += `
         <tr>
           <td><strong>${c.parent_id ? '└── ' : ''}${escapeHtml(c.name)}</strong></td>
           <td><span class="badge badge-info">${escapeHtml(parentName)}</span></td>
           <td>${escapeHtml(c.description || '-')}</td>
           <td>
+            <button class="btn btn-secondary btn-sm" onclick="editCategory(${c.id}, '${escapeJs(c.name)}', ${c.parent_id || 'null'}, '${escapeJs(c.description || '')}')">
+              <i class="fa-solid fa-pen"></i> Edit
+            </button>
             <button class="btn btn-danger btn-sm" onclick="deleteCategory(${c.id}, '${escapeJs(c.name)}')">
               <i class="fa-solid fa-trash"></i> Delete
             </button>
@@ -194,11 +202,49 @@ async function handleCreateCategory(e) {
       alert(data.message);
       document.getElementById('create-category-form').reset();
       loadAdminCategories();
+      loadAdminFiles();
     } else {
       alert(data.error || 'Failed to create category.');
     }
   } catch (err) {
     alert('Server error creating category.');
+  }
+}
+
+async function editCategory(id, currentName, currentParentId, currentDesc) {
+  const newName = prompt("Edit Category Name:", currentName);
+  if (!newName || !newName.trim()) return;
+
+  const parentOptionsStr = categoriesList
+    .filter(c => c.id !== id && !c.parent_id)
+    .map(c => `ID ${c.id}: ${c.name}`)
+    .join('\n');
+
+  const newParentInput = prompt(
+    `Move folder "${newName}" under a parent folder?\n\nAvailable Parent Folders:\n0 = Main Top-Level Folder\n${parentOptionsStr}\n\nEnter Parent Folder ID:`,
+    currentParentId || 0
+  );
+
+  if (newParentInput === null) return;
+  const parent_id = parseInt(newParentInput) > 0 ? parseInt(newParentInput) : null;
+  const description = prompt("Edit Description:", currentDesc) || "";
+
+  try {
+    const res = await fetch(`/api/categories/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName.trim(), parent_id, description })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message);
+      loadAdminCategories();
+      loadAdminFiles();
+    } else {
+      alert(data.error || 'Failed to update category.');
+    }
+  } catch (err) {
+    alert('Server error editing category.');
   }
 }
 
