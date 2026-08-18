@@ -354,6 +354,26 @@ def verify_passcode():
     log_audit('PASSCODE_FAILED', f"Failed passcode attempt: {passcode_input}")
     return jsonify({'success': False, 'message': 'Invalid passcode.'}), 401
 
+@app.route('/api/auth/admin-login', methods=['POST'])
+def admin_login():
+    data = request.get_json() or {}
+    username = (data.get('username') or '').strip()
+    password = (data.get('password') or '').strip()
+    
+    conn = get_db()
+    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+    conn.close()
+
+    if user and check_password_hash(user['password_hash'], password):
+        session['is_admin'] = True
+        session['is_unlocked'] = True
+        session['admin_user'] = username
+        log_audit('ADMIN_LOGIN', f"User '{username}' logged in successfully.")
+        return jsonify({'success': True, 'message': 'Admin login successful.'})
+
+    log_audit('ADMIN_LOGIN_FAILED', f"Failed admin login for '{username}'")
+    return jsonify({'success': False, 'message': 'Invalid username or password.'}), 401
+
 @app.route('/api/auth/logout', methods=['POST'])
 def logout():
     session.clear()
@@ -368,7 +388,7 @@ def list_categories():
     categories = [dict(r) for r in rows]
     conn.close()
     
-    # Build hierarchical tree with integer parent_id comparison
+    # Build hierarchical tree supporting unlimited nested subfolders
     category_map = {}
     for c in categories:
         cid = int(c['id'])
@@ -383,15 +403,15 @@ def list_categories():
         else:
             tree.append(cat)
 
-    # Build hierarchical ordered flat list (parent followed immediately by its children)
+    # Build hierarchical ordered flat list (parent followed recursively by all nested children)
     ordered_flat = []
-    def traverse(cat_node):
-        ordered_flat.append(cat_node)
+    def traverse(cat_node, depth=0):
+        ordered_flat.append({**cat_node, 'depth': depth})
         for child in cat_node.get('children', []):
-            traverse(child)
+            traverse(child, depth + 1)
 
     for root_node in tree:
-        traverse(root_node)
+        traverse(root_node, 0)
 
     return jsonify({'categories': tree, 'flat_list': ordered_flat})
 
@@ -426,7 +446,7 @@ def create_category():
     upload_db_to_s3()
     
     log_audit('CATEGORY_CREATED', f"Created category '{name}' (ID: {cat_id})")
-    return jsonify({'success': True, 'id': cat_id, 'message': f"Category '{name}' created successfully!"})
+    return jsonify({'success': True, 'id': cat_id, 'message': f"Folder '{name}' created successfully!"})
 
 @app.route('/api/categories/<int:cat_id>', methods=['PUT'])
 @admin_required
@@ -455,7 +475,7 @@ def update_category(cat_id):
     upload_db_to_s3()
     
     log_audit('CATEGORY_UPDATED', f"Updated category '{name}' (ID: {cat_id})")
-    return jsonify({'success': True, 'message': f"Category '{name}' updated."})
+    return jsonify({'success': True, 'message': f"Folder '{name}' updated."})
 
 @app.route('/api/categories/<int:cat_id>', methods=['DELETE'])
 @admin_required
@@ -472,9 +492,53 @@ def delete_category(cat_id):
     upload_db_to_s3()
     
     log_audit('CATEGORY_DELETED', f"Deleted category '{cat['name']}' (ID: {cat_id})")
-    return jsonify({'success': True, 'message': f"Category '{cat['name']}' deleted."})
+    return jsonify({'success': True, 'message': f"Folder '{cat['name']}' deleted."})
 
-# --- CMD & Troubleshooting Script Management API ---
+# --- File Management & Download API ---
+@app.route('/api/files', methods=['GET'])
+@passcode_required
+def list_files():
+    cat_id = request.args.get('category_id')
+    search = request.args.get('search', '').strip()
+    
+    conn = get_db()
+    query = '''
+        SELECT f.*, c.name as category_name, c.parent_id as category_parent_id 
+        FROM files f 
+        JOIN categories c ON f.category_id = c.id
+    '''
+    params = []
+    conditions = []
+    
+    if cat_id:
+        def get_all_descendant_ids(target_id):
+            desc_ids = [target_id]
+            children = conn.execute('SELECT id FROM categories WHERE parent_id = ?', (target_id,)).fetchall()
+            for child in children:
+                desc_ids.extend(get_all_descendant_ids(child['id']))
+            return desc_ids
+
+        cat_ids = get_all_descendant_ids(int(cat_id))
+        placeholders = ','.join(['?'] * len(cat_ids))
+        conditions.append(f'f.category_id IN ({placeholders})')
+        params.extend(cat_ids)
+        
+    if search:
+        conditions.append('(f.original_name LIKE ? OR f.description LIKE ? OR c.name LIKE ?)')
+        search_param = f'%{search}%'
+        params.extend([search_param, search_param, search_param])
+        
+    if conditions:
+        query += ' WHERE ' + ' AND '.join(conditions)
+        
+    query += ' ORDER BY f.created_at DESC'
+    
+    rows = conn.execute(query, params).fetchall()
+    files_list = [dict(r) for r in rows]
+    conn.close()
+    
+    return jsonify({'files': files_list})
+
 @app.route('/api/tools/cmd-scripts', methods=['GET'])
 @passcode_required
 def get_cmd_scripts():
@@ -691,45 +755,6 @@ def test_s3_connection():
             'error': str(e),
             'message': f"Error connecting to Backblaze B2: {str(e)}"
         }), 500
-
-# --- File Management & Download API ---
-@app.route('/api/files', methods=['GET'])
-@passcode_required
-def list_files():
-    cat_id = request.args.get('category_id')
-    search = request.args.get('search', '').strip()
-    
-    conn = get_db()
-    query = '''
-        SELECT f.*, c.name as category_name, c.parent_id as category_parent_id 
-        FROM files f 
-        JOIN categories c ON f.category_id = c.id
-    '''
-    params = []
-    conditions = []
-    
-    if cat_id:
-        sub_cats = conn.execute('SELECT id FROM categories WHERE parent_id = ?', (cat_id,)).fetchall()
-        cat_ids = [int(cat_id)] + [r['id'] for r in sub_cats]
-        placeholders = ','.join(['?'] * len(cat_ids))
-        conditions.append(f'f.category_id IN ({placeholders})')
-        params.extend(cat_ids)
-        
-    if search:
-        conditions.append('(f.original_name LIKE ? OR f.description LIKE ? OR c.name LIKE ?)')
-        search_param = f'%{search}%'
-        params.extend([search_param, search_param, search_param])
-        
-    if conditions:
-        query += ' WHERE ' + ' AND '.join(conditions)
-        
-    query += ' ORDER BY f.created_at DESC'
-    
-    rows = conn.execute(query, params).fetchall()
-    files_list = [dict(r) for r in rows]
-    conn.close()
-    
-    return jsonify({'files': files_list})
 
 @app.route('/api/files/upload', methods=['POST'])
 @admin_required
