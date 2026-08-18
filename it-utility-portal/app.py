@@ -104,11 +104,8 @@ def fix_categories_hierarchy():
         else:
             printers_id = p_row['id']
 
-        # Force Resetters and Drivers to have parent_id = Printers ID
+        # Force Resetters and Drivers to have parent_id = Printers ID if unparented
         cursor.execute("UPDATE categories SET parent_id = ? WHERE name IN ('Resetters', 'Drivers') AND (parent_id IS NULL OR parent_id = '')", (printers_id,))
-        
-        # Delete any accidental duplicate orphan categories
-        cursor.execute("DELETE FROM categories WHERE name = 'Tools & Installers'")
         
         conn.commit()
         conn.close()
@@ -355,7 +352,6 @@ def logout():
 @app.route('/api/categories', methods=['GET'])
 @passcode_required
 def list_categories():
-    fix_categories_hierarchy()
     conn = get_db()
     rows = conn.execute('SELECT * FROM categories ORDER BY display_order ASC, name ASC').fetchall()
     categories = [dict(r) for r in rows]
