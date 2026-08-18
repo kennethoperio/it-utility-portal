@@ -298,6 +298,68 @@ async function loadNetworkInfo() {
   }
 }
 
+// Interactive Network Testing Functions
+async function runPingTest() {
+  const host = document.getElementById('ping-target').value.trim() || '8.8.8.8';
+  appendTerminalOutput(`\n[+] Executing Ping test to target '${host}'...`);
+  try {
+    const res = await fetch('/api/tools/ping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ host })
+    });
+    const data = await res.json();
+    appendTerminalOutput(data.output || 'No response returned from ping.');
+  } catch (err) {
+    appendTerminalOutput(`[-] Ping error: ${err.message}`);
+  }
+}
+
+async function runTracertTest() {
+  const host = document.getElementById('tracert-target').value.trim() || '1.1.1.1';
+  appendTerminalOutput(`\n[+] Executing Traceroute (tracert) to '${host}' (Max 10 hops)... Please wait...`);
+  try {
+    const res = await fetch('/api/tools/tracert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ host })
+    });
+    const data = await res.json();
+    appendTerminalOutput(data.output || 'No response returned from traceroute.');
+  } catch (err) {
+    appendTerminalOutput(`[-] Traceroute error: ${err.message}`);
+  }
+}
+
+async function runDnsLookupTest() {
+  const host = document.getElementById('dns-target').value.trim() || 'google.com';
+  appendTerminalOutput(`\n[+] Executing DNS nslookup for domain '${host}'...`);
+  try {
+    const res = await fetch('/api/tools/dns-lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ host })
+    });
+    const data = await res.json();
+    appendTerminalOutput(data.output || 'No response returned from DNS lookup.');
+  } catch (err) {
+    appendTerminalOutput(`[-] DNS Lookup error: ${err.message}`);
+  }
+}
+
+function appendTerminalOutput(text) {
+  const term = document.getElementById('net-terminal-output');
+  if (!term) return;
+  const time = new Date().toLocaleTimeString();
+  term.innerText += `\n[${time}] ${text}`;
+  term.scrollTop = term.scrollHeight;
+}
+
+function clearTerminalOutput() {
+  const term = document.getElementById('net-terminal-output');
+  if (term) term.innerText = 'Console cleared. Select a test tool above to execute network diagnostics.';
+}
+
 // Helpers
 function escapeHtml(str) {
   if (!str) return '';
