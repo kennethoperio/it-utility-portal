@@ -511,17 +511,8 @@ def list_files():
     conditions = []
     
     if cat_id:
-        def get_all_descendant_ids(target_id):
-            desc_ids = [target_id]
-            children = conn.execute('SELECT id FROM categories WHERE parent_id = ?', (target_id,)).fetchall()
-            for child in children:
-                desc_ids.extend(get_all_descendant_ids(child['id']))
-            return desc_ids
-
-        cat_ids = get_all_descendant_ids(int(cat_id))
-        placeholders = ','.join(['?'] * len(cat_ids))
-        conditions.append(f'f.category_id IN ({placeholders})')
-        params.extend(cat_ids)
+        conditions.append('f.category_id = ?')
+        params.append(int(cat_id))
         
     if search:
         conditions.append('(f.original_name LIKE ? OR f.description LIKE ? OR c.name LIKE ?)')
