@@ -6,6 +6,8 @@ import uuid
 import json
 import io
 import socket
+import subprocess
+import re
 import zipfile
 from datetime import datetime, timedelta
 from functools import wraps
@@ -187,6 +189,17 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS cmd_scripts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            type TEXT NOT NULL,
+            command TEXT NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     
     cursor.execute('SELECT value FROM settings WHERE key = ?', ('access_passcode',))
     if not cursor.fetchone():
@@ -213,6 +226,18 @@ def init_db():
         for name, pid, icon, desc, order in categories_data:
             cursor.execute('INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES (?, ?, ?, ?, ?)',
                            (name, pid, icon, desc, order))
+
+    cursor.execute('SELECT COUNT(*) as count FROM cmd_scripts')
+    if cursor.fetchone()['count'] == 0:
+        default_scripts = [
+            ('Windows System File Checker & Repair', 'PowerShell / CMD', 'sfc /scannow && DISM /Online /Cleanup-Image /RestoreHealth', 'Scans and repairs corrupted Windows system files and system image.'),
+            ('Restart Printer Spooler & Clear Queue', 'PowerShell / CMD', 'net stop spooler && del /Q /F /S "%systemroot%\\System32\\Spool\\Printers\\*.*" && net start spooler', 'Stops printer spooler, deletes stuck print jobs in queue, and restarts service.'),
+            ('Complete Network Stack & DNS Reset', 'PowerShell / CMD', 'ipconfig /flushdns && ipconfig /release && ipconfig /renew && netsh winsock reset && netsh int ip reset', 'Flushes DNS resolver cache, releases/renews DHCP IP lease, and resets Winsock catalog.'),
+            ('Windows Activation & License Status Check', 'CMD', 'slmgr.vbs /dli && slmgr.vbs /xpr', 'Displays detailed Windows activation license status and expiration info.'),
+            ('Export Detailed System Specs to Desktop', 'PowerShell', 'Get-ComputerInfo | Out-File -FilePath "$env:USERPROFILE\\Desktop\\SystemSpecs.txt"', 'Exports full hardware, OS, BIOS, and memory specifications into a text file.')
+        ]
+        for title, stype, cmd, desc in default_scripts:
+            cursor.execute('INSERT INTO cmd_scripts (title, type, command, description) VALUES (?, ?, ?, ?)', (title, stype, cmd, desc))
 
     conn.commit()
     conn.close()
@@ -468,6 +493,158 @@ def delete_category(cat_id):
     
     log_audit('CATEGORY_DELETED', f"Deleted category '{cat['name']}' (ID: {cat_id})")
     return jsonify({'success': True, 'message': f"Category '{cat['name']}' deleted."})
+
+# --- CMD & Troubleshooting Script Management API ---
+@app.route('/api/tools/cmd-scripts', methods=['GET'])
+@passcode_required
+def get_cmd_scripts():
+    conn = get_db()
+    rows = conn.execute('SELECT * FROM cmd_scripts ORDER BY id ASC').fetchall()
+    scripts = [dict(r) for r in rows]
+    conn.close()
+    return jsonify({'scripts': scripts})
+
+@app.route('/api/admin/cmd-scripts', methods=['POST'])
+@admin_required
+def create_cmd_script():
+    data = request.get_json() or {}
+    title = (data.get('title') or '').strip()
+    script_type = (data.get('type') or 'PowerShell / CMD').strip()
+    command = (data.get('command') or '').strip()
+    description = (data.get('description') or '').strip()
+
+    if not title or not command:
+        return jsonify({'error': 'Title and Command script string are required.'}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('INSERT INTO cmd_scripts (title, type, command, description) VALUES (?, ?, ?, ?)',
+                   (title, script_type, command, description))
+    conn.commit()
+    script_id = cursor.lastrowid
+    conn.close()
+    upload_db_to_s3()
+
+    log_audit('CMD_SCRIPT_CREATED', f"Created troubleshooting command '{title}' (ID: {script_id})")
+    return jsonify({'success': True, 'id': script_id, 'message': f"Command '{title}' created successfully!"})
+
+@app.route('/api/admin/cmd-scripts/<int:script_id>', methods=['PUT'])
+@admin_required
+def update_cmd_script(script_id):
+    data = request.get_json() or {}
+    title = (data.get('title') or '').strip()
+    script_type = (data.get('type') or 'PowerShell / CMD').strip()
+    command = (data.get('command') or '').strip()
+    description = (data.get('description') or '').strip()
+
+    if not title or not command:
+        return jsonify({'error': 'Title and Command script string are required.'}), 400
+
+    conn = get_db()
+    conn.execute('UPDATE cmd_scripts SET title = ?, type = ?, command = ?, description = ? WHERE id = ?',
+                 (title, script_type, command, description, script_id))
+    conn.commit()
+    conn.close()
+    upload_db_to_s3()
+
+    log_audit('CMD_SCRIPT_UPDATED', f"Updated command '{title}' (ID: {script_id})")
+    return jsonify({'success': True, 'message': f"Command '{title}' updated."})
+
+@app.route('/api/admin/cmd-scripts/<int:script_id>', methods=['DELETE'])
+@admin_required
+def delete_cmd_script(script_id):
+    conn = get_db()
+    conn.execute('DELETE FROM cmd_scripts WHERE id = ?', (script_id,))
+    conn.commit()
+    conn.close()
+    upload_db_to_s3()
+
+    log_audit('CMD_SCRIPT_DELETED', f"Deleted command script ID: {script_id}")
+    return jsonify({'success': True, 'message': 'Troubleshooting command deleted.'})
+
+# --- Network Diagnostic Tools API (Ping, Tracert, DNS Lookup) ---
+@app.route('/api/tools/network-info', methods=['GET'])
+@passcode_required
+def network_info():
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    server_hostname = socket.gethostname()
+    try:
+        server_ip = socket.gethostbyname(server_hostname)
+    except Exception:
+        server_ip = '127.0.0.1'
+        
+    return jsonify({
+        'client_ip': client_ip,
+        'server_hostname': server_hostname,
+        'server_ip': server_ip,
+        'timestamp': datetime.now().isoformat()
+    })
+
+@app.route('/api/tools/ping', methods=['POST'])
+@passcode_required
+def run_ping():
+    data = request.get_json() or {}
+    host = (data.get('host') or '8.8.8.8').strip()
+    if not re.match(r'^[a-zA-Z0-9.-]+$', host):
+        return jsonify({'success': False, 'output': 'Invalid host format. Use IP address (e.g. 8.8.8.8) or domain (e.g. google.com)'}), 400
+
+    count_flag = '-n' if sys.platform == 'win32' else '-c'
+    cmd = ['ping', count_flag, '4', host]
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=12)
+        out = res.stdout or res.stderr or "No output returned from ping."
+        return jsonify({'success': True, 'output': out})
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'output': f"Ping timeout to target host '{host}'."})
+    except Exception as e:
+        return jsonify({'success': False, 'output': f"Ping error: {str(e)}"})
+
+@app.route('/api/tools/tracert', methods=['POST'])
+@passcode_required
+def run_tracert():
+    data = request.get_json() or {}
+    host = (data.get('host') or '8.8.8.8').strip()
+    if not re.match(r'^[a-zA-Z0-9.-]+$', host):
+        return jsonify({'success': False, 'output': 'Invalid host format. Use IP address or domain.'}), 400
+
+    tracert_bin = 'tracert' if sys.platform == 'win32' else 'traceroute'
+    max_hops_flag = '-h' if sys.platform == 'win32' else '-m'
+    cmd = [tracert_bin, max_hops_flag, '10', host]
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=25)
+        out = res.stdout or res.stderr or "No output returned from traceroute."
+        return jsonify({'success': True, 'output': out})
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'output': f"Traceroute timeout to target host '{host}' (Max 10 hops)."})
+    except Exception as e:
+        return jsonify({'success': False, 'output': f"Traceroute error: {str(e)}"})
+
+@app.route('/api/tools/dns-lookup', methods=['POST'])
+@passcode_required
+def run_dns_lookup():
+    data = request.get_json() or {}
+    host = (data.get('host') or 'google.com').strip()
+    if not re.match(r'^[a-zA-Z0-9.-]+$', host):
+        return jsonify({'success': False, 'output': 'Invalid domain format.'}), 400
+
+    try:
+        host_info = socket.gethostbyname_ex(host)
+        cname = host_info[0]
+        aliases = host_info[1]
+        ips = host_info[2]
+        
+        output_lines = [
+            f"Server Domain: {host}",
+            f"Canonical Name: {cname}",
+            f"Aliases: {', '.join(aliases) if aliases else 'None'}",
+            f"Resolved IPv4 Address(es):",
+        ]
+        for ip in ips:
+            output_lines.append(f"  └── {ip}")
+
+        return jsonify({'success': True, 'output': '\n'.join(output_lines)})
+    except Exception as e:
+        return jsonify({'success': False, 'output': f"DNS Lookup failed for '{host}': {str(e)}"})
 
 # --- Audit Logs Management API ---
 @app.route('/api/admin/audit-logs/<int:log_id>', methods=['DELETE'])
@@ -798,61 +975,6 @@ def get_file_qrcode(file_id):
         return send_file(img_io, mimetype='image/png')
     except Exception as e:
         return jsonify({'error': f"QR Code generation error: {str(e)}", 'url': download_url}), 500
-
-# --- IT Diagnostics & Command Scripts API ---
-@app.route('/api/tools/network-info', methods=['GET'])
-@passcode_required
-def network_info():
-    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    server_hostname = socket.gethostname()
-    try:
-        server_ip = socket.gethostbyname(server_hostname)
-    except Exception:
-        server_ip = '127.0.0.1'
-        
-    return jsonify({
-        'client_ip': client_ip,
-        'server_hostname': server_hostname,
-        'server_ip': server_ip,
-        'timestamp': datetime.now().isoformat()
-    })
-
-@app.route('/api/tools/cmd-scripts', methods=['GET'])
-@passcode_required
-def get_cmd_scripts():
-    scripts = [
-        {
-            'title': 'Windows System File Checker & Repair',
-            'type': 'PowerShell / CMD',
-            'command': 'sfc /scannow && DISM /Online /Cleanup-Image /RestoreHealth',
-            'description': 'Scans and repairs corrupted Windows system files and system image.'
-        },
-        {
-            'title': 'Restart Printer Spooler & Clear Queue',
-            'type': 'PowerShell / CMD',
-            'command': 'net stop spooler && del /Q /F /S "%systemroot%\\System32\\Spool\\Printers\\*.*" && net start spooler',
-            'description': 'Stops printer spooler, deletes stuck print jobs in queue, and restarts service.'
-        },
-        {
-            'title': 'Complete Network Stack & DNS Reset',
-            'type': 'PowerShell / CMD',
-            'command': 'ipconfig /flushdns && ipconfig /release && ipconfig /renew && netsh winsock reset && netsh int ip reset',
-            'description': 'Flushes DNS resolver cache, releases/renews DHCP IP lease, and resets Winsock catalog.'
-        },
-        {
-            'title': 'Windows Activation & License Status Check',
-            'type': 'CMD',
-            'command': 'slmgr.vbs /dli && slmgr.vbs /xpr',
-            'description': 'Displays detailed Windows activation license status and expiration info.'
-        },
-        {
-            'title': 'Export Detailed System Specs to Desktop',
-            'type': 'PowerShell',
-            'command': 'Get-ComputerInfo | Out-File -FilePath "$env:USERPROFILE\\Desktop\\SystemSpecs.txt"',
-            'description': 'Exports full hardware, OS, BIOS, and memory specifications into a text file.'
-        }
-    ]
-    return jsonify({'scripts': scripts})
 
 # --- Admin Settings & Guest Passcode API ---
 @app.route('/api/admin/settings', methods=['GET', 'POST'])
