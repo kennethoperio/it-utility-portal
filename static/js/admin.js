@@ -164,7 +164,7 @@ async function loadAdminCategories() {
     const catMap = {};
     categoriesList.forEach(c => catMap[c.id] = c.name);
 
-    // Populate category select dropdowns (supports unlimited nested subfolder parents!)
+    // Populate category select dropdowns
     const selectEl = document.getElementById('upload-category');
     const parentSelectEl = document.getElementById('cat-parent');
     const filterSelectEl = document.getElementById('admin-file-category-filter');
@@ -609,10 +609,28 @@ async function loadAdminSettingsData(isSilent = false) {
     const res = await fetch('/api/admin/settings');
     const data = await res.json();
 
-    // Stats
+    // Stats calculation including 10 GB Free Storage Left
     if (data.stats) {
+      const totalBytes = data.stats.total_bytes || 0;
+      const usedMB = totalBytes / (1024 * 1024);
+      const limitBytes = 10 * 1024 * 1024 * 1024; // 10 GB
+      const freeBytes = Math.max(0, limitBytes - totalBytes);
+      const freeGB = (freeBytes / (1024 * 1024 * 1024)).toFixed(2);
+      const percentUsed = ((totalBytes / limitBytes) * 100).toFixed(1);
+
       document.getElementById('stat-files').innerText = data.stats.total_files || 0;
-      document.getElementById('stat-storage').innerText = `${((data.stats.total_bytes || 0) / (1024 * 1024)).toFixed(1)} MB`;
+      document.getElementById('stat-storage').innerText = `${usedMB.toFixed(1)} MB (${percentUsed}%)`;
+      
+      const leftEl = document.getElementById('stat-storage-left');
+      if (leftEl) {
+        leftEl.innerText = `${freeGB} GB Free`;
+        if (freeBytes < 1 * 1024 * 1024 * 1024) { // Less than 1 GB left
+          leftEl.style.color = 'var(--danger-color)';
+        } else {
+          leftEl.style.color = 'var(--success-color)';
+        }
+      }
+
       document.getElementById('stat-downloads').innerText = data.stats.total_downloads || 0;
     }
 
