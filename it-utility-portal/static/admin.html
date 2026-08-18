@@ -119,13 +119,28 @@
 
     <!-- TAB 2: File Manager -->
     <div id="admin-sec-files" style="display: none;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
         <h2><i class="fa-solid fa-boxes-stacked"></i> Uploaded IT Tools Directory</h2>
-        <div style="display: flex; gap: 0.5rem;">
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
           <button class="btn btn-primary btn-sm" onclick="confirmDownloadAllZip()"><i class="fa-solid fa-file-zipper"></i> Download All (.zip)</button>
           <button class="btn btn-secondary btn-sm" onclick="loadAdminFiles()"><i class="fa-solid fa-rotate"></i> Refresh List</button>
         </div>
       </div>
+
+      <!-- Filter Controls Toolbar -->
+      <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; background-color: var(--bg-secondary); padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius); align-items: center;">
+        <div style="flex: 1; min-width: 200px;">
+          <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;"><i class="fa-solid fa-filter"></i> Filter by Category / Folder</label>
+          <select id="admin-file-category-filter" onchange="loadAdminFiles()" style="width: 100%; padding: 0.55rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); outline: none;">
+            <option value="">All Categories & Folders</option>
+          </select>
+        </div>
+        <div style="flex: 1.5; min-width: 250px;">
+          <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;"><i class="fa-solid fa-magnifying-glass"></i> Search Files</label>
+          <input type="text" id="admin-file-search-filter" placeholder="Search tool name or description..." oninput="filterAdminFilesTable()" style="width: 100%; padding: 0.55rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); outline: none;">
+        </div>
+      </div>
+
       <div class="table-responsive">
         <table>
           <thead>
