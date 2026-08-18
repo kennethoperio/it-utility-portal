@@ -1,0 +1,6 @@
+flask
+werkzeug
+qrcode
+pillow
+gunicorn
+boto3
