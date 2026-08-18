@@ -180,7 +180,7 @@ def init_db():
             cursor.execute('INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES (?, ?, ?, ?, ?)',
                            (name, pid, icon, desc, order))
             
-        # Add subcategories under Printers
+        # Add subcategories specifically under Printers
         cursor.execute("SELECT id FROM categories WHERE name = 'Printers'")
         printers_cat = cursor.fetchone()
         if printers_cat:
@@ -189,6 +189,13 @@ def init_db():
                            ('Resetters', printers_id, 'refresh-cw', 'Printer waste ink resetters & EEPROM clearers', 1))
             cursor.execute('INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES (?, ?, ?, ?, ?)',
                            ('Drivers', printers_id, 'file-text', 'Universal and specific printer drivers & setup packs', 2))
+
+    # Clean up / fix any mismatched parent_id for Resetters & Drivers to ensure they belong under Printers
+    cursor.execute("SELECT id FROM categories WHERE name = 'Printers'")
+    printers_row = cursor.fetchone()
+    if printers_row:
+        p_id = printers_row['id']
+        cursor.execute("UPDATE categories SET parent_id = ? WHERE name IN ('Resetters', 'Drivers')", (p_id,))
 
     conn.commit()
     conn.close()
@@ -375,6 +382,32 @@ def create_category():
     
     log_audit('CATEGORY_CREATED', f"Created category '{name}' (ID: {cat_id})")
     return jsonify({'success': True, 'id': cat_id, 'message': f"Category '{name}' created."})
+
+@app.route('/api/categories/<int:cat_id>', methods=['PUT'])
+@admin_required
+def update_category(cat_id):
+    data = request.get_json() or {}
+    name = (data.get('name') or '').strip()
+    parent_id = data.get('parent_id')
+    if parent_id == "" or parent_id is None:
+        parent_id = None
+    else:
+        parent_id = int(parent_id)
+
+    description = (data.get('description') or '').strip()
+    
+    if not name:
+        return jsonify({'error': 'Category name is required.'}), 400
+
+    conn = get_db()
+    conn.execute('UPDATE categories SET name = ?, parent_id = ?, description = ? WHERE id = ?',
+                 (name, parent_id, description, cat_id))
+    conn.commit()
+    conn.close()
+    upload_db_to_s3()
+    
+    log_audit('CATEGORY_UPDATED', f"Updated category '{name}' (ID: {cat_id})")
+    return jsonify({'success': True, 'message': f"Category '{name}' updated."})
 
 @app.route('/api/categories/<int:cat_id>', methods=['DELETE'])
 @admin_required
