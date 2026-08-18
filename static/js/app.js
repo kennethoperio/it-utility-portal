@@ -113,6 +113,77 @@ async function submitPasscode(e) {
   }
 }
 
+function getCategoryIconClass(categoryName, iconName) {
+  if (iconName && iconName !== 'folder' && iconName !== 'folder-minus') {
+    return iconName.startsWith('fa-') ? iconName : `fa-${iconName}`;
+  }
+  const name = (categoryName || '').toLowerCase();
+  if (name.includes('print')) return 'fa-print';
+  if (name.includes('driver')) return 'fa-microchip';
+  if (name.includes('reset')) return 'fa-rotate-left';
+  if (name.includes('recover')) return 'fa-life-ring';
+  if (name.includes('tool') || name.includes('install')) return 'fa-toolbox';
+  if (name.includes('repair') || name.includes('fix')) return 'fa-screwdriver-wrench';
+  if (name.includes('key') || name.includes('license') || name.includes('activat')) return 'fa-key';
+  if (name.includes('network') || name.includes('wifi')) return 'fa-network-wired';
+  if (name.includes('anti') || name.includes('malware') || name.includes('shield')) return 'fa-shield-virus';
+  if (name.includes('hard') || name.includes('diag')) return 'fa-microchip';
+  return 'fa-folder-tree';
+}
+
+function getSmartFileIcon(filename, categoryName) {
+  const fn = (filename || '').toLowerCase();
+  const cat = (categoryName || '').toLowerCase();
+  const ext = fn.split('.').pop().toLowerCase();
+
+  // 1. Printer & Scanner Drivers
+  if (fn.includes('print') || fn.includes('scan') || fn.includes('epson') || fn.includes('hp') || fn.includes('canon') || fn.includes('brother') || cat.includes('printer') || cat.includes('driver')) {
+    return { icon: 'fa-print', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.15)' };
+  }
+
+  // 2. Recovery & Undelete Tools
+  if (fn.includes('recuva') || fn.includes('rcsetup') || fn.includes('recover') || fn.includes('partition') || cat.includes('recovery')) {
+    return { icon: 'fa-life-ring', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' };
+  }
+
+  // 3. Remote Desktop Utilities
+  if (fn.includes('anydesk') || fn.includes('teamviewer') || fn.includes('rustdesk') || fn.includes('vnc') || fn.includes('remote')) {
+    return { icon: 'fa-desktop', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.15)' };
+  }
+
+  // 4. Activators & License Keys
+  if (fn.includes('key') || fn.includes('license') || fn.includes('activat') || fn.includes('kms') || cat.includes('activat') || cat.includes('license')) {
+    return { icon: 'fa-key', color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)' };
+  }
+
+  // 5. Antivirus & Security
+  if (fn.includes('malware') || fn.includes('antivirus') || fn.includes('cleaner') || fn.includes('defender') || cat.includes('antivirus') || cat.includes('security')) {
+    return { icon: 'fa-shield-virus', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' };
+  }
+
+  // 6. Network & Connectivity Tools
+  if (fn.includes('wifi') || fn.includes('ping') || fn.includes('nmap') || fn.includes('putty') || cat.includes('network')) {
+    return { icon: 'fa-network-wired', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)' };
+  }
+
+  // 7. System & Windows Repair Scripts
+  if (fn.includes('sfc') || fn.includes('dism') || fn.includes('repair') || fn.includes('fix') || cat.includes('repair')) {
+    return { icon: 'fa-screwdriver-wrench', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)' };
+  }
+
+  // 8. Archives & Compressed Installers
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'iso'].includes(ext) || fn.includes('winrar') || fn.includes('7zip')) {
+    return { icon: 'fa-file-zipper', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.15)' };
+  }
+
+  // Default Executable / Installer Icon
+  if (['exe', 'msi', 'bat', 'cmd', 'ps1', 'vbs'].includes(ext)) {
+    return { icon: 'fa-toolbox', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)' };
+  }
+
+  return { icon: 'fa-file-lines', color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.15)' };
+}
+
 async function loadCategories() {
   try {
     const res = await fetch('/api/categories');
@@ -127,14 +198,14 @@ async function loadCategories() {
       (nodes || []).forEach(cat => {
         const isCatActive = currentCategoryId === cat.id;
         const isExpanded = expandedCategoryIds.has(cat.id);
-        const iconClass = cat.icon || (depth === 0 ? 'folder' : 'folder-minus');
+        const iconClass = getCategoryIconClass(cat.name, cat.icon);
         const paddingLeft = depth > 0 ? `style="padding-left: ${0.75 + depth * 0.75}rem;"` : '';
         const hasChildren = cat.children && cat.children.length > 0;
 
         treeHtml += `<li class="category-item">
           <div style="display: flex; align-items: center; width: 100%;">
             <button class="category-btn ${isCatActive ? 'active' : ''}" ${paddingLeft} style="flex: 1;" onclick="selectCategory(${cat.id})">
-              <span><i class="fa-solid fa-${iconClass}"></i> ${escapeHtml(cat.name)}</span>
+              <span><i class="fa-solid ${iconClass}"></i> ${escapeHtml(cat.name)}</span>
             </button>
             ${hasChildren ? `
               <button class="toggle-folder-btn" onclick="toggleCategoryExpand(event, ${cat.id})" title="Toggle subfolders">
@@ -240,10 +311,11 @@ function renderFiles(files) {
     `;
 
     activeNode.children.forEach(sub => {
+      const subIcon = getCategoryIconClass(sub.name, sub.icon);
       html += `
         <div onclick="selectCategory(${sub.id})" style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.1rem; display: flex; align-items: center; gap: 0.85rem; cursor: pointer; transition: transform 0.2s ease, border-color 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-color)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='none'">
           <div style="width: 44px; height: 44px; border-radius: 8px; background-color: rgba(56, 189, 248, 0.12); color: var(--accent-color); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
-            <i class="fa-solid fa-folder"></i>
+            <i class="fa-solid ${subIcon}"></i>
           </div>
           <div style="overflow: hidden; flex: 1;">
             <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(sub.name)}</div>
@@ -291,18 +363,15 @@ function renderFiles(files) {
   }
 
   filtered.forEach(f => {
-    const ext = f.original_name.split('.').pop().toLowerCase();
-    let fileIcon = 'fa-file';
-    if (['exe', 'msi', 'bat', 'cmd', 'ps1', 'vbs'].includes(ext)) fileIcon = 'fa-gear';
-    else if (['zip', 'rar', '7z', 'tar', 'gz', 'iso'].includes(ext)) fileIcon = 'fa-file-zipper';
-    else if (['pdf', 'doc', 'txt'].includes(ext)) fileIcon = 'fa-file-lines';
-
+    const iconStyle = getSmartFileIcon(f.original_name, f.category_name);
     const sizeMB = (f.file_size / (1024 * 1024)).toFixed(2);
 
     html += `
       <div class="file-card">
         <div class="file-header">
-          <div class="file-icon"><i class="fa-solid ${fileIcon}"></i></div>
+          <div class="file-icon" style="background-color: ${iconStyle.bg}; color: ${iconStyle.color};">
+            <i class="fa-solid ${iconStyle.icon}"></i>
+          </div>
           <div style="flex: 1; overflow: hidden;">
             <div class="file-title" title="${escapeHtml(f.original_name)}">${escapeHtml(f.original_name)}</div>
             <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.2rem;">
