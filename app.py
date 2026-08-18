@@ -28,7 +28,7 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Cloudflare R2 / S3 Storage Credentials from Environment
+# Cloudflare R2 / S3 / Backblaze Storage Credentials from Environment
 S3_ENDPOINT = os.environ.get('S3_ENDPOINT')
 S3_ACCESS_KEY = os.environ.get('S3_ACCESS_KEY')
 S3_SECRET_KEY = os.environ.get('S3_SECRET_KEY')
@@ -47,6 +47,27 @@ def get_s3_client():
         except Exception as e:
             print(f"S3 client error: {e}")
     return None
+
+def download_db_from_s3():
+    s3_client = get_s3_client()
+    if s3_client and S3_BUCKET:
+        try:
+            s3_client.download_file(S3_BUCKET, 'it_vault.db', DB_PATH)
+            print("Successfully downloaded latest database from cloud storage!")
+        except Exception as e:
+            print(f"No existing database found in cloud storage (or initial boot): {e}")
+
+def upload_db_to_s3():
+    s3_client = get_s3_client()
+    if s3_client and S3_BUCKET and os.path.exists(DB_PATH):
+        try:
+            s3_client.upload_file(DB_PATH, S3_BUCKET, 'it_vault.db')
+            print("Uploaded updated database to cloud storage!")
+        except Exception as e:
+            print(f"Error syncing DB to S3: {e}")
+
+# Download latest DB on server boot before initializing sqlite
+download_db_from_s3()
 
 # --- Database Initialization ---
 def get_db():
@@ -182,6 +203,7 @@ def log_audit(action, details=""):
         conn.execute('INSERT INTO audit_logs (action, details, ip_address) VALUES (?, ?, ?)', (action, details, ip))
         conn.commit()
         conn.close()
+        upload_db_to_s3()
     except Exception as e:
         print(f"Audit log error: {e}")
 
@@ -212,6 +234,7 @@ def set_setting(key, value):
     conn.execute('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', (key, str(value)))
     conn.commit()
     conn.close()
+    upload_db_to_s3()
 
 def compute_sha256(filepath):
     hasher = hashlib.sha256()
@@ -271,6 +294,7 @@ def verify_passcode():
         conn.execute('UPDATE guest_passcodes SET current_uses = current_uses + 1 WHERE id = ?', (guest['id'],))
         conn.commit()
         conn.close()
+        upload_db_to_s3()
         session['is_unlocked'] = True
         log_audit('PASSCODE_ACCESS', f"Unlocked via Guest Passcode '{guest['label']}'")
         return jsonify({'success': True, 'message': 'Access granted via guest passcode!'})
@@ -347,6 +371,7 @@ def create_category():
     conn.commit()
     cat_id = cursor.lastrowid
     conn.close()
+    upload_db_to_s3()
     
     log_audit('CATEGORY_CREATED', f"Created category '{name}' (ID: {cat_id})")
     return jsonify({'success': True, 'id': cat_id, 'message': f"Category '{name}' created."})
@@ -363,6 +388,7 @@ def delete_category(cat_id):
     conn.execute('DELETE FROM categories WHERE id = ?', (cat_id,))
     conn.commit()
     conn.close()
+    upload_db_to_s3()
     
     log_audit('CATEGORY_DELETED', f"Deleted category '{cat['name']}' (ID: {cat_id})")
     return jsonify({'success': True, 'message': f"Category '{cat['name']}' deleted."})
@@ -451,6 +477,7 @@ def upload_file():
     conn.commit()
     file_id = cursor.lastrowid
     conn.close()
+    upload_db_to_s3()
 
     log_audit('FILE_UPLOADED', f"Uploaded file '{original_filename}' ({file_size} bytes, ID: {file_id})")
     return jsonify({
@@ -493,6 +520,7 @@ def download_file(file_id):
     conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
     conn.commit()
     conn.close()
+    upload_db_to_s3()
 
     log_audit('FILE_DOWNLOADED', f"Downloaded '{file_record['original_name']}' (ID: {file_id})")
     
@@ -586,6 +614,7 @@ def delete_file(file_id):
     conn.execute('DELETE FROM files WHERE id = ?', (file_id,))
     conn.commit()
     conn.close()
+    upload_db_to_s3()
 
     log_audit('FILE_DELETED', f"Deleted file '{file_record['original_name']}' (ID: {file_id})")
     return jsonify({'success': True, 'message': f"File '{file_record['original_name']}' deleted."})
@@ -733,6 +762,7 @@ def create_guest_passcode():
     ''', (code, label, max_uses, expires_at))
     conn.commit()
     conn.close()
+    upload_db_to_s3()
 
     log_audit('GUEST_PASSCODE_CREATED', f"Created temporary passcode '{code}' for '{label}'")
     return jsonify({'success': True, 'passcode': code, 'message': f"Created guest passcode {code}"})
@@ -744,6 +774,7 @@ def delete_guest_passcode(code_id):
     conn.execute('DELETE FROM guest_passcodes WHERE id = ?', (code_id,))
     conn.commit()
     conn.close()
+    upload_db_to_s3()
     
     log_audit('GUEST_PASSCODE_DELETED', f"Deleted guest passcode ID: {code_id}")
     return jsonify({'success': True, 'message': 'Guest passcode deleted.'})
