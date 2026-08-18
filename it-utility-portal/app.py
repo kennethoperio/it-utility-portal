@@ -330,7 +330,7 @@ def verify_passcode():
         log_audit('PASSCODE_ACCESS', 'Unlocked via Primary Passcode')
         return jsonify({'success': True, 'message': 'Access granted!'})
 
-    # Check guest passcodes
+    # Check guest passcodes (Allow logging in as long as passcode exists and not expired)
     conn = get_db()
     now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     guest = conn.execute('''
@@ -339,20 +339,16 @@ def verify_passcode():
     ''', (passcode_input, now_str)).fetchone()
 
     if guest:
-        if guest['max_uses'] > 0 and guest['current_uses'] >= guest['max_uses']:
-            conn.close()
-            return jsonify({'success': False, 'message': 'This temporary passcode has reached its download limit.'}), 403
-        
         session['is_unlocked'] = True
         session['is_guest'] = True
         session['guest_passcode_id'] = guest['id']
         conn.close()
         log_audit('PASSCODE_ACCESS', f"Unlocked via Guest Passcode '{guest['label']}'")
-        return jsonify({'success': True, 'message': 'Access granted via guest passcode!'})
+        return jsonify({'success': True, 'message': f"Access granted via guest passcode '{guest['label']}'!"})
 
     conn.close()
     log_audit('PASSCODE_FAILED', f"Failed passcode attempt: {passcode_input}")
-    return jsonify({'success': False, 'message': 'Invalid passcode.'}), 401
+    return jsonify({'success': False, 'message': 'Invalid or expired passcode.'}), 401
 
 @app.route('/api/auth/admin-login', methods=['POST'])
 def admin_login():
@@ -388,7 +384,6 @@ def list_categories():
     categories = [dict(r) for r in rows]
     conn.close()
     
-    # Build hierarchical tree supporting unlimited nested subfolders
     category_map = {}
     for c in categories:
         cid = int(c['id'])
@@ -403,7 +398,6 @@ def list_categories():
         else:
             tree.append(cat)
 
-    # Build hierarchical ordered flat list (parent followed recursively by all nested children)
     ordered_flat = []
     def traverse(cat_node, depth=0):
         ordered_flat.append({**cat_node, 'depth': depth})
@@ -529,6 +523,26 @@ def list_files():
     conn.close()
     
     return jsonify({'files': files_list})
+
+@app.route('/api/files/check-download/<int:file_id>', methods=['GET'])
+@passcode_required
+def check_download_permission(file_id):
+    if session.get('is_guest') and session.get('guest_passcode_id'):
+        g_id = session.get('guest_passcode_id')
+        conn = get_db()
+        g_row = conn.execute('SELECT * FROM guest_passcodes WHERE id = ?', (g_id,)).fetchone()
+        conn.close()
+
+        if g_row and g_row['max_uses'] > 0 and g_row['current_uses'] >= g_row['max_uses']:
+            return jsonify({
+                'allowed': False,
+                'limit_reached': True,
+                'max_uses': g_row['max_uses'],
+                'current_uses': g_row['current_uses'],
+                'error': f"Temporary passcode download limit reached ({g_row['current_uses']}/{g_row['max_uses']}). Please request a new passcode from your administrator."
+            }), 403
+
+    return jsonify({'allowed': True})
 
 @app.route('/api/tools/cmd-scripts', methods=['GET'])
 @passcode_required
@@ -813,33 +827,28 @@ def upload_file():
 def download_file(file_id):
     conn = get_db()
     
-    # Enforce Guest Passcode Download Limits Strictly
+    # Enforce Guest Passcode Download Limit
     if session.get('is_guest') and session.get('guest_passcode_id'):
         g_id = session.get('guest_passcode_id')
         g_row = conn.execute('SELECT * FROM guest_passcodes WHERE id = ?', (g_id,)).fetchone()
         
         if not g_row:
-            session.clear()
             conn.close()
-            return jsonify({'error': 'Guest passcode invalid or expired.'}), 403
+            return jsonify({'error': 'Guest passcode invalid or expired.', 'limit_reached': True}), 403
             
         if g_row['max_uses'] > 0 and g_row['current_uses'] >= g_row['max_uses']:
-            session['is_unlocked'] = False
-            session.pop('guest_passcode_id', None)
-            session.pop('is_guest', None)
             conn.close()
-            return jsonify({'error': 'Your temporary passcode download limit has been reached.'}), 403
+            return jsonify({
+                'error': f"Download limit reached ({g_row['current_uses']}/{g_row['max_uses']}). Please request a new passcode from your administrator.",
+                'limit_reached': True,
+                'max_uses': g_row['max_uses'],
+                'current_uses': g_row['current_uses']
+            }), 403
             
         # Increment download count for guest passcode
         new_uses = g_row['current_uses'] + 1
         conn.execute('UPDATE guest_passcodes SET current_uses = ? WHERE id = ?', (new_uses, g_id))
         conn.commit()
-
-        # If limit reached with this download, lock session immediately for future downloads
-        if g_row['max_uses'] > 0 and new_uses >= g_row['max_uses']:
-            session['is_unlocked'] = False
-            session.pop('guest_passcode_id', None)
-            session.pop('is_guest', None)
 
     file_record = conn.execute('SELECT * FROM files WHERE id = ?', (file_id,)).fetchone()
     
