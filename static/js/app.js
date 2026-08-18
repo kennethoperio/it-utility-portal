@@ -3,14 +3,37 @@
 let currentCategoryId = null;
 let currentSearchQuery = "";
 let allFiles = [];
+let categoriesTreeData = [];
 let expandedCategoryIds = new Set();
 let inactivityTimer = null;
 const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
 
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   checkAuthStatus();
   setupInactivityAutoLogout();
 });
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('portal_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeIcon(savedTheme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const newTheme = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('portal_theme', newTheme);
+  updateThemeIcon(newTheme);
+}
+
+function updateThemeIcon(theme) {
+  const icon = document.querySelector('#theme-toggle-btn i');
+  if (icon) {
+    icon.className = theme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  }
+}
 
 function setupInactivityAutoLogout() {
   const resetTimer = () => {
@@ -94,6 +117,7 @@ async function loadCategories() {
   try {
     const res = await fetch('/api/categories');
     const data = await res.json();
+    categoriesTreeData = data.categories || [];
 
     const treeEl = document.getElementById('categories-tree');
     let html = `<li><button class="category-btn ${currentCategoryId === null ? 'active' : ''}" onclick="selectCategory(null)"><i class="fa-solid fa-border-all"></i> All Utilities</button></li>`;
@@ -129,7 +153,7 @@ async function loadCategories() {
       return treeHtml;
     }
 
-    html += buildCategoryTreeHtml(data.categories || []);
+    html += buildCategoryTreeHtml(categoriesTreeData);
     treeEl.innerHTML = html;
   } catch (err) {
     console.error('Error loading categories:', err);
@@ -186,8 +210,54 @@ async function loadFiles() {
   }
 }
 
+function findCategoryNode(nodes, targetId) {
+  if (!targetId || !nodes) return null;
+  for (const node of nodes) {
+    if (node.id === targetId) return node;
+    if (node.children && node.children.length > 0) {
+      const found = findCategoryNode(node.children, targetId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 function renderFiles(files) {
   const gridEl = document.getElementById('files-grid');
+  let html = '';
+
+  // Check if current category has subfolders to display as interactive subfolder cards
+  const activeNode = findCategoryNode(categoriesTreeData, currentCategoryId);
+  const hasSubfolders = activeNode && activeNode.children && activeNode.children.length > 0;
+
+  if (hasSubfolders) {
+    html += `
+      <div style="grid-column: 1 / -1; margin-bottom: 1.25rem;">
+        <h3 style="font-size: 1rem; color: var(--text-secondary); margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+          <i class="fa-solid fa-folder-tree" style="color: var(--accent-color);"></i> Subfolders inside ${escapeHtml(activeNode.name)}
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;">
+    `;
+
+    activeNode.children.forEach(sub => {
+      html += `
+        <div onclick="selectCategory(${sub.id})" style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.1rem; display: flex; align-items: center; gap: 0.85rem; cursor: pointer; transition: transform 0.2s ease, border-color 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-color)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='none'">
+          <div style="width: 44px; height: 44px; border-radius: 8px; background-color: rgba(56, 189, 248, 0.12); color: var(--accent-color); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
+            <i class="fa-solid fa-folder"></i>
+          </div>
+          <div style="overflow: hidden; flex: 1;">
+            <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(sub.name)}</div>
+            <div style="font-size: 0.78rem; color: var(--accent-color); margin-top: 0.15rem;">Click to view subfolder &rarr;</div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+    `;
+  }
 
   let filtered = files;
   if (currentSearchQuery) {
@@ -200,15 +270,26 @@ function renderFiles(files) {
   }
 
   if (filtered.length === 0) {
-    gridEl.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 3rem;">
-      <i class="fa-solid fa-folder-open fa-3x" style="margin-bottom: 1rem; opacity: 0.5;"></i>
-      <h3>No tools found</h3>
-      <p style="font-size: 0.9rem; margin-top: 0.5rem;">No files uploaded directly in this folder yet, or search term returned zero matches.</p>
-    </div>`;
+    if (hasSubfolders) {
+      html += `
+        <div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 2rem; background-color: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: var(--radius);">
+          <i class="fa-solid fa-folder-tree fa-2x" style="margin-bottom: 0.75rem; opacity: 0.5;"></i>
+          <p style="font-size: 0.9rem;">Select a subfolder above to view its utility installers and drivers.</p>
+        </div>
+      `;
+    } else {
+      html = `
+        <div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 3rem;">
+          <i class="fa-solid fa-folder-open fa-3x" style="margin-bottom: 1rem; opacity: 0.5;"></i>
+          <h3>No tools found</h3>
+          <p style="font-size: 0.9rem; margin-top: 0.5rem;">No files uploaded directly in this folder yet, or search term returned zero matches.</p>
+        </div>
+      `;
+    }
+    gridEl.innerHTML = html;
     return;
   }
 
-  let html = '';
   filtered.forEach(f => {
     const ext = f.original_name.split('.').pop().toLowerCase();
     let fileIcon = 'fa-file';
@@ -260,7 +341,6 @@ async function handleDownloadClick(e, fileId) {
   if (e) e.preventDefault();
   
   try {
-    // Check download permission first
     const checkRes = await fetch(`/api/files/check-download/${fileId}`);
     const checkData = await checkRes.json();
 
@@ -271,7 +351,6 @@ async function handleDownloadClick(e, fileId) {
       return;
     }
 
-    // Permission granted! Initiate browser download smoothly
     const downloadUrl = `/api/files/download/${fileId}`;
     const a = document.createElement('a');
     a.href = downloadUrl;
@@ -280,7 +359,6 @@ async function handleDownloadClick(e, fileId) {
     a.click();
     document.body.removeChild(a);
 
-    // Refresh file download counter after 1.5 seconds
     setTimeout(() => {
       loadFiles();
     }, 1500);
@@ -450,16 +528,3 @@ function escapeJs(str) {
   if (!str) return '';
   return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
-
-// Dark/Light Theme Toggle
-document.getElementById('theme-toggle-btn').addEventListener('click', () => {
-  const currentTheme = document.documentElement.getAttribute('data-theme');
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', newTheme);
-  const icon = document.querySelector('#theme-toggle-btn i');
-  if (newTheme === 'light') {
-    icon.className = 'fa-solid fa-sun';
-  } else {
-    icon.className = 'fa-solid fa-moon';
-  }
-});
