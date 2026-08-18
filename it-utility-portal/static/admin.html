@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Portal</title>
-  <link rel="stylesheet" href="/css/style.css?v=2.0">
+  <link rel="stylesheet" href="/css/style.css?v=3.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -39,8 +39,15 @@
       <div class="stat-card">
         <div class="stat-icon"><i class="fa-solid fa-hard-drive"></i></div>
         <div class="stat-info">
-          <small>Storage Used</small>
+          <small>Backblaze Storage Used</small>
           <h3 id="stat-storage">0 MB</h3>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background-color: rgba(34, 197, 94, 0.15); color: var(--success-color);"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+        <div class="stat-info">
+          <small>10 GB Free Storage Left</small>
+          <h3 id="stat-storage-left" style="color: var(--success-color);">10.00 GB Free</h3>
         </div>
       </div>
       <div class="stat-card">
@@ -48,13 +55,6 @@
         <div class="stat-info">
           <small>Total Downloads</small>
           <h3 id="stat-downloads">0</h3>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon"><i class="fa-solid fa-key"></i></div>
-        <div class="stat-info">
-          <small>Active Passcodes</small>
-          <h3 id="stat-passcodes">1 Primary</h3>
         </div>
       </div>
     </div>
@@ -420,6 +420,6 @@
     </div>
   </div>
 
-  <script src="/js/admin.js?v=2.0"></script>
+  <script src="/js/admin.js?v=3.0"></script>
 </body>
 </html>
