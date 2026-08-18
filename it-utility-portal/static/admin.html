@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Portal</title>
-  <link rel="stylesheet" href="/css/style.css?v=3.5">
+  <link rel="stylesheet" href="/css/style.css?v=4.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -164,14 +164,14 @@
 
     <!-- TAB 3: Category Builder -->
     <div id="admin-sec-categories" style="display: none;">
-      <div style="display: grid; grid-template-columns: 350px 1fr; gap: 1.5rem;">
+      <div style="display: grid; grid-template-columns: 360px 1fr; gap: 1.5rem;">
         <!-- Category Form -->
         <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem;">
           <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-folder-plus"></i> Add Category / Subfolder</h3>
           <form id="create-category-form" onsubmit="handleCreateCategory(event)">
             <div class="form-group">
               <label for="cat-name">Category / Folder Name *</label>
-              <input type="text" id="cat-name" placeholder="e.g. Printers, Resetters, Drivers" required>
+              <input type="text" id="cat-name" placeholder="e.g. Printers, Resetters, Drivers, Database" required>
             </div>
             <div class="form-group">
               <label for="cat-parent">Parent Category (Optional)</label>
@@ -179,6 +179,28 @@
                 <option value="">-- Main Folder (Top Level) --</option>
               </select>
               <small style="color: var(--text-secondary); font-size: 0.75rem;">Select a parent category to create a subfolder (e.g. Printers -> Drivers)</small>
+            </div>
+            <div class="form-group">
+              <label for="cat-icon">Folder Icon Style</label>
+              <select id="cat-icon">
+                <option value="auto">✨ Auto-Detect Icon from Category Name</option>
+                <option value="folder">📁 Standard Folder</option>
+                <option value="print">🖨️ Printer / Scanner</option>
+                <option value="microchip">🎛️ Driver / Microchip</option>
+                <option value="rotate-left">🔄 Resetter / Reset Tool</option>
+                <option value="screwdriver-wrench">🛠️ Windows Repair / Wrench</option>
+                <option value="life-ring">🛟 Data Recovery / Rescue</option>
+                <option value="toolbox">🧰 Utilities / Toolbox</option>
+                <option value="key">🔑 License Key / Activator</option>
+                <option value="network-wired">🌐 Network & Connectivity</option>
+                <option value="shield-virus">🛡️ Antivirus & Security</option>
+                <option value="hard-drive">💾 Hard Drive & Disk Tools</option>
+                <option value="desktop">🖥️ Remote Desktop / Display</option>
+                <option value="database">🗄️ Database & SQL Tools</option>
+                <option value="gear">⚙️ System Configuration</option>
+                <option value="mobile-screen">📱 Mobile & Android Utilities</option>
+                <option value="bolt">⚡ Quick Diagnostics & Scripts</option>
+              </select>
             </div>
             <div class="form-group">
               <label for="cat-description">Description</label>
@@ -197,6 +219,7 @@
                 <tr>
                   <th>Category Name</th>
                   <th>Parent Folder</th>
+                  <th>Icon</th>
                   <th>Description</th>
                   <th>Action</th>
                 </tr>
@@ -423,6 +446,6 @@
     </div>
   </div>
 
-  <script src="/js/admin.js?v=3.5"></script>
+  <script src="/js/admin.js?v=4.0"></script>
 </body>
 </html>
