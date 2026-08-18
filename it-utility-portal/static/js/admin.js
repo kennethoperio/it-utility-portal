@@ -66,7 +66,6 @@ async function checkAdminAuth() {
       document.getElementById('admin-logout-btn').style.display = 'inline-flex';
       loadAdminDashboardData();
       
-      // Auto-refresh guest passcodes & stats every 3 seconds live
       if (!autoRefreshTimer) {
         autoRefreshTimer = setInterval(() => {
           loadAdminSettingsData(true);
@@ -143,7 +142,6 @@ function switchAdminTab(tabName) {
   const target = document.getElementById(`admin-sec-${tabName}`);
   if (target) target.style.display = 'block';
 
-  // Highlight active button
   const activeBtn = Array.from(buttons).find(b => b.getAttribute('onclick').includes(tabName));
   if (activeBtn) activeBtn.classList.add('active');
 
@@ -153,7 +151,6 @@ function switchAdminTab(tabName) {
   if (tabName === 'passcodes' || tabName === 'logs' || tabName === 'settings') loadAdminSettingsData();
 }
 
-// Batch Download All Tools (.zip) with Confirmation
 function confirmDownloadAllZip() {
   const totalFilesStr = document.getElementById('stat-files')?.innerText || '0';
   const totalStorageStr = document.getElementById('stat-storage')?.innerText || '0 MB';
@@ -176,6 +173,28 @@ function confirmDownloadAllZip() {
   }
 }
 
+function getCategoryIconClass(categoryName, iconName) {
+  if (iconName && iconName !== 'folder' && iconName !== 'folder-minus' && iconName !== 'auto') {
+    return iconName.startsWith('fa-') ? iconName : `fa-${iconName}`;
+  }
+  const name = (categoryName || '').toLowerCase();
+  if (name.includes('print')) return 'fa-print';
+  if (name.includes('driver')) return 'fa-microchip';
+  if (name.includes('reset')) return 'fa-rotate-left';
+  if (name.includes('recover') || name.includes('undelete')) return 'fa-life-ring';
+  if (name.includes('tool') || name.includes('install')) return 'fa-toolbox';
+  if (name.includes('repair') || name.includes('fix') || name.includes('tweak')) return 'fa-screwdriver-wrench';
+  if (name.includes('key') || name.includes('license') || name.includes('activat')) return 'fa-key';
+  if (name.includes('network') || name.includes('wifi') || name.includes('ip')) return 'fa-network-wired';
+  if (name.includes('anti') || name.includes('malware') || name.includes('shield') || name.includes('secur')) return 'fa-shield-virus';
+  if (name.includes('hard') || name.includes('diag') || name.includes('ram') || name.includes('cpu')) return 'fa-microchip';
+  if (name.includes('data') || name.includes('sql') || name.includes('db')) return 'fa-database';
+  if (name.includes('disk') || name.includes('hdd') || name.includes('ssd') || name.includes('storage')) return 'fa-hard-drive';
+  if (name.includes('remote') || name.includes('desk') || name.includes('vnc')) return 'fa-desktop';
+  if (name.includes('mobile') || name.includes('android') || name.includes('phone')) return 'fa-mobile-screen';
+  return 'fa-folder-tree';
+}
+
 // Categories Management
 async function loadAdminCategories() {
   try {
@@ -186,7 +205,6 @@ async function loadAdminCategories() {
     const catMap = {};
     categoriesList.forEach(c => catMap[c.id] = c.name);
 
-    // Populate category select dropdowns
     const selectEl = document.getElementById('upload-category');
     const parentSelectEl = document.getElementById('cat-parent');
     const filterSelectEl = document.getElementById('admin-file-category-filter');
@@ -220,11 +238,13 @@ async function loadAdminCategories() {
       const depth = c.depth || 0;
       const indent = depth > 0 ? '&nbsp;&nbsp;'.repeat(depth) + '└── ' : '';
       const parentName = c.parent_id ? (catMap[c.parent_id] || 'Main') : 'Main Folder';
+      const iconClass = getCategoryIconClass(c.name, c.icon);
 
       tableHtml += `
         <tr>
           <td><strong>${indent}${escapeHtml(c.name)}</strong></td>
           <td><span class="badge badge-info">${escapeHtml(parentName)}</span></td>
+          <td><i class="fa-solid ${iconClass}" style="color: var(--accent-color);"></i> <code>${iconClass}</code></td>
           <td>${escapeHtml(c.description || '-')}</td>
           <td>
             <button class="btn btn-secondary btn-sm" onclick="editCategory(${c.id}, '${escapeJs(c.name)}', ${c.parent_id || 'null'}, '${escapeJs(c.description || '')}')">
@@ -238,7 +258,7 @@ async function loadAdminCategories() {
       `;
     });
 
-    if (tableBody) tableBody.innerHTML = tableHtml || '<tr><td colspan="4" style="text-align:center;">No categories created yet.</td></tr>';
+    if (tableBody) tableBody.innerHTML = tableHtml || '<tr><td colspan="5" style="text-align:center;">No categories created yet.</td></tr>';
   } catch (err) {
     console.error('Error loading admin categories:', err);
   }
@@ -248,13 +268,14 @@ async function handleCreateCategory(e) {
   e.preventDefault();
   const name = document.getElementById('cat-name').value.trim();
   const parent_id = document.getElementById('cat-parent').value || null;
+  const icon = document.getElementById('cat-icon').value || 'auto';
   const description = document.getElementById('cat-description').value.trim();
 
   try {
     const res = await fetch('/api/categories', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, parent_id, description })
+      body: JSON.stringify({ name, parent_id, icon, description })
     });
     const data = await res.json();
 
@@ -631,7 +652,6 @@ async function loadAdminSettingsData(isSilent = false) {
     const res = await fetch('/api/admin/settings');
     const data = await res.json();
 
-    // Stats calculation including 10 GB Free Storage Left
     if (data.stats) {
       const totalBytes = data.stats.total_bytes || 0;
       const usedMB = totalBytes / (1024 * 1024);
@@ -646,7 +666,7 @@ async function loadAdminSettingsData(isSilent = false) {
       const leftEl = document.getElementById('stat-storage-left');
       if (leftEl) {
         leftEl.innerText = `${freeGB} GB Free`;
-        if (freeBytes < 1 * 1024 * 1024 * 1024) { // Less than 1 GB left
+        if (freeBytes < 1 * 1024 * 1024 * 1024) {
           leftEl.style.color = 'var(--danger-color)';
         } else {
           leftEl.style.color = 'var(--success-color)';
@@ -657,13 +677,11 @@ async function loadAdminSettingsData(isSilent = false) {
     }
 
     if (!isSilent) {
-      // Settings fields (only update if not background silent refresh)
       document.getElementById('set-site-title').value = data.site_title || '';
       document.getElementById('set-announcement').value = data.announcement || '';
       document.getElementById('set-primary-passcode').value = data.access_passcode || '';
     }
 
-    // Guest passcodes table
     const passTable = document.getElementById('guest-passcodes-table-body');
     let passHtml = '';
     (data.guest_passcodes || []).forEach(g => {
@@ -685,7 +703,6 @@ async function loadAdminSettingsData(isSilent = false) {
     });
     if (passTable) passTable.innerHTML = passHtml || '<tr><td colspan="5" style="text-align:center;">No temporary passcodes created.</td></tr>';
 
-    // Store full audit logs for pagination
     allAuditLogsList = data.audit_logs || [];
     renderAuditLogsTable();
 
@@ -746,7 +763,6 @@ function renderAuditLogsTable() {
 
   logsTable.innerHTML = logsHtml || '<tr><td colspan="6" style="text-align:center;">No activity logged yet.</td></tr>';
 
-  // Update pagination info controls
   const infoEl = document.getElementById('logs-pagination-info');
   const pageNumberEl = document.getElementById('logs-page-number');
   const prevBtn = document.getElementById('logs-prev-btn');
