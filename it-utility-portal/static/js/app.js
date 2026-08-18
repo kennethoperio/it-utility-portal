@@ -97,31 +97,30 @@ async function loadCategories() {
     const treeEl = document.getElementById('categories-tree');
     let html = `<li><button class="category-btn ${currentCategoryId === null ? 'active' : ''}" onclick="selectCategory(null)"><i class="fa-solid fa-border-all"></i> All Utilities</button></li>`;
 
-    data.categories.forEach(cat => {
-      const isCatActive = currentCategoryId === cat.id;
-      const iconClass = cat.icon || 'folder';
-      
-      html += `<li class="category-item">
-        <button class="category-btn ${isCatActive ? 'active' : ''}" onclick="selectCategory(${cat.id})">
-          <span><i class="fa-solid fa-${iconClass}"></i> ${escapeHtml(cat.name)}</span>
-          <i class="fa-solid fa-chevron-right" style="font-size: 0.75rem; opacity: 0.6;"></i>
-        </button>`;
+    function buildCategoryTreeHtml(nodes, depth = 0) {
+      let treeHtml = '';
+      (nodes || []).forEach(cat => {
+        const isCatActive = currentCategoryId === cat.id;
+        const iconClass = cat.icon || (depth === 0 ? 'folder' : 'folder-minus');
+        const paddingLeft = depth > 0 ? `style="padding-left: ${0.75 + depth * 0.75}rem;"` : '';
 
-      if (cat.children && cat.children.length > 0) {
-        html += `<ul class="subcategory-list">`;
-        cat.children.forEach(sub => {
-          const isSubActive = currentCategoryId === sub.id;
-          html += `<li>
-            <button class="subcategory-btn ${isSubActive ? 'active' : ''}" onclick="selectCategory(${sub.id})">
-              <i class="fa-solid fa-folder-minus" style="font-size: 0.75rem;"></i> ${escapeHtml(sub.name)}
-            </button>
-          </li>`;
-        });
-        html += `</ul>`;
-      }
-      html += `</li>`;
-    });
+        treeHtml += `<li class="category-item">
+          <button class="category-btn ${isCatActive ? 'active' : ''}" ${paddingLeft} onclick="selectCategory(${cat.id})">
+            <span><i class="fa-solid fa-${iconClass}"></i> ${escapeHtml(cat.name)}</span>
+            ${cat.children && cat.children.length > 0 ? '<i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; opacity: 0.6;"></i>' : ''}
+          </button>`;
 
+        if (cat.children && cat.children.length > 0) {
+          treeHtml += `<ul class="subcategory-list" style="padding-left: 0.5rem;">`;
+          treeHtml += buildCategoryTreeHtml(cat.children, depth + 1);
+          treeHtml += `</ul>`;
+        }
+        treeHtml += `</li>`;
+      });
+      return treeHtml;
+    }
+
+    html += buildCategoryTreeHtml(data.categories || []);
     treeEl.innerHTML = html;
   } catch (err) {
     console.error('Error loading categories:', err);
@@ -236,7 +235,6 @@ function renderFiles(files) {
 }
 
 function handleDownloadClick(e, fileId) {
-  // Allow browser to trigger download link, then check auth status after brief delay to lock UI if limit reached
   setTimeout(() => {
     checkAuthStatus();
   }, 1200);
