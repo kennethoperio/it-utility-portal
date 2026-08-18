@@ -138,7 +138,7 @@ body {
   gap: 1.5rem;
 }
 
-/* Sidebar */
+/* Sidebar & Accordion Folders */
 .sidebar {
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -181,7 +181,7 @@ body {
   font-weight: 500;
   cursor: pointer;
   text-align: left;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .category-btn:hover, .category-btn.active {
@@ -189,33 +189,47 @@ body {
   color: #ffffff;
 }
 
+/* Smooth Accordion Animation */
 .subcategory-list {
   list-style: none;
-  padding-left: 1.5rem;
+  padding-left: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  margin-top: 0.2rem;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease-in-out, margin 0.25s ease;
 }
 
-.subcategory-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+.subcategory-list.open {
+  max-height: 600px;
+  opacity: 1;
+  margin-top: 0.25rem;
+}
+
+.chevron-icon {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+}
+
+.chevron-icon.rotated {
+  transform: rotate(90deg);
+}
+
+.toggle-folder-btn {
   background: transparent;
   border: none;
-  border-radius: 4px;
   color: var(--text-secondary);
-  font-size: 0.88rem;
+  padding: 0.55rem 0.75rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.subcategory-btn:hover, .subcategory-btn.active {
-  color: var(--accent-color);
+.toggle-folder-btn:hover {
   background-color: var(--bg-tertiary);
+  color: var(--accent-color);
 }
 
 /* Toolbar & Search */
@@ -273,12 +287,13 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .file-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
   border-color: var(--accent-color);
+  box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.4);
 }
 
 .file-header {
@@ -605,7 +620,7 @@ tr:hover {
   border-radius: var(--radius);
   padding: 2rem;
   width: 100%;
-  max-width: 450px;
+  max-width: 460px;
   box-shadow: var(--shadow);
 }
 
