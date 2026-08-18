@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IT Troubleshooting Utility Hub</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <a href="/" class="nav-brand">
+      <i class="fa-solid fa-toolbox"></i>
+      <span id="site-title-display">IT Utility Hub</span>
+    </a>
+    <div class="nav-actions">
+      <button class="btn btn-secondary btn-sm" id="theme-toggle-btn" title="Toggle Dark/Light Mode">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <a href="/admin" class="btn btn-secondary btn-sm">
+        <i class="fa-solid fa-user-gear"></i> Admin Dashboard
+      </a>
+    </div>
+  </header>
+
+  <!-- Announcement Banner -->
+  <div class="banner" id="banner-container" style="display: none;">
+    <div class="banner-content">
+      <i class="fa-solid fa-bullhorn"></i>
+      <span id="announcement-text">Welcome to IT Utility Hub!</span>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="container">
+    
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-files-btn" onclick="switchMainTab('files')">
+        <i class="fa-solid fa-folder-open"></i> Software & Utility Tools
+      </button>
+      <button class="tab-btn" id="tab-cmd-btn" onclick="switchMainTab('cmd')">
+        <i class="fa-solid fa-terminal"></i> PowerShell / CMD Cheat Sheet
+      </button>
+      <button class="tab-btn" id="tab-net-btn" onclick="switchMainTab('net')">
+        <i class="fa-solid fa-network-wired"></i> Network Diagnostics
+      </button>
+    </div>
+
+    <!-- TAB 1: File Browser -->
+    <div id="section-files">
+      <div class="main-layout">
+        <!-- Sidebar Categories -->
+        <aside class="sidebar">
+          <div class="sidebar-title"><i class="fa-solid fa-folder"></i> Utility Categories</div>
+          <ul class="category-nav" id="categories-tree">
+            <!-- Dynamically populated categories -->
+            <li><button class="category-btn active" onclick="selectCategory(null)"><i class="fa-solid fa-border-all"></i> All Utilities</button></li>
+          </ul>
+        </aside>
+
+        <!-- Files Content Area -->
+        <main>
+          <div class="toolbar">
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="search-input" placeholder="Search IT tools, installers, resetters, drivers..." oninput="handleSearch()">
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-secondary btn-sm" onclick="loadFiles()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+            </div>
+          </div>
+
+          <!-- Files Grid -->
+          <div class="file-grid" id="files-grid">
+            <div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 3rem;">
+              <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+              <p style="margin-top: 1rem;">Loading IT Utilities...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- TAB 2: Command Cheat Sheet -->
+    <div id="section-cmd" style="display: none;">
+      <h2 style="margin-bottom: 1rem;"><i class="fa-solid fa-terminal"></i> Quick IT Troubleshooting Commands</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">1-Click copy standard PowerShell and CMD scripts for fixing Windows issues, printer spooler, network stack, and license status.</p>
+      <div id="cmd-scripts-list" style="display: flex; flex-direction: column; gap: 1rem;">
+        <!-- Populated via JS -->
+      </div>
+    </div>
+
+    <!-- TAB 3: Network Diagnostics -->
+    <div id="section-net" style="display: none;">
+      <h2 style="margin-bottom: 1rem;"><i class="fa-solid fa-network-wired"></i> Network Information & Client Helper</h2>
+      <div class="stats-grid" style="margin-top: 1.5rem;">
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fa-solid fa-globe"></i></div>
+          <div>
+            <div class="stat-lbl">Your IP Address</div>
+            <div class="stat-val" id="net-client-ip">Fetching...</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fa-solid fa-server"></i></div>
+          <div>
+            <div class="stat-lbl">Server Hostname</div>
+            <div class="stat-val" id="net-server-host">Fetching...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Passcode Unlock Modal -->
+  <div class="modal-overlay" id="passcode-modal">
+    <div class="modal-card">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background-color: rgba(56, 189, 248, 0.15); color: var(--accent-color); display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 1rem;">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+        <h2>Access Passcode Required</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">Please enter the IT technician passcode to unlock tools & downloads.</p>
+      </div>
+
+      <form id="passcode-form" onsubmit="submitPasscode(event)">
+        <div class="form-group">
+          <label for="passcode-input">Passcode / Access Key</label>
+          <input type="password" id="passcode-input" placeholder="Enter passcode..." required autofocus>
+        </div>
+        <div id="passcode-error" style="color: var(--danger-color); font-size: 0.85rem; margin-bottom: 1rem; display: none;"></div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;"><i class="fa-solid fa-key"></i> Unlock Access</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- QR Code Modal -->
+  <div class="modal-overlay" id="qrcode-modal">
+    <div class="modal-card" style="text-align: center;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-qrcode"></i> Mobile Download QR Code</h3>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="closeQrModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1rem;" id="qr-tool-name">Scan with mobile phone to download directly onto target device.</p>
+      <div style="background-color: white; padding: 1rem; border-radius: 8px; display: inline-block; margin-bottom: 1rem;" id="qr-image-container">
+        <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+      </div>
+      <div>
+        <button class="btn btn-secondary btn-sm" onclick="closeQrModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
