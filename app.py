@@ -103,14 +103,27 @@ def fix_categories_hierarchy():
         conn = get_db()
         cursor = conn.cursor()
         
-        # Ensure Printers category exists
+        # Ensure Printers category exists with icon
         cursor.execute("SELECT id FROM categories WHERE name = 'Printers'")
         p_row = cursor.fetchone()
         if not p_row:
-            cursor.execute("INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES ('Printers', NULL, 'printer', 'Printer drivers and resetters', 2)")
+            cursor.execute("INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES ('Printers', NULL, 'print', 'Printer drivers and resetters', 2)")
             printers_id = cursor.lastrowid
         else:
             printers_id = p_row['id']
+            cursor.execute("UPDATE categories SET icon = 'print' WHERE id = ?", (printers_id,))
+
+        # Update specific icons for default categories
+        cursor.execute("UPDATE categories SET icon = 'print' WHERE name = 'Printers'")
+        cursor.execute("UPDATE categories SET icon = 'microchip' WHERE name = 'Drivers'")
+        cursor.execute("UPDATE categories SET icon = 'rotate-left' WHERE name = 'Resetters'")
+        cursor.execute("UPDATE categories SET icon = 'life-ring' WHERE name = 'Recovery Tools'")
+        cursor.execute("UPDATE categories SET icon = 'toolbox' WHERE name = 'Tools & Installers'")
+        cursor.execute("UPDATE categories SET icon = 'screwdriver-wrench' WHERE name = 'Windows Repair'")
+        cursor.execute("UPDATE categories SET icon = 'key' WHERE name = 'Activators & License Tools'")
+        cursor.execute("UPDATE categories SET icon = 'network-wired' WHERE name = 'Network & Connectivity'")
+        cursor.execute("UPDATE categories SET icon = 'shield-virus' WHERE name = 'Antivirus & Malware Removal'")
+        cursor.execute("UPDATE categories SET icon = 'microchip' WHERE name = 'Hardware Diagnostics'")
 
         # Force Resetters and Drivers to have parent_id = Printers ID if unparented
         cursor.execute("UPDATE categories SET parent_id = ? WHERE name IN ('Resetters', 'Drivers') AND (parent_id IS NULL OR parent_id = '')", (printers_id,))
@@ -216,12 +229,12 @@ def init_db():
     cursor.execute('SELECT COUNT(*) as count FROM categories')
     if cursor.fetchone()['count'] == 0:
         categories_data = [
-            ('Windows Repair', None, 'wrench', 'System repair tools, SFC, DISM, and Registry scripts', 1),
-            ('Printers', None, 'printer', 'Printer management tools, drivers, and spooler resetters', 2),
+            ('Windows Repair', None, 'screwdriver-wrench', 'System repair tools, SFC, DISM, and Registry scripts', 1),
+            ('Printers', None, 'print', 'Printer management tools, drivers, and spooler resetters', 2),
             ('Activators & License Tools', None, 'key', 'Product keys, activation scripts, and license management', 3),
-            ('Network & Connectivity', None, 'wifi', 'IP tools, Wi-Fi analyzers, reset scripts, and ping helpers', 4),
-            ('Antivirus & Malware Removal', None, 'shield', 'Virus scanners, removal tools, and security utilities', 5),
-            ('Hardware Diagnostics', None, 'cpu', 'RAM, HDD/SSD, CPU test tools, and spec gatherers', 6),
+            ('Network & Connectivity', None, 'network-wired', 'IP tools, Wi-Fi analyzers, reset scripts, and ping helpers', 4),
+            ('Antivirus & Malware Removal', None, 'shield-virus', 'Virus scanners, removal tools, and security utilities', 5),
+            ('Hardware Diagnostics', None, 'microchip', 'RAM, HDD/SSD, CPU test tools, and spec gatherers', 6),
         ]
         for name, pid, icon, desc, order in categories_data:
             cursor.execute('INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES (?, ?, ?, ?, ?)',
