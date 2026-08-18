@@ -16,6 +16,9 @@
       <span>IT Portal Admin Dashboard</span>
     </a>
     <div class="nav-actions">
+      <button class="btn btn-secondary btn-sm" onclick="confirmDownloadAllZip()" style="background-color: #0284c7; color: white;">
+        <i class="fa-solid fa-file-zipper"></i> Download All Tools (.zip)
+      </button>
       <a href="/" class="btn btn-secondary btn-sm" target="_blank">
         <i class="fa-solid fa-external-link"></i> View Public Portal
       </a>
@@ -118,7 +121,10 @@
     <div id="admin-sec-files" style="display: none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
         <h2><i class="fa-solid fa-boxes-stacked"></i> Uploaded IT Tools Directory</h2>
-        <button class="btn btn-secondary btn-sm" onclick="loadAdminFiles()"><i class="fa-solid fa-rotate"></i> Refresh List</button>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-primary btn-sm" onclick="confirmDownloadAllZip()"><i class="fa-solid fa-file-zipper"></i> Download All (.zip)</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminFiles()"><i class="fa-solid fa-rotate"></i> Refresh List</button>
+        </div>
       </div>
       <div class="table-responsive">
         <table>
