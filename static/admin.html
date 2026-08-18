@@ -64,6 +64,7 @@
       <button class="tab-btn active" onclick="switchAdminTab('upload')"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Utilities</button>
       <button class="tab-btn" onclick="switchAdminTab('files')"><i class="fa-solid fa-boxes-stacked"></i> Manage Files</button>
       <button class="tab-btn" onclick="switchAdminTab('categories')"><i class="fa-solid fa-folder-tree"></i> Categories & Folders</button>
+      <button class="tab-btn" onclick="switchAdminTab('commands')"><i class="fa-solid fa-terminal"></i> IT Commands</button>
       <button class="tab-btn" onclick="switchAdminTab('passcodes')"><i class="fa-solid fa-users-gear"></i> Temporary Passcodes</button>
       <button class="tab-btn" onclick="switchAdminTab('logs')"><i class="fa-solid fa-clock-rotate-left"></i> Audit Logs</button>
       <button class="tab-btn" onclick="switchAdminTab('settings')"><i class="fa-solid fa-sliders"></i> Site Settings</button>
@@ -206,7 +207,59 @@
       </div>
     </div>
 
-    <!-- TAB 4: Passcodes Manager -->
+    <!-- TAB 4: IT Troubleshooting Commands Manager -->
+    <div id="admin-sec-commands" style="display: none;">
+      <div style="display: grid; grid-template-columns: 380px 1fr; gap: 1.5rem;">
+        <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem;">
+          <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-terminal"></i> Add Troubleshooting Command</h3>
+          <form id="create-command-form" onsubmit="handleCreateCmdScript(event)">
+            <div class="form-group">
+              <label for="cmd-title">Command Title *</label>
+              <input type="text" id="cmd-title" placeholder="e.g. Restart Printer Spooler" required>
+            </div>
+            <div class="form-group">
+              <label for="cmd-type">Type / Environment</label>
+              <select id="cmd-type">
+                <option value="PowerShell / CMD">PowerShell / CMD</option>
+                <option value="PowerShell">PowerShell</option>
+                <option value="CMD">CMD</option>
+                <option value="Bash / Linux">Bash / Linux</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="cmd-command">Command String *</label>
+              <textarea id="cmd-command" rows="3" placeholder="e.g. net stop spooler && net start spooler" style="width: 100%; padding: 0.6rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: monospace; font-size: 0.85rem;" required></textarea>
+            </div>
+            <div class="form-group">
+              <label for="cmd-description">Description & Purpose</label>
+              <input type="text" id="cmd-description" placeholder="What this command fixes...">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;"><i class="fa-solid fa-plus"></i> Save Command</button>
+          </form>
+        </div>
+
+        <div>
+          <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-list-check"></i> Manage Quick Troubleshooting Commands</h3>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th>Command String</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="admin-commands-table-body">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: Passcodes Manager -->
     <div id="admin-sec-passcodes" style="display: none;">
       <div style="display: grid; grid-template-columns: 350px 1fr; gap: 1.5rem;">
         <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem;">
@@ -250,7 +303,7 @@
       </div>
     </div>
 
-    <!-- TAB 5: Audit Logs -->
+    <!-- TAB 6: Audit Logs -->
     <div id="admin-sec-logs" style="display: none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
         <h3><i class="fa-solid fa-shield-halved"></i> Activity Audit Trail</h3>
@@ -298,7 +351,7 @@
       </div>
     </div>
 
-    <!-- TAB 6: Settings -->
+    <!-- TAB 7: Settings -->
     <div id="admin-sec-settings" style="display: none;">
       <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 2rem; max-width: 700px; margin: 0 auto;">
         <h2 style="margin-bottom: 1.5rem;"><i class="fa-solid fa-sliders"></i> Portal & Security Settings</h2>
