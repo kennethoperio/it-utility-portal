@@ -92,6 +92,29 @@ function switchAdminTab(tabName) {
   if (tabName === 'passcodes' || tabName === 'logs' || tabName === 'settings') loadAdminSettingsData();
 }
 
+// Batch Download All Tools (.zip) with Confirmation
+function confirmDownloadAllZip() {
+  const totalFilesStr = document.getElementById('stat-files')?.innerText || '0';
+  const totalStorageStr = document.getElementById('stat-storage')?.innerText || '0 MB';
+
+  if (parseInt(totalFilesStr) === 0) {
+    alert('No utility tools have been uploaded to your vault yet.');
+    return;
+  }
+
+  const confirmed = confirm(
+    `📦 DOWNLOAD ALL IT TOOLS CONFIRMATION\n\n` +
+    `Are you sure you want to download a single ZIP package containing all ${totalFilesStr} tools?\n\n` +
+    `Total Package Size: ~${totalStorageStr}\n` +
+    `Folder Hierarchy: Saved in subfolders organized by category.\n\n` +
+    `Click OK to start downloading.`
+  );
+
+  if (confirmed) {
+    window.location.href = '/api/admin/download-all-zip';
+  }
+}
+
 // Categories Management
 async function loadAdminCategories() {
   try {
