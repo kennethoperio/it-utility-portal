@@ -1,49 +1,54 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IT Troubleshooting Utility Hub</title>
-  <link rel="stylesheet" href="css/style.css">
-  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="css/style.css?v=1.2">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-  <!-- Navbar -->
-  <header class="navbar">
-    <a href="/" class="nav-brand">
-      <i class="fa-solid fa-toolbox"></i>
-      <span id="site-title-display">IT Utility Hub</span>
-    </a>
-    <div class="nav-actions">
-      <button class="btn btn-secondary btn-sm" id="theme-toggle-btn" title="Toggle Dark/Light Mode">
-        <i class="fa-solid fa-moon"></i>
-      </button>
-      <a href="/admin" class="btn btn-secondary btn-sm">
-        <i class="fa-solid fa-user-gear"></i> Admin Dashboard
-      </a>
+  <!-- Top Announcement Banner -->
+  <div class="announcement-banner" id="banner-container" style="display: none;">
+    <i class="fa-solid fa-bullhorn"></i>
+    <span id="announcement-text">Authorized IT Technicians Portal - Fast 1-Click Utility Downloads</span>
+  </div>
+
+  <!-- Header / Navbar -->
+  <header class="header">
+    <div class="header-container">
+      <div class="logo">
+        <i class="fa-solid fa-toolbox"></i>
+        <span id="site-title-display">IT Troubleshooting Utility Hub</span>
+      </div>
+      <div class="user-actions">
+        <button class="btn btn-secondary btn-sm" id="theme-toggle-btn" title="Toggle Theme">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+        <a href="/admin" class="btn btn-primary btn-sm" target="_blank">
+          <i class="fa-solid fa-lock"></i> Admin Portal
+        </a>
+      </div>
     </div>
   </header>
 
-  <!-- Announcement Banner -->
-  <div class="banner" id="banner-container" style="display: none;">
-    <div class="banner-content">
-      <i class="fa-solid fa-bullhorn"></i>
-      <span id="announcement-text">Welcome to IT Utility Hub!</span>
-    </div>
-  </div>
-
   <!-- Main Container -->
   <div class="container">
-    
+
+    <!-- Hero / Header Section -->
+    <div class="hero-section">
+      <h1 class="hero-title">IT Troubleshooting Utility Portal</h1>
+      <p class="hero-subtitle">Fast, centralized repository for printer drivers, resetters, Windows repair tools, and network diagnostics.</p>
+    </div>
+
     <!-- Navigation Tabs -->
     <div class="tabs">
       <button class="tab-btn active" id="tab-files-btn" onclick="switchMainTab('files')">
-        <i class="fa-solid fa-folder-open"></i> Software & Utility Tools
+        <i class="fa-solid fa-boxes-stacked"></i> Utility Software Library
       </button>
       <button class="tab-btn" id="tab-cmd-btn" onclick="switchMainTab('cmd')">
-        <i class="fa-solid fa-terminal"></i> PowerShell / CMD Cheat Sheet
+        <i class="fa-solid fa-terminal"></i> Quick IT Commands
       </button>
       <button class="tab-btn" id="tab-net-btn" onclick="switchMainTab('net')">
         <i class="fa-solid fa-network-wired"></i> Network Diagnostics
@@ -96,8 +101,10 @@
 
     <!-- TAB 3: Network Diagnostics -->
     <div id="section-net" style="display: none;">
-      <h2 style="margin-bottom: 1rem;"><i class="fa-solid fa-network-wired"></i> Network Information & Client Helper</h2>
-      <div class="stats-grid" style="margin-top: 1.5rem;">
+      <h2 style="margin-bottom: 1rem;"><i class="fa-solid fa-network-wired"></i> Network Information & Diagnostic Suite</h2>
+      
+      <!-- IP Stats Grid -->
+      <div class="stats-grid" style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
         <div class="stat-card">
           <div class="stat-icon"><i class="fa-solid fa-globe"></i></div>
           <div>
@@ -113,6 +120,53 @@
           </div>
         </div>
       </div>
+
+      <!-- Network Test Suite Controls -->
+      <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem;">
+        <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-bolt"></i> Interactive Network Testing Tools</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+          <!-- Tool 1: Ping Test -->
+          <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem;">
+            <h4 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-satellite-dish" style="color: var(--accent-color);"></i> Ping Host Test</h4>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Check reachability and round-trip latency to any IP or domain.</p>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" id="ping-target" value="8.8.8.8" placeholder="e.g. 8.8.8.8 or google.com" style="flex: 1; padding: 0.5rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); outline: none;">
+              <button class="btn btn-primary btn-sm" onclick="runPingTest()"><i class="fa-solid fa-play"></i> Ping</button>
+            </div>
+          </div>
+
+          <!-- Tool 2: Traceroute -->
+          <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem;">
+            <h4 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-route" style="color: var(--accent-color);"></i> Traceroute (Tracert)</h4>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Trace the hop-by-hop path packets take across the network.</p>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" id="tracert-target" value="1.1.1.1" placeholder="e.g. 1.1.1.1 or cloudflare.com" style="flex: 1; padding: 0.5rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); outline: none;">
+              <button class="btn btn-primary btn-sm" onclick="runTracertTest()"><i class="fa-solid fa-play"></i> Tracert</button>
+            </div>
+          </div>
+
+          <!-- Tool 3: DNS Lookup -->
+          <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem;">
+            <h4 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-magnifying-glass-location" style="color: var(--accent-color);"></i> DNS nslookup</h4>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Resolve domain names into IP addresses and CNAME records.</p>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" id="dns-target" value="google.com" placeholder="e.g. google.com" style="flex: 1; padding: 0.5rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); outline: none;">
+              <button class="btn btn-primary btn-sm" onclick="runDnsLookupTest()"><i class="fa-solid fa-play"></i> Lookup</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Terminal Output Window -->
+      <div style="background-color: #0d1117; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.25rem; font-family: monospace;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid #30363d; padding-bottom: 0.5rem;">
+          <span style="color: #58a6ff; font-weight: 600; font-size: 0.9rem;"><i class="fa-solid fa-terminal"></i> Diagnostic Terminal Output</span>
+          <button class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" onclick="clearTerminalOutput()"><i class="fa-solid fa-eraser"></i> Clear Console</button>
+        </div>
+        <pre id="net-terminal-output" style="color: #c9d1d9; font-size: 0.85rem; line-height: 1.4; margin: 0; min-height: 160px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">Console Ready. Select a test tool above to execute network diagnostics.</pre>
+      </div>
+
     </div>
 
   </div>
@@ -156,6 +210,6 @@
     </div>
   </div>
 
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=1.2"></script>
 </body>
 </html>
