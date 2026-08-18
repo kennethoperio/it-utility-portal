@@ -136,12 +136,10 @@ async function loadAdminCategories() {
     let filterHtml = '<option value="">All Categories & Folders</option>';
 
     categoriesList.forEach(c => {
-      const parentName = c.parent_id ? catMap[c.parent_id] : null;
-      const label = parentName ? `${parentName} └── ${c.name}` : c.name;
-      const prefix = c.parent_id ? '&nbsp;&nbsp;└── ' : '';
+      const prefix = c.parent_id ? '&nbsp;&nbsp;&nbsp;&nbsp;└── ' : '';
 
-      selectHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)} ${parentName ? '('+escapeHtml(parentName)+')' : ''}</option>`;
-      filterHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)} ${parentName ? '('+escapeHtml(parentName)+')' : ''}</option>`;
+      selectHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)}</option>`;
+      filterHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)}</option>`;
       if (!c.parent_id) {
         parentHtml += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
       }
