@@ -105,7 +105,7 @@ def fix_categories_hierarchy():
             printers_id = p_row['id']
 
         # Force Resetters and Drivers to have parent_id = Printers ID
-        cursor.execute("UPDATE categories SET parent_id = ? WHERE name IN ('Resetters', 'Drivers')", (printers_id,))
+        cursor.execute("UPDATE categories SET parent_id = ? WHERE name IN ('Resetters', 'Drivers') AND (parent_id IS NULL OR parent_id = '')", (printers_id,))
         
         # Delete any accidental duplicate orphan categories
         cursor.execute("DELETE FROM categories WHERE name = 'Tools & Installers'")
@@ -114,51 +114,6 @@ def fix_categories_hierarchy():
         conn.close()
     except Exception as e:
         print(f"Error fixing category hierarchy: {e}")
-
-def resync_cloud_files_to_db():
-    """Scans Backblaze/S3 bucket for files and recovers missing file records in SQLite DB."""
-    s3_client = get_s3_client()
-    if not (s3_client and S3_BUCKET):
-        return
-
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        # Get default category ID
-        cursor.execute("SELECT id FROM categories LIMIT 1")
-        cat_row = cursor.fetchone()
-        default_cat_id = cat_row['id'] if cat_row else 1
-
-        # List objects in Backblaze bucket
-        bucket_name = S3_BUCKET.strip()
-        response = s3_client.list_objects_v2(Bucket=bucket_name)
-        objects = response.get('Contents', [])
-
-        for obj in objects:
-            file_key = obj['Key']
-            if file_key in ('it_vault.db', 'test_connection.txt'):
-                continue
-                
-            # Check if file_key is already recorded in files table
-            cursor.execute("SELECT id FROM files WHERE file_key = ?", (file_key,))
-            if not cursor.fetchone():
-                file_size = obj['Size']
-                orig_name = file_key
-                # Clean prefix if uuid format
-                if '_' in file_key:
-                    orig_name = file_key.split('_', 1)[1]
-
-                cursor.execute('''
-                    INSERT INTO files (original_name, file_key, category_id, file_size, sha256_hash, description, version)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (orig_name, file_key, default_cat_id, file_size, 'CLOUD-SYNCED', 'Restored from cloud storage', '1.0'))
-                print(f"Restored cloud file record: {file_key}")
-
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"Error resyncing cloud files: {e}")
 
 def init_db():
     conn = get_db()
@@ -406,17 +361,20 @@ def list_categories():
     categories = [dict(r) for r in rows]
     conn.close()
     
-    # Build hierarchical tree
-    category_map = {c['id']: {**c, 'children': []} for c in categories}
-    tree = []
-    
+    # Build hierarchical tree with integer parent_id comparison
+    category_map = {}
     for c in categories:
-        cid = c['id']
-        pid = c['parent_id']
+        cid = int(c['id'])
+        pid = int(c['parent_id']) if c['parent_id'] is not None and str(c['parent_id']).isdigit() else None
+        category_map[cid] = {**c, 'id': cid, 'parent_id': pid, 'children': []}
+
+    tree = []
+    for cid, cat in category_map.items():
+        pid = cat['parent_id']
         if pid and pid in category_map:
-            category_map[pid]['children'].append(category_map[cid])
+            category_map[pid]['children'].append(cat)
         else:
-            tree.append(category_map[cid])
+            tree.append(cat)
 
     # Build hierarchical ordered flat list (parent followed immediately by its children)
     ordered_flat = []
@@ -435,7 +393,16 @@ def list_categories():
 def create_category():
     data = request.get_json() or {}
     name = (data.get('name') or '').strip()
-    parent_id = data.get('parent_id') or None
+    
+    parent_id = data.get('parent_id')
+    if parent_id == "" or parent_id is None:
+        parent_id = None
+    else:
+        try:
+            parent_id = int(parent_id)
+        except (ValueError, TypeError):
+            parent_id = None
+
     icon = data.get('icon', 'folder')
     description = (data.get('description') or '').strip()
     
@@ -452,7 +419,7 @@ def create_category():
     upload_db_to_s3()
     
     log_audit('CATEGORY_CREATED', f"Created category '{name}' (ID: {cat_id})")
-    return jsonify({'success': True, 'id': cat_id, 'message': f"Category '{name}' created."})
+    return jsonify({'success': True, 'id': cat_id, 'message': f"Category '{name}' created successfully!"})
 
 @app.route('/api/categories/<int:cat_id>', methods=['PUT'])
 @admin_required
@@ -463,7 +430,10 @@ def update_category(cat_id):
     if parent_id == "" or parent_id is None:
         parent_id = None
     else:
-        parent_id = int(parent_id)
+        try:
+            parent_id = int(parent_id)
+        except (ValueError, TypeError):
+            parent_id = None
 
     description = (data.get('description') or '').strip()
     
