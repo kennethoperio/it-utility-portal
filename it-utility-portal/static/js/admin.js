@@ -164,23 +164,22 @@ async function loadAdminCategories() {
     const catMap = {};
     categoriesList.forEach(c => catMap[c.id] = c.name);
 
-    // Populate category select dropdowns
+    // Populate category select dropdowns (supports unlimited nested subfolder parents!)
     const selectEl = document.getElementById('upload-category');
     const parentSelectEl = document.getElementById('cat-parent');
     const filterSelectEl = document.getElementById('admin-file-category-filter');
 
-    let selectHtml = '<option value="">-- Select Category --</option>';
+    let selectHtml = '<option value="">-- Select Target Folder --</option>';
     let parentHtml = '<option value="">-- Main Folder (Top Level) --</option>';
     let filterHtml = '<option value="">All Categories & Folders</option>';
 
     categoriesList.forEach(c => {
-      const prefix = c.parent_id ? '&nbsp;&nbsp;&nbsp;&nbsp;└── ' : '';
+      const depth = c.depth || 0;
+      const prefix = depth > 0 ? '&nbsp;&nbsp;'.repeat(depth) + '└── ' : '';
 
       selectHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)}</option>`;
       filterHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)}</option>`;
-      if (!c.parent_id) {
-        parentHtml += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
-      }
+      parentHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)}</option>`;
     });
 
     if (selectEl) selectEl.innerHTML = selectHtml;
@@ -196,10 +195,13 @@ async function loadAdminCategories() {
     let tableHtml = '';
 
     categoriesList.forEach(c => {
+      const depth = c.depth || 0;
+      const indent = depth > 0 ? '&nbsp;&nbsp;'.repeat(depth) + '└── ' : '';
       const parentName = c.parent_id ? (catMap[c.parent_id] || 'Main') : 'Main Folder';
+
       tableHtml += `
         <tr>
-          <td><strong>${c.parent_id ? '└── ' : ''}${escapeHtml(c.name)}</strong></td>
+          <td><strong>${indent}${escapeHtml(c.name)}</strong></td>
           <td><span class="badge badge-info">${escapeHtml(parentName)}</span></td>
           <td>${escapeHtml(c.description || '-')}</td>
           <td>
@@ -248,12 +250,12 @@ async function handleCreateCategory(e) {
 }
 
 async function editCategory(id, currentName, currentParentId, currentDesc) {
-  const newName = prompt("Edit Category Name:", currentName);
+  const newName = prompt("Edit Category / Folder Name:", currentName);
   if (!newName || !newName.trim()) return;
 
   const parentOptionsStr = categoriesList
-    .filter(c => c.id !== id && !c.parent_id)
-    .map(c => `ID ${c.id}: ${c.name}`)
+    .filter(c => c.id !== id)
+    .map(c => `ID ${c.id}: ${'  '.repeat(c.depth || 0)}${c.name}`)
     .join('\n');
 
   const newParentInput = prompt(
@@ -285,7 +287,7 @@ async function editCategory(id, currentName, currentParentId, currentDesc) {
 }
 
 async function deleteCategory(id, name) {
-  if (!confirm(`Are you sure you want to delete category "${name}"?\nWarning: This will also delete all files assigned to this folder!`)) return;
+  if (!confirm(`Are you sure you want to delete category "${name}"?\nWarning: This will also delete all subfolders and files assigned to this folder!`)) return;
 
   try {
     const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
