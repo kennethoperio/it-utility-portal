@@ -3,10 +3,30 @@
 let currentCategoryId = null;
 let currentSearchQuery = "";
 let allFiles = [];
+let inactivityTimer = null;
+const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
 
 document.addEventListener('DOMContentLoaded', () => {
   checkAuthStatus();
+  setupInactivityAutoLogout();
 });
+
+function setupInactivityAutoLogout() {
+  const resetTimer = () => {
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(async () => {
+      alert('Session unlocked access expired due to 5 minutes of inactivity.');
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.reload();
+    }, INACTIVITY_LIMIT);
+  };
+
+  ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'].forEach(evt => {
+    document.addEventListener(evt, resetTimer, { passive: true });
+  });
+
+  resetTimer();
+}
 
 async function checkAuthStatus() {
   try {
@@ -198,7 +218,7 @@ function renderFiles(files) {
         </div>
 
         <div class="file-actions">
-          <a href="/api/files/download/${f.id}" class="btn btn-primary" style="flex: 1;">
+          <a href="/api/files/download/${f.id}" class="btn btn-primary" style="flex: 1;" onclick="handleDownloadClick(event, ${f.id})">
             <i class="fa-solid fa-download"></i> Download
           </a>
           <button class="btn btn-secondary btn-icon" onclick="copyHash('${f.sha256_hash}')" title="Copy SHA-256 Hash">
@@ -213,6 +233,13 @@ function renderFiles(files) {
   });
 
   gridEl.innerHTML = html;
+}
+
+function handleDownloadClick(e, fileId) {
+  // Allow browser to trigger download link, then check auth status after brief delay to lock UI if limit reached
+  setTimeout(() => {
+    checkAuthStatus();
+  }, 1200);
 }
 
 function copyHash(hash) {
