@@ -3,6 +3,7 @@
 let categoriesList = [];
 let adminFilesList = [];
 let allAuditLogsList = [];
+let adminCmdScriptsList = [];
 let currentLogsPage = 1;
 let logsPerPage = 10;
 
@@ -70,12 +71,13 @@ async function logoutAdmin() {
 function loadAdminDashboardData() {
   loadAdminCategories();
   loadAdminFiles();
+  loadAdminCmdScripts();
   loadAdminSettingsData();
 }
 
 // Tab Switching
 function switchAdminTab(tabName) {
-  const tabs = ['upload', 'files', 'categories', 'passcodes', 'logs', 'settings'];
+  const tabs = ['upload', 'files', 'categories', 'commands', 'passcodes', 'logs', 'settings'];
   tabs.forEach(t => {
     const el = document.getElementById(`admin-sec-${t}`);
     if (el) el.style.display = 'none';
@@ -93,6 +95,7 @@ function switchAdminTab(tabName) {
 
   if (tabName === 'files') loadAdminFiles();
   if (tabName === 'categories') loadAdminCategories();
+  if (tabName === 'commands') loadAdminCmdScripts();
   if (tabName === 'passcodes' || tabName === 'logs' || tabName === 'settings') loadAdminSettingsData();
 }
 
@@ -264,6 +267,117 @@ async function deleteCategory(id, name) {
     }
   } catch (err) {
     alert('Server error deleting category.');
+  }
+}
+
+// Troubleshooting Commands Management
+async function loadAdminCmdScripts() {
+  try {
+    const res = await fetch('/api/tools/cmd-scripts');
+    const data = await res.json();
+    adminCmdScriptsList = data.scripts || [];
+    renderAdminCmdScriptsTable(adminCmdScriptsList);
+  } catch (err) {
+    console.error('Error loading CMD scripts in admin:', err);
+  }
+}
+
+function renderAdminCmdScriptsTable(scripts) {
+  const tableBody = document.getElementById('admin-commands-table-body');
+  if (!tableBody) return;
+
+  let html = '';
+  scripts.forEach(s => {
+    html += `
+      <tr>
+        <td><strong>${escapeHtml(s.title)}</strong></td>
+        <td><span class="badge badge-info">${escapeHtml(s.type)}</span></td>
+        <td><code style="background:#1e293b; padding:0.2rem 0.4rem; border-radius:4px; font-size:0.8rem; font-family:monospace; color:#38bdf8;">${escapeHtml(s.command)}</code></td>
+        <td>
+          <button class="btn btn-secondary btn-sm" onclick="editCmdScript(${s.id}, '${escapeJs(s.title)}', '${escapeJs(s.type)}', '${escapeJs(s.command)}', '${escapeJs(s.description || '')}')">
+            <i class="fa-solid fa-pen"></i> Edit
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCmdScript(${s.id}, '${escapeJs(s.title)}')">
+            <i class="fa-solid fa-trash"></i> Delete
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+
+  tableBody.innerHTML = html || '<tr><td colspan="4" style="text-align:center;">No troubleshooting commands added yet.</td></tr>';
+}
+
+async function handleCreateCmdScript(e) {
+  e.preventDefault();
+  const title = document.getElementById('cmd-title').value.trim();
+  const type = document.getElementById('cmd-type').value;
+  const command = document.getElementById('cmd-command').value.trim();
+  const description = document.getElementById('cmd-description').value.trim();
+
+  try {
+    const res = await fetch('/api/admin/cmd-scripts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, type, command, description })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      alert(data.message);
+      document.getElementById('create-command-form').reset();
+      loadAdminCmdScripts();
+    } else {
+      alert(data.error || 'Failed to add command script.');
+    }
+  } catch (err) {
+    alert('Server error creating command script.');
+  }
+}
+
+async function editCmdScript(id, currentTitle, currentType, currentCmd, currentDesc) {
+  const title = prompt("Edit Command Title:", currentTitle);
+  if (!title || !title.trim()) return;
+
+  const type = prompt("Edit Environment Type (e.g. PowerShell / CMD, PowerShell, CMD):", currentType) || currentType;
+  const command = prompt("Edit Command String:", currentCmd);
+  if (!command || !command.trim()) return;
+
+  const description = prompt("Edit Description:", currentDesc) || "";
+
+  try {
+    const res = await fetch(`/api/admin/cmd-scripts/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title.trim(), type: type.trim(), command: command.trim(), description: description.trim() })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      alert(data.message);
+      loadAdminCmdScripts();
+    } else {
+      alert(data.error || 'Failed to update command script.');
+    }
+  } catch (err) {
+    alert('Server error editing command script.');
+  }
+}
+
+async function deleteCmdScript(id, title) {
+  if (!confirm(`Are you sure you want to delete command "${title}"?`)) return;
+
+  try {
+    const res = await fetch(`/api/admin/cmd-scripts/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message);
+      loadAdminCmdScripts();
+    } else {
+      alert(data.error || 'Failed to delete command.');
+    }
+  } catch (err) {
+    alert('Server error deleting command.');
   }
 }
 
