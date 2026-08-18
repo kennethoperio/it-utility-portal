@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Portal</title>
-  <link rel="stylesheet" href="/css/style.css?v=3.0">
+  <link rel="stylesheet" href="/css/style.css?v=3.5">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -17,6 +17,9 @@
         <span>IT Portal Admin Dashboard</span>
       </div>
       <div class="user-actions">
+        <button class="btn btn-secondary btn-sm" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Light/Dark Theme">
+          <i class="fa-solid fa-moon"></i>
+        </button>
         <button class="btn btn-primary btn-sm" onclick="confirmDownloadAllZip()"><i class="fa-solid fa-file-zipper"></i> Download All Tools (.zip)</button>
         <a href="/" class="btn btn-secondary btn-sm" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> View Public Portal</a>
         <button class="btn btn-danger btn-sm" id="admin-logout-btn" onclick="logoutAdmin()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
@@ -420,6 +423,6 @@
     </div>
   </div>
 
-  <script src="/js/admin.js?v=3.0"></script>
+  <script src="/js/admin.js?v=3.5"></script>
 </body>
 </html>
