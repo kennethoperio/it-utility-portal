@@ -114,74 +114,83 @@ async function submitPasscode(e) {
 }
 
 function getCategoryIconClass(categoryName, iconName) {
-  if (iconName && iconName !== 'folder' && iconName !== 'folder-minus') {
+  if (iconName && iconName !== 'folder' && iconName !== 'folder-minus' && iconName !== 'auto') {
     return iconName.startsWith('fa-') ? iconName : `fa-${iconName}`;
   }
   const name = (categoryName || '').toLowerCase();
-  if (name.includes('print')) return 'fa-print';
   if (name.includes('driver')) return 'fa-microchip';
+  if (name.includes('print')) return 'fa-print';
   if (name.includes('reset')) return 'fa-rotate-left';
-  if (name.includes('recover')) return 'fa-life-ring';
+  if (name.includes('recover') || name.includes('undelete')) return 'fa-life-ring';
   if (name.includes('tool') || name.includes('install')) return 'fa-toolbox';
-  if (name.includes('repair') || name.includes('fix')) return 'fa-screwdriver-wrench';
+  if (name.includes('repair') || name.includes('fix') || name.includes('tweak')) return 'fa-screwdriver-wrench';
   if (name.includes('key') || name.includes('license') || name.includes('activat')) return 'fa-key';
-  if (name.includes('network') || name.includes('wifi')) return 'fa-network-wired';
-  if (name.includes('anti') || name.includes('malware') || name.includes('shield')) return 'fa-shield-virus';
-  if (name.includes('hard') || name.includes('diag')) return 'fa-microchip';
+  if (name.includes('network') || name.includes('wifi') || name.includes('ip')) return 'fa-network-wired';
+  if (name.includes('anti') || name.includes('malware') || name.includes('shield') || name.includes('secur')) return 'fa-shield-virus';
+  if (name.includes('hard') || name.includes('diag') || name.includes('ram') || name.includes('cpu')) return 'fa-microchip';
+  if (name.includes('data') || name.includes('sql') || name.includes('db')) return 'fa-database';
+  if (name.includes('disk') || name.includes('hdd') || name.includes('ssd') || name.includes('storage')) return 'fa-hard-drive';
+  if (name.includes('remote') || name.includes('desk') || name.includes('vnc')) return 'fa-desktop';
+  if (name.includes('mobile') || name.includes('android') || name.includes('phone')) return 'fa-mobile-screen';
   return 'fa-folder-tree';
 }
 
-function getSmartFileIcon(filename, categoryName) {
-  const fn = (filename || '').toLowerCase();
+function getUniformCategoryIcon(categoryName, filename) {
   const cat = (categoryName || '').toLowerCase();
-  const ext = fn.split('.').pop().toLowerCase();
+  const fn = (filename || '').toLowerCase();
 
-  // 1. Printer & Scanner Drivers
-  if (fn.includes('print') || fn.includes('scan') || fn.includes('epson') || fn.includes('hp') || fn.includes('canon') || fn.includes('brother') || cat.includes('printer') || cat.includes('driver')) {
+  // 1. Drivers (Uniform icon for all drivers)
+  if (cat.includes('driver') || cat.includes('epson') || cat.includes('hp') || cat.includes('canon') || cat.includes('brother')) {
+    return { icon: 'fa-microchip', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)' };
+  }
+
+  // 2. Printers / Resetter
+  if (cat.includes('printer') || cat.includes('reset')) {
     return { icon: 'fa-print', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.15)' };
   }
 
-  // 2. Recovery & Undelete Tools
-  if (fn.includes('recuva') || fn.includes('rcsetup') || fn.includes('recover') || fn.includes('partition') || cat.includes('recovery')) {
+  // 3. Recovery Tools
+  if (cat.includes('recover') || cat.includes('undelete')) {
     return { icon: 'fa-life-ring', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' };
   }
 
-  // 3. Remote Desktop Utilities
-  if (fn.includes('anydesk') || fn.includes('teamviewer') || fn.includes('rustdesk') || fn.includes('vnc') || fn.includes('remote')) {
-    return { icon: 'fa-desktop', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.15)' };
+  // 4. Windows Repair
+  if (cat.includes('repair') || cat.includes('fix') || cat.includes('windows')) {
+    return { icon: 'fa-screwdriver-wrench', color: '#6366f1', bg: 'rgba(99, 102, 241, 0.15)' };
   }
 
-  // 4. Activators & License Keys
-  if (fn.includes('key') || fn.includes('license') || fn.includes('activat') || fn.includes('kms') || cat.includes('activat') || cat.includes('license')) {
+  // 5. Activators & License Tools
+  if (cat.includes('key') || cat.includes('license') || cat.includes('activat')) {
     return { icon: 'fa-key', color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)' };
   }
 
-  // 5. Antivirus & Security
-  if (fn.includes('malware') || fn.includes('antivirus') || fn.includes('cleaner') || fn.includes('defender') || cat.includes('antivirus') || cat.includes('security')) {
-    return { icon: 'fa-shield-virus', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' };
-  }
-
-  // 6. Network & Connectivity Tools
-  if (fn.includes('wifi') || fn.includes('ping') || fn.includes('nmap') || fn.includes('putty') || cat.includes('network')) {
+  // 6. Network & Connectivity
+  if (cat.includes('network') || cat.includes('wifi') || cat.includes('ip')) {
     return { icon: 'fa-network-wired', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)' };
   }
 
-  // 7. System & Windows Repair Scripts
-  if (fn.includes('sfc') || fn.includes('dism') || fn.includes('repair') || fn.includes('fix') || cat.includes('repair')) {
-    return { icon: 'fa-screwdriver-wrench', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)' };
+  // 7. Antivirus & Security
+  if (cat.includes('anti') || cat.includes('malware') || cat.includes('shield') || cat.includes('secur')) {
+    return { icon: 'fa-shield-virus', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' };
   }
 
-  // 8. Archives & Compressed Installers
-  if (['zip', 'rar', '7z', 'tar', 'gz', 'iso'].includes(ext) || fn.includes('winrar') || fn.includes('7zip')) {
+  // 8. Hardware Diagnostics
+  if (cat.includes('hard') || cat.includes('diag') || cat.includes('cpu') || cat.includes('ram')) {
+    return { icon: 'fa-microchip', color: '#14b8a6', bg: 'rgba(20, 184, 166, 0.15)' };
+  }
+
+  // 9. Tools & Installers (General)
+  if (cat.includes('tool') || cat.includes('install')) {
+    return { icon: 'fa-toolbox', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.15)' };
+  }
+
+  // Fallback by File Extension / Type
+  const ext = fn.split('.').pop().toLowerCase();
+  if (['zip', 'rar', '7z', 'tar', 'iso'].includes(ext)) {
     return { icon: 'fa-file-zipper', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.15)' };
   }
 
-  // Default Executable / Installer Icon
-  if (['exe', 'msi', 'bat', 'cmd', 'ps1', 'vbs'].includes(ext)) {
-    return { icon: 'fa-toolbox', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)' };
-  }
-
-  return { icon: 'fa-file-lines', color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.15)' };
+  return { icon: 'fa-folder-tree', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)' };
 }
 
 async function loadCategories() {
@@ -297,7 +306,6 @@ function renderFiles(files) {
   const gridEl = document.getElementById('files-grid');
   let html = '';
 
-  // Check if current category has subfolders to display as interactive subfolder cards
   const activeNode = findCategoryNode(categoriesTreeData, currentCategoryId);
   const hasSubfolders = activeNode && activeNode.children && activeNode.children.length > 0;
 
@@ -363,7 +371,7 @@ function renderFiles(files) {
   }
 
   filtered.forEach(f => {
-    const iconStyle = getSmartFileIcon(f.original_name, f.category_name);
+    const iconStyle = getUniformCategoryIcon(f.category_name, f.original_name);
     const sizeMB = (f.file_size / (1024 * 1024)).toFixed(2);
 
     html += `
