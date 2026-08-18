@@ -6,11 +6,32 @@ let allAuditLogsList = [];
 let adminCmdScriptsList = [];
 let currentLogsPage = 1;
 let logsPerPage = 10;
+let autoRefreshTimer = null;
+let inactivityTimer = null;
+const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
 
 document.addEventListener('DOMContentLoaded', () => {
   checkAdminAuth();
   setupDragAndDrop();
+  setupInactivityAutoLogout();
 });
+
+function setupInactivityAutoLogout() {
+  const resetTimer = () => {
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(async () => {
+      alert('Admin session expired due to 5 minutes of inactivity.');
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.reload();
+    }, INACTIVITY_LIMIT);
+  };
+
+  ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'].forEach(evt => {
+    document.addEventListener(evt, resetTimer, { passive: true });
+  });
+
+  resetTimer();
+}
 
 async function checkAdminAuth() {
   try {
@@ -22,10 +43,21 @@ async function checkAdminAuth() {
       document.getElementById('admin-main-content').style.display = 'block';
       document.getElementById('admin-logout-btn').style.display = 'inline-flex';
       loadAdminDashboardData();
+      
+      // Auto-refresh guest passcodes & stats every 3 seconds live
+      if (!autoRefreshTimer) {
+        autoRefreshTimer = setInterval(() => {
+          loadAdminSettingsData(true);
+        }, 3000);
+      }
     } else {
       document.getElementById('admin-login-modal').classList.add('active');
       document.getElementById('admin-main-content').style.display = 'none';
       document.getElementById('admin-logout-btn').style.display = 'none';
+      if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+      }
     }
   } catch (err) {
     console.error('Error checking admin auth:', err);
@@ -570,7 +602,7 @@ async function deleteFile(id, name) {
 }
 
 // Settings, Guest Passcodes & Audit Logs Pagination
-async function loadAdminSettingsData() {
+async function loadAdminSettingsData(isSilent = false) {
   try {
     const res = await fetch('/api/admin/settings');
     const data = await res.json();
@@ -582,22 +614,28 @@ async function loadAdminSettingsData() {
       document.getElementById('stat-downloads').innerText = data.stats.total_downloads || 0;
     }
 
-    // Settings fields
-    document.getElementById('set-site-title').value = data.site_title || '';
-    document.getElementById('set-announcement').value = data.announcement || '';
-    document.getElementById('set-primary-passcode').value = data.access_passcode || '';
+    if (!isSilent) {
+      // Settings fields (only update if not background silent refresh)
+      document.getElementById('set-site-title').value = data.site_title || '';
+      document.getElementById('set-announcement').value = data.announcement || '';
+      document.getElementById('set-primary-passcode').value = data.access_passcode || '';
+    }
 
     // Guest passcodes table
     const passTable = document.getElementById('guest-passcodes-table-body');
     let passHtml = '';
     (data.guest_passcodes || []).forEach(g => {
+      const isLimitReached = g.max_uses > 0 && g.current_uses >= g.max_uses;
       const usesStr = g.max_uses > 0 ? `${g.current_uses} / ${g.max_uses}` : `${g.current_uses} (Unlimited)`;
       const expires = g.expires_at ? g.expires_at.split(' ')[0] : 'Never';
+      const badgeClass = isLimitReached ? 'badge-danger' : 'badge-info';
+      const badgeStyle = isLimitReached ? 'background: rgba(239, 68, 68, 0.15); color: #ef4444;' : '';
+
       passHtml += `
         <tr>
           <td><strong style="color: var(--accent-color);">${escapeHtml(g.passcode)}</strong></td>
           <td>${escapeHtml(g.label)}</td>
-          <td>${usesStr}</td>
+          <td><span class="badge ${badgeClass}" style="${badgeStyle}">${usesStr}</span></td>
           <td>${expires}</td>
           <td><button class="btn btn-danger btn-sm" onclick="deleteGuestPasscode(${g.id})"><i class="fa-solid fa-trash"></i></button></td>
         </tr>
@@ -610,7 +648,7 @@ async function loadAdminSettingsData() {
     renderAuditLogsTable();
 
   } catch (err) {
-    console.error('Error loading admin settings:', err);
+    if (!isSilent) console.error('Error loading admin settings:', err);
   }
 }
 
