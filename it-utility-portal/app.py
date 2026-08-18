@@ -6,6 +6,7 @@ import uuid
 import json
 import io
 import socket
+import zipfile
 from datetime import datetime, timedelta
 from functools import wraps
 
@@ -26,6 +27,26 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Cloudflare R2 / S3 Storage Credentials from Environment
+S3_ENDPOINT = os.environ.get('S3_ENDPOINT')
+S3_ACCESS_KEY = os.environ.get('S3_ACCESS_KEY')
+S3_SECRET_KEY = os.environ.get('S3_SECRET_KEY')
+S3_BUCKET = os.environ.get('S3_BUCKET')
+
+def get_s3_client():
+    if S3_ENDPOINT and S3_ACCESS_KEY and S3_SECRET_KEY:
+        try:
+            import boto3
+            return boto3.client(
+                's3',
+                endpoint_url=S3_ENDPOINT,
+                aws_access_key_id=S3_ACCESS_KEY,
+                aws_secret_access_key=S3_SECRET_KEY
+            )
+        except Exception as e:
+            print(f"S3 client error: {e}")
+    return None
 
 # --- Database Initialization ---
 def get_db():
@@ -363,7 +384,6 @@ def list_files():
     conditions = []
     
     if cat_id:
-        # Include subcategories files as well
         sub_cats = conn.execute('SELECT id FROM categories WHERE parent_id = ?', (cat_id,)).fetchall()
         cat_ids = [int(cat_id)] + [r['id'] for r in sub_cats]
         placeholders = ','.join(['?'] * len(cat_ids))
@@ -408,10 +428,19 @@ def upload_file():
     unique_key = f"{uuid.uuid4().hex}{ext}"
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
 
-    # Save file to disk
+    # Save file locally
     file.save(filepath)
     file_size = os.path.getsize(filepath)
     sha256_hash = compute_sha256(filepath)
+
+    # If Cloudflare R2 / S3 is configured, upload to cloud bucket
+    s3_client = get_s3_client()
+    if s3_client and S3_BUCKET:
+        try:
+            s3_client.upload_file(filepath, S3_BUCKET, unique_key)
+            print(f"Uploaded {unique_key} to Cloudflare R2 / S3 bucket {S3_BUCKET}")
+        except Exception as e:
+            print(f"Error uploading to S3/R2: {e}")
 
     conn = get_db()
     cursor = conn.cursor()
@@ -445,7 +474,17 @@ def download_file(file_id):
         conn.close()
         return jsonify({'error': 'Requested file does not exist.'}), 404
 
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], file_record['file_key'])
+    unique_key = file_record['file_key']
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
+
+    # Check Cloudflare R2 / S3 first if local file missing
+    s3_client = get_s3_client()
+    if not os.path.exists(filepath) and s3_client and S3_BUCKET:
+        try:
+            s3_client.download_file(S3_BUCKET, unique_key, filepath)
+        except Exception as e:
+            print(f"Error downloading from S3/R2: {e}")
+
     if not os.path.exists(filepath):
         conn.close()
         return jsonify({'error': 'Physical file missing from server storage.'}), 404
@@ -463,6 +502,61 @@ def download_file(file_id):
         download_name=file_record['original_name']
     )
 
+@app.route('/api/admin/download-all-zip', methods=['GET'])
+@admin_required
+def download_all_zip():
+    conn = get_db()
+    files = conn.execute('''
+        SELECT f.*, c.name as category_name, c.parent_id 
+        FROM files f 
+        JOIN categories c ON f.category_id = c.id
+    ''').fetchall()
+    
+    if not files:
+        conn.close()
+        return jsonify({'error': 'No files uploaded to download.'}), 404
+        
+    categories = {c['id']: dict(c) for c in conn.execute('SELECT * FROM categories').fetchall()}
+    conn.close()
+
+    memory_file = io.BytesIO()
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for f in files:
+            file_key = f['file_key']
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], file_key)
+            
+            # Fetch from S3/R2 if missing locally
+            s3_client = get_s3_client()
+            if not os.path.exists(filepath) and s3_client and S3_BUCKET:
+                try:
+                    s3_client.download_file(S3_BUCKET, file_key, filepath)
+                except Exception as e:
+                    print(f"S3 download error for zip: {e}")
+
+            if os.path.exists(filepath):
+                # Build category path hierarchy (e.g. Printers/Resetters/file.exe)
+                cat_id = f['category_id']
+                path_parts = []
+                curr = categories.get(cat_id)
+                while curr:
+                    path_parts.insert(0, curr['name'])
+                    curr = categories.get(curr['parent_id']) if curr.get('parent_id') else None
+                
+                folder_path = "/".join(path_parts) if path_parts else "General"
+                zip_path = f"{folder_path}/{f['original_name']}"
+                zf.write(filepath, arcname=zip_path)
+
+    memory_file.seek(0)
+    filename = f"IT_Utility_Vault_All_Tools_{datetime.now().strftime('%Y%m%d')}.zip"
+    
+    log_audit('DOWNLOAD_ALL_ZIP', 'Admin downloaded full tool vault ZIP archive')
+    return send_file(
+        memory_file,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=filename
+    )
+
 @app.route('/api/files/<int:file_id>', methods=['DELETE'])
 @admin_required
 def delete_file(file_id):
@@ -473,12 +567,21 @@ def delete_file(file_id):
         conn.close()
         return jsonify({'error': 'File not found.'}), 404
 
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], file_record['file_key'])
+    unique_key = file_record['file_key']
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
+    
     if os.path.exists(filepath):
         try:
             os.remove(filepath)
         except Exception as e:
-            print(f"Error removing file from disk: {e}")
+            print(f"Error removing local file: {e}")
+
+    s3_client = get_s3_client()
+    if s3_client and S3_BUCKET:
+        try:
+            s3_client.delete_object(Bucket=S3_BUCKET, Key=unique_key)
+        except Exception as e:
+            print(f"Error deleting from S3/R2: {e}")
 
     conn.execute('DELETE FROM files WHERE id = ?', (file_id,))
     conn.commit()
