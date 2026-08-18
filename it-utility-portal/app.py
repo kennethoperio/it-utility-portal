@@ -498,6 +498,45 @@ def delete_category(cat_id):
     log_audit('CATEGORY_DELETED', f"Deleted category '{cat['name']}' (ID: {cat_id})")
     return jsonify({'success': True, 'message': f"Category '{cat['name']}' deleted."})
 
+# --- Backblaze B2 Diagnostic Test Endpoint ---
+@app.route('/api/admin/test-s3', methods=['GET'])
+@admin_required
+def test_s3_connection():
+    s3_client = get_s3_client()
+    if not s3_client:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to initialize boto3 S3 client. Check S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY.',
+            'config': {
+                'S3_ENDPOINT': S3_ENDPOINT,
+                'S3_ACCESS_KEY': S3_ACCESS_KEY[:6] + '***' if S3_ACCESS_KEY else None,
+                'S3_BUCKET': S3_BUCKET
+            }
+        }), 500
+
+    try:
+        bucket = (S3_BUCKET or '').strip()
+        # Test listing objects in Backblaze bucket
+        res = s3_client.list_objects_v2(Bucket=bucket)
+        objs = [o['Key'] for o in res.get('Contents', [])]
+        
+        # Test uploading a small diagnostic test file
+        test_key = "test_connection.txt"
+        s3_client.put_object(Bucket=bucket, Key=test_key, Body=b"Backblaze B2 Connection Test Success!")
+        
+        return jsonify({
+            'success': True,
+            'message': f"Successfully connected to Backblaze B2 bucket '{bucket}'!",
+            'bucket_objects_count': len(objs),
+            'bucket_files': objs[:10]
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': f"Error connecting to Backblaze B2: {str(e)}"
+        }), 500
+
 # --- File Management & Download API ---
 @app.route('/api/files', methods=['GET'])
 @passcode_required
@@ -574,8 +613,7 @@ def upload_file():
             print(f"SUCCESS: Uploaded {unique_key} to Backblaze B2 bucket '{bucket_name}'")
         except Exception as e:
             print(f"ERROR uploading to Backblaze B2: {e}")
-    else:
-        print(f"WARNING: S3_CLIENT or S3_BUCKET missing. S3_ENDPOINT={S3_ENDPOINT}, S3_BUCKET={S3_BUCKET}")
+            log_audit('S3_UPLOAD_ERROR', f"Failed uploading {original_filename} to B2: {str(e)}")
 
     conn = get_db()
     cursor = conn.cursor()
