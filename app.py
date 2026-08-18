@@ -348,10 +348,10 @@ def logout():
 def list_categories():
     conn = get_db()
     rows = conn.execute('SELECT * FROM categories ORDER BY display_order ASC, name ASC').fetchall()
-    
     categories = [dict(r) for r in rows]
+    conn.close()
     
-    # Build tree
+    # Build hierarchical tree
     category_map = {c['id']: {**c, 'children': []} for c in categories}
     tree = []
     
@@ -362,9 +362,18 @@ def list_categories():
             category_map[pid]['children'].append(category_map[cid])
         else:
             tree.append(category_map[cid])
-            
-    conn.close()
-    return jsonify({'categories': tree, 'flat_list': categories})
+
+    # Build hierarchical ordered flat list (parent followed immediately by its children)
+    ordered_flat = []
+    def traverse(cat_node):
+        ordered_flat.append(cat_node)
+        for child in cat_node.get('children', []):
+            traverse(child)
+
+    for root_node in tree:
+        traverse(root_node)
+
+    return jsonify({'categories': tree, 'flat_list': ordered_flat})
 
 @app.route('/api/categories', methods=['POST'])
 @admin_required
