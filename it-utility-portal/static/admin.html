@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Portal</title>
-  <link rel="stylesheet" href="/css/style.css?v=1.2">
+  <link rel="stylesheet" href="/css/style.css?v=2.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -271,7 +271,7 @@
             </div>
             <div class="form-group">
               <label for="passcode-max-uses">Max Allowed Downloads (0 = Unlimited)</label>
-              <input type="number" id="passcode-max-uses" value="5" min="0">
+              <input type="number" id="passcode-max-uses" value="1" min="0">
             </div>
             <div class="form-group">
               <label for="passcode-valid-days">Valid Duration (Days)</label>
@@ -282,7 +282,14 @@
         </div>
 
         <div>
-          <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-list"></i> Active Guest Passcodes</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <h3 style="margin: 0;"><i class="fa-solid fa-list"></i> Active Guest Passcodes</h3>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <span style="font-size: 0.78rem; color: var(--accent-color);"><i class="fa-solid fa-pulse fa-circle-dot"></i> Live Auto-Sync 3s</span>
+              <button class="btn btn-secondary btn-sm" onclick="loadAdminSettingsData()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+            </div>
+          </div>
+
           <div class="table-responsive">
             <table>
               <thead>
@@ -413,6 +420,6 @@
     </div>
   </div>
 
-  <script src="/js/admin.js?v=1.2"></script>
+  <script src="/js/admin.js?v=2.0"></script>
 </body>
 </html>
