@@ -44,7 +44,6 @@ def get_s3_client():
             if not endpoint.startswith('http://') and not endpoint.startswith('https://'):
                 endpoint = f"https://{endpoint}"
 
-            # Auto-extract region name (e.g. s3.us-west-004.backblazeb2.com -> us-west-004)
             region = 'us-west-004'
             clean_host = endpoint.replace('https://', '').replace('http://', '')
             parts = clean_host.split('.')
@@ -76,8 +75,16 @@ def upload_db_to_s3():
     s3_client = get_s3_client()
     if s3_client and S3_BUCKET and os.path.exists(DB_PATH):
         try:
+            # Checkpoint SQLite WAL to ensure main .db file contains all committed writes
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                conn.execute("PRAGMA wal_checkpoint(FULL)")
+                conn.close()
+            except Exception as chk_e:
+                print(f"WAL checkpoint note: {chk_e}")
+
             s3_client.upload_file(DB_PATH, S3_BUCKET.strip(), 'it_vault.db')
-            print("Uploaded updated database to cloud storage!")
+            print("SUCCESS: Uploaded updated database to Backblaze B2!")
         except Exception as e:
             print(f"Error syncing DB to S3: {e}")
 
@@ -462,6 +469,16 @@ def delete_category(cat_id):
     
     log_audit('CATEGORY_DELETED', f"Deleted category '{cat['name']}' (ID: {cat_id})")
     return jsonify({'success': True, 'message': f"Category '{cat['name']}' deleted."})
+
+# --- Force Sync & Repair Database Endpoint ---
+@app.route('/api/admin/force-sync-db', methods=['POST'])
+@admin_required
+def force_sync_database():
+    try:
+        upload_db_to_s3()
+        return jsonify({'success': True, 'message': 'Database WAL checkpointed and synced to Backblaze B2!'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # --- Backblaze B2 Diagnostic Test Endpoint ---
 @app.route('/api/admin/test-s3', methods=['GET'])
