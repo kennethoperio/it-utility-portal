@@ -69,17 +69,85 @@ def upload_db_to_s3():
 # Download latest DB on server boot before initializing sqlite
 download_db_from_s3()
 
-# --- Database Initialization ---
+# --- Database Initialization & Maintenance ---
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
+def fix_categories_hierarchy():
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Ensure Printers category exists
+        cursor.execute("SELECT id FROM categories WHERE name = 'Printers'")
+        p_row = cursor.fetchone()
+        if not p_row:
+            cursor.execute("INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES ('Printers', NULL, 'printer', 'Printer drivers and resetters', 2)")
+            printers_id = cursor.lastrowid
+        else:
+            printers_id = p_row['id']
+
+        # Force Resetters and Drivers to have parent_id = Printers ID
+        cursor.execute("UPDATE categories SET parent_id = ? WHERE name IN ('Resetters', 'Drivers')", (printers_id,))
+        
+        # Delete any accidental duplicate orphan categories
+        cursor.execute("DELETE FROM categories WHERE name = 'Tools & Installers'")
+        
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error fixing category hierarchy: {e}")
+
+def resync_cloud_files_to_db():
+    """Scans Backblaze/S3 bucket for files and recovers missing file records in SQLite DB."""
+    s3_client = get_s3_client()
+    if not (s3_client and S3_BUCKET):
+        return
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Get default category ID
+        cursor.execute("SELECT id FROM categories LIMIT 1")
+        cat_row = cursor.fetchone()
+        default_cat_id = cat_row['id'] if cat_row else 1
+
+        # List objects in Backblaze bucket
+        response = s3_client.list_objects_v2(Bucket=S3_BUCKET)
+        objects = response.get('Contents', [])
+
+        for obj in objects:
+            file_key = obj['Key']
+            if file_key == 'it_vault.db':
+                continue
+                
+            # Check if file_key is already recorded in files table
+            cursor.execute("SELECT id FROM files WHERE file_key = ?", (file_key,))
+            if not cursor.fetchone():
+                file_size = obj['Size']
+                orig_name = file_key
+                # If key has uuid prefix, clean it for display
+                if '_' in file_key:
+                    orig_name = file_key.split('_', 1)[1]
+
+                cursor.execute('''
+                    INSERT INTO files (original_name, file_key, category_id, file_size, sha256_hash, description, version)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (orig_name, file_key, default_cat_id, file_size, 'CLOUD-SYNCED', 'Restored from cloud storage', '1.0'))
+                print(f"Restored cloud file record: {file_key}")
+
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error resyncing cloud files: {e}")
+
 def init_db():
     conn = get_db()
     cursor = conn.cursor()
     
-    # Users table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -89,7 +157,6 @@ def init_db():
         )
     ''')
     
-    # Settings table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
@@ -97,7 +164,6 @@ def init_db():
         )
     ''')
     
-    # Guest passcodes
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS guest_passcodes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -110,7 +176,6 @@ def init_db():
         )
     ''')
     
-    # Categories table (supports parent_id for nesting)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS categories (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -123,7 +188,6 @@ def init_db():
         )
     ''')
     
-    # Files table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS files (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -140,7 +204,6 @@ def init_db():
         )
     ''')
     
-    # Audit Logs
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS audit_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -151,7 +214,6 @@ def init_db():
         )
     ''')
     
-    # Seed default settings if empty
     cursor.execute('SELECT value FROM settings WHERE key = ?', ('access_passcode',))
     if not cursor.fetchone():
         cursor.execute('INSERT INTO settings (key, value) VALUES (?, ?)', ('access_passcode', 'tech2026'))
@@ -159,13 +221,11 @@ def init_db():
         cursor.execute('INSERT INTO settings (key, value) VALUES (?, ?)', ('announcement', 'Authorized IT Technicians Portal - Fast 1-Click Utility Downloads'))
         cursor.execute('INSERT INTO settings (key, value) VALUES (?, ?)', ('theme', 'dark'))
 
-    # Seed default admin if empty
     cursor.execute('SELECT id FROM users WHERE username = ?', ('admin',))
     if not cursor.fetchone():
         default_hash = generate_password_hash('admin123')
         cursor.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', ('admin', default_hash))
 
-    # Seed default categories if empty
     cursor.execute('SELECT COUNT(*) as count FROM categories')
     if cursor.fetchone()['count'] == 0:
         categories_data = [
@@ -180,32 +240,11 @@ def init_db():
             cursor.execute('INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES (?, ?, ?, ?, ?)',
                            (name, pid, icon, desc, order))
 
-    # Explicitly enforce parent_id for Resetters & Drivers under Printers
-    cursor.execute("SELECT id FROM categories WHERE name = 'Printers'")
-    printers_row = cursor.fetchone()
-    if printers_row:
-        p_id = printers_row['id']
-        
-        # Ensure Resetters exists under Printers
-        cursor.execute("SELECT id FROM categories WHERE name = 'Resetters'")
-        res_row = cursor.fetchone()
-        if res_row:
-            cursor.execute("UPDATE categories SET parent_id = ? WHERE id = ?", (p_id, res_row['id']))
-        else:
-            cursor.execute('INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES (?, ?, ?, ?, ?)',
-                           ('Resetters', p_id, 'refresh-cw', 'Printer waste ink resetters & EEPROM clearers', 1))
-
-        # Ensure Drivers exists under Printers
-        cursor.execute("SELECT id FROM categories WHERE name = 'Drivers'")
-        drv_row = cursor.fetchone()
-        if drv_row:
-            cursor.execute("UPDATE categories SET parent_id = ? WHERE id = ?", (p_id, drv_row['id']))
-        else:
-            cursor.execute('INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES (?, ?, ?, ?, ?)',
-                           ('Drivers', p_id, 'file-text', 'Universal and specific printer drivers & setup packs', 2))
-
     conn.commit()
     conn.close()
+
+    fix_categories_hierarchy()
+    resync_cloud_files_to_db()
 
 init_db()
 
@@ -346,6 +385,7 @@ def logout():
 @app.route('/api/categories', methods=['GET'])
 @passcode_required
 def list_categories():
+    fix_categories_hierarchy()
     conn = get_db()
     rows = conn.execute('SELECT * FROM categories ORDER BY display_order ASC, name ASC').fetchall()
     categories = [dict(r) for r in rows]
@@ -446,6 +486,7 @@ def delete_category(cat_id):
 @app.route('/api/files', methods=['GET'])
 @passcode_required
 def list_files():
+    resync_cloud_files_to_db()
     cat_id = request.args.get('category_id')
     search = request.args.get('search', '').strip()
     
@@ -500,7 +541,7 @@ def upload_file():
 
     original_filename = secure_filename(file.filename) or file.filename
     ext = os.path.splitext(original_filename)[1]
-    unique_key = f"{uuid.uuid4().hex}{ext}"
+    unique_key = f"{uuid.uuid4().hex}_{original_filename}"
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
 
     # Save file locally
@@ -508,14 +549,14 @@ def upload_file():
     file_size = os.path.getsize(filepath)
     sha256_hash = compute_sha256(filepath)
 
-    # If Cloudflare R2 / S3 is configured, upload to cloud bucket
+    # If Cloudflare R2 / S3 / Backblaze is configured, upload to cloud bucket
     s3_client = get_s3_client()
     if s3_client and S3_BUCKET:
         try:
             s3_client.upload_file(filepath, S3_BUCKET, unique_key)
-            print(f"Uploaded {unique_key} to Cloudflare R2 / S3 bucket {S3_BUCKET}")
+            print(f"Uploaded {unique_key} to Cloudflare R2 / S3 / Backblaze bucket {S3_BUCKET}")
         except Exception as e:
-            print(f"Error uploading to S3/R2: {e}")
+            print(f"Error uploading to S3/R2/B2: {e}")
 
     conn = get_db()
     cursor = conn.cursor()
@@ -553,13 +594,13 @@ def download_file(file_id):
     unique_key = file_record['file_key']
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
 
-    # Check Cloudflare R2 / S3 first if local file missing
+    # Check Cloudflare R2 / S3 / Backblaze first if local file missing
     s3_client = get_s3_client()
     if not os.path.exists(filepath) and s3_client and S3_BUCKET:
         try:
             s3_client.download_file(S3_BUCKET, unique_key, filepath)
         except Exception as e:
-            print(f"Error downloading from S3/R2: {e}")
+            print(f"Error downloading from S3/R2/B2: {e}")
 
     if not os.path.exists(filepath):
         conn.close()
@@ -602,7 +643,7 @@ def download_all_zip():
             file_key = f['file_key']
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], file_key)
             
-            # Fetch from S3/R2 if missing locally
+            # Fetch from S3/R2/B2 if missing locally
             s3_client = get_s3_client()
             if not os.path.exists(filepath) and s3_client and S3_BUCKET:
                 try:
@@ -611,7 +652,6 @@ def download_all_zip():
                     print(f"S3 download error for zip: {e}")
 
             if os.path.exists(filepath):
-                # Build category path hierarchy (e.g. Printers/Resetters/file.exe)
                 cat_id = f['category_id']
                 path_parts = []
                 curr = categories.get(cat_id)
@@ -658,7 +698,7 @@ def delete_file(file_id):
         try:
             s3_client.delete_object(Bucket=S3_BUCKET, Key=unique_key)
         except Exception as e:
-            print(f"Error deleting from S3/R2: {e}")
+            print(f"Error deleting from S3/R2/B2: {e}")
 
     conn.execute('DELETE FROM files WHERE id = ?', (file_id,))
     conn.commit()
