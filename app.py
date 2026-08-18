@@ -137,7 +137,7 @@ def resync_cloud_files_to_db():
 
         for obj in objects:
             file_key = obj['Key']
-            if file_key == 'it_vault.db':
+            if file_key in ('it_vault.db', 'test_connection.txt'):
                 continue
                 
             # Check if file_key is already recorded in files table
@@ -519,10 +519,6 @@ def test_s3_connection():
         # Test listing objects in Backblaze bucket
         res = s3_client.list_objects_v2(Bucket=bucket)
         objs = [o['Key'] for o in res.get('Contents', [])]
-        
-        # Test uploading a small diagnostic test file
-        test_key = "test_connection.txt"
-        s3_client.put_object(Bucket=bucket, Key=test_key, Body=b"Backblaze B2 Connection Test Success!")
         
         return jsonify({
             'success': True,
