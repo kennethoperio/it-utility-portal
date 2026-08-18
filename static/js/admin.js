@@ -11,10 +11,32 @@ let inactivityTimer = null;
 const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
 
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   checkAdminAuth();
   setupDragAndDrop();
   setupInactivityAutoLogout();
 });
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('portal_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeIcon(savedTheme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const newTheme = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('portal_theme', newTheme);
+  updateThemeIcon(newTheme);
+}
+
+function updateThemeIcon(theme) {
+  const icon = document.querySelector('#theme-toggle-btn i');
+  if (icon) {
+    icon.className = theme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  }
+}
 
 function setupInactivityAutoLogout() {
   const resetTimer = () => {
