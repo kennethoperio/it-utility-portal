@@ -741,6 +741,23 @@ async function loadAdminSettingsData(isSilent = false) {
   }
 }
 
+async function migrateFilesToGDrive() {
+  if (!confirm('Are you sure you want to copy all existing tools (172 MB) from Backblaze B2 into your 5 TB Google Drive folder?')) return;
+
+  try {
+    const res = await fetch('/api/admin/migrate-to-gdrive', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message);
+      loadAdminDashboardData();
+    } else {
+      alert(data.error || 'Migration failed.');
+    }
+  } catch (err) {
+    alert('Server error executing migration.');
+  }
+}
+
 // Audit Logs Pagination & Actions
 function changeLogsPerPage(val) {
   logsPerPage = parseInt(val) || 10;
