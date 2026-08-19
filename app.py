@@ -83,18 +83,66 @@ def get_gdrive_service():
         print(f"Google Drive Service Init Error: {e}")
         return None
 
-def upload_file_to_gdrive(filepath, filename, mime_type='application/octet-stream'):
+def get_or_create_gdrive_folder(service, folder_name, parent_id):
+    if not service or not folder_name or not parent_id:
+        return parent_id
+    try:
+        q = f"name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false and '{parent_id}' in parents"
+        res = service.files().list(q=q, supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name)').execute()
+        files = res.get('files', [])
+        if files:
+            return files[0]['id']
+        
+        folder_metadata = {
+            'name': folder_name,
+            'mimeType': 'application/vnd.google-apps.folder',
+            'parents': [parent_id]
+        }
+        folder = service.files().create(body=folder_metadata, supportsAllDrives=True, fields='id').execute()
+        return folder.get('id')
+    except Exception as e:
+        print(f"Error getting/creating GDrive subfolder '{folder_name}': {e}")
+        return parent_id
+
+def get_gdrive_folder_id_for_category(service, category_id):
+    root_folder_id = (os.environ.get('GDRIVE_FOLDER_ID') or '').strip()
+    if not root_folder_id or not category_id:
+        return root_folder_id
+
+    try:
+        conn = get_db()
+        categories = {c['id']: dict(c) for c in conn.execute('SELECT * FROM categories').fetchall()}
+        conn.close()
+
+        path_names = []
+        curr = categories.get(int(category_id))
+        while curr:
+            path_names.insert(0, curr['name'])
+            curr = categories.get(curr['parent_id']) if curr.get('parent_id') else None
+
+        current_parent_id = root_folder_id
+        for name in path_names:
+            current_parent_id = get_or_create_gdrive_folder(service, name, current_parent_id)
+
+        return current_parent_id
+    except Exception as e:
+        print(f"Error resolving GDrive path for category {category_id}: {e}")
+        return root_folder_id
+
+def upload_file_to_gdrive(filepath, filename, category_id=None, mime_type='application/octet-stream'):
     service = get_gdrive_service()
     if not service:
         print("Google Drive service unavailable for upload.")
         return None, "Google Drive service unavailable."
     try:
         from googleapiclient.http import MediaFileUpload
-        folder_id = (os.environ.get('GDRIVE_FOLDER_ID') or '').strip()
-        
+        target_folder_id = (os.environ.get('GDRIVE_FOLDER_ID') or '').strip()
+        if category_id:
+            target_folder_id = get_gdrive_folder_id_for_category(service, category_id)
+
         file_metadata = {'name': filename}
-        if folder_id:
-            file_metadata['parents'] = [folder_id]
+        if target_folder_id:
+            file_metadata['parents'] = [target_folder_id]
 
         media = MediaFileUpload(filepath, mimetype=mime_type, resumable=True)
         gfile = service.files().create(
@@ -466,7 +514,51 @@ def index_page():
 def admin_page():
     return app.send_static_file('admin.html')
 
-# --- Migration Endpoint: Copy files from Backblaze B2 into 5 TB Google Drive ---
+# --- Migration & Organization Endpoints ---
+@app.route('/api/admin/organize-gdrive-folders', methods=['POST'])
+@admin_required
+def organize_gdrive_folders():
+    service = get_gdrive_service()
+    if not service:
+        return jsonify({'error': 'Google Drive service unavailable.'}), 400
+
+    conn = get_db()
+    files = conn.execute("SELECT * FROM files WHERE file_key LIKE 'gdrive:%'").fetchall()
+    
+    moved_count = 0
+    errors = []
+
+    for f in files:
+        g_id = f['file_key'].replace('gdrive:', '')
+        cat_id = f['category_id']
+        
+        try:
+            target_folder_id = get_gdrive_folder_id_for_category(service, cat_id)
+            if target_folder_id:
+                file_info = service.files().get(fileId=g_id, fields='parents', supportsAllDrives=True).execute()
+                previous_parents = ",".join(file_info.get('parents', []))
+                
+                if target_folder_id not in file_info.get('parents', []):
+                    service.files().update(
+                        fileId=g_id,
+                        addParents=target_folder_id,
+                        removeParents=previous_parents,
+                        supportsAllDrives=True,
+                        fields='id, parents'
+                    ).execute()
+                    moved_count += 1
+        except Exception as e:
+            errors.append(f"Failed organizing {f['original_name']}: {e}")
+
+    conn.close()
+    log_audit('GDRIVE_ORGANIZED', f"Organized {moved_count} files into category subfolders on 5 TB Google Drive")
+
+    return jsonify({
+        'success': True,
+        'message': f"Organized {moved_count} files into category subfolders on Google Drive!",
+        'errors': errors
+    })
+
 @app.route('/api/admin/migrate-to-gdrive', methods=['POST'])
 @admin_required
 def migrate_to_gdrive():
@@ -479,7 +571,9 @@ def migrate_to_gdrive():
     
     if not files:
         conn.close()
-        return jsonify({'success': True, 'message': 'All files are already stored on 5 TB Google Drive!'})
+        # Also organize existing GDrive files into subfolders
+        organize_res = organize_gdrive_folders()
+        return jsonify({'success': True, 'message': 'All files are stored and organized on 5 TB Google Drive!'})
 
     s3_client = get_s3_client()
     migrated_count = 0
@@ -497,7 +591,7 @@ def migrate_to_gdrive():
                 continue
 
         if os.path.exists(local_path):
-            g_id, err = upload_file_to_gdrive(local_path, f['original_name'])
+            g_id, err = upload_file_to_gdrive(local_path, f['original_name'], category_id=f['category_id'])
             if g_id:
                 new_key = f"gdrive:{g_id}"
                 conn.execute("UPDATE files SET file_key = ? WHERE id = ?", (new_key, f['id']))
@@ -510,9 +604,14 @@ def migrate_to_gdrive():
     upload_db_to_cloud()
     log_audit('MIGRATION_GDRIVE', f"Migrated {migrated_count} files (172 MB) from Backblaze to 5 TB Google Drive")
 
+    # Organize files after migration
+    try:
+        organize_gdrive_folders()
+    except Exception: pass
+
     return jsonify({
         'success': True,
-        'message': f"Successfully migrated {migrated_count} files to 5 TB Google Drive!",
+        'message': f"Successfully migrated {migrated_count} files into category subfolders on 5 TB Google Drive!",
         'errors': errors
     })
 
@@ -970,7 +1069,7 @@ def upload_file():
     gdrive_error = None
     gdrive_service = get_gdrive_service()
     if gdrive_service:
-        gdrive_id, gdrive_error = upload_file_to_gdrive(filepath, original_filename)
+        gdrive_id, gdrive_error = upload_file_to_gdrive(filepath, original_filename, category_id=category_id)
         if gdrive_id:
             unique_key = f"gdrive:{gdrive_id}"
             print(f"SUCCESS: Uploaded {original_filename} to 5 TB Google Drive! File ID: {gdrive_id}")
