@@ -39,9 +39,31 @@ S3_BUCKET = os.environ.get('S3_BUCKET')
 
 GDRIVE_SERVICE_ACCOUNT_JSON = os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON')
 GDRIVE_FOLDER_ID = os.environ.get('GDRIVE_FOLDER_ID')
+GDRIVE_CLIENT_ID = os.environ.get('GDRIVE_CLIENT_ID')
+GDRIVE_CLIENT_SECRET = os.environ.get('GDRIVE_CLIENT_SECRET')
+GDRIVE_REFRESH_TOKEN = os.environ.get('GDRIVE_REFRESH_TOKEN')
 
 # --- Google Drive Storage Integration ---
 def get_gdrive_service():
+    client_id = (os.environ.get('GDRIVE_CLIENT_ID') or '').strip()
+    client_secret = (os.environ.get('GDRIVE_CLIENT_SECRET') or '').strip()
+    refresh_token = (os.environ.get('GDRIVE_REFRESH_TOKEN') or '').strip()
+
+    if client_id and client_secret and refresh_token:
+        try:
+            from google.oauth2.credentials import Credentials
+            from googleapiclient.discovery import build
+            creds = Credentials(
+                token=None,
+                refresh_token=refresh_token,
+                token_uri="https://oauth2.googleapis.com/token",
+                client_id=client_id,
+                client_secret=client_secret
+            )
+            return build('drive', 'v3', credentials=creds)
+        except Exception as e:
+            print(f"Google Drive OAuth2 Service Init Error: {e}")
+
     json_str = (os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON') or '').strip()
     if not json_str:
         return None
@@ -1256,7 +1278,7 @@ def admin_settings():
     if 'new_admin_password' in data and data['new_admin_password'].strip():
         new_hash = generate_password_hash(data['new_admin_password'].strip())
         conn = get_db()
-        conn.execute('UPDATE users SET password_hash = ? WHERE username = ?', (new_hash, session.get('admin_user', 'admin')))
+        conn.execute('UPDATE users SET password_hash = ? WHERE username = ?', (session.get('admin_user', 'admin'),))
         conn.commit()
         conn.close()
 
