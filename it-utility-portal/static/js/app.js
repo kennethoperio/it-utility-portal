@@ -6,6 +6,7 @@ let allFiles = [];
 let categoriesTreeData = [];
 let expandedCategoryIds = new Set();
 let inactivityTimer = null;
+let isDownloadingMap = {};
 const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -68,14 +69,18 @@ async function checkAuthStatus() {
       banner.style.display = 'flex';
     }
 
+    const logoutBtn = document.getElementById('client-logout-btn');
+
     if (data.is_unlocked) {
       document.getElementById('passcode-modal').classList.remove('active');
+      if (logoutBtn) logoutBtn.style.display = 'inline-flex';
       loadCategories();
       loadFiles();
       loadCmdScripts();
       loadNetworkInfo();
     } else {
       document.getElementById('passcode-modal').classList.add('active');
+      if (logoutBtn) logoutBtn.style.display = 'none';
     }
   } catch (err) {
     console.error('Error checking auth status:', err);
@@ -99,6 +104,8 @@ async function submitPasscode(e) {
 
     if (data.success) {
       document.getElementById('passcode-modal').classList.remove('active');
+      const logoutBtn = document.getElementById('client-logout-btn');
+      if (logoutBtn) logoutBtn.style.display = 'inline-flex';
       loadCategories();
       loadFiles();
       loadCmdScripts();
@@ -111,6 +118,11 @@ async function submitPasscode(e) {
     errorEl.innerText = 'Network error while verifying passcode.';
     errorEl.style.display = 'block';
   }
+}
+
+async function logoutClient() {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  window.location.reload();
 }
 
 function getCategoryIconClass(categoryName, iconName) {
@@ -373,6 +385,7 @@ function renderFiles(files) {
   filtered.forEach(f => {
     const iconStyle = getUniformCategoryIcon(f.category_name, f.original_name);
     const sizeMB = (f.file_size / (1024 * 1024)).toFixed(2);
+    const isDownloading = !!isDownloadingMap[f.id];
 
     html += `
       <div class="file-card">
@@ -397,8 +410,8 @@ function renderFiles(files) {
         </div>
 
         <div class="file-actions">
-          <button class="btn btn-primary" style="flex: 1;" onclick="handleDownloadClick(event, ${f.id})">
-            <i class="fa-solid fa-download"></i> Download
+          <button class="btn btn-primary" id="btn-download-${f.id}" style="flex: 1;" ${isDownloading ? 'disabled' : ''} onclick="handleDownloadClick(event, ${f.id}, '${escapeJs(f.original_name)}')">
+            ${isDownloading ? '<i class="fa-solid fa-spinner fa-spin"></i> Downloading...' : '<i class="fa-solid fa-download"></i> Download'}
           </button>
           <button class="btn btn-secondary btn-icon" onclick="copyHash('${f.sha256_hash}')" title="Copy SHA-256 Hash">
             <i class="fa-solid fa-fingerprint"></i>
@@ -414,34 +427,91 @@ function renderFiles(files) {
   gridEl.innerHTML = html;
 }
 
-async function handleDownloadClick(e, fileId) {
+async function handleDownloadClick(e, fileId, fileName) {
   if (e) e.preventDefault();
   
+  if (isDownloadingMap[fileId]) return; // Prevent multiple clicks!
+  isDownloadingMap[fileId] = true;
+
+  const btn = document.getElementById(`btn-download-${fileId}`);
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Downloading...`;
+  }
+
+  // Show Download Progress Overlay Modal
+  const modal = document.getElementById('download-progress-modal');
+  const filenameEl = document.getElementById('download-progress-filename');
+  const fillEl = document.getElementById('download-progress-fill');
+  const statusEl = document.getElementById('download-progress-status');
+
+  if (filenameEl) filenameEl.innerText = fileName ? `Downloading: ${fileName}` : 'Connecting to 5 TB Google Drive...';
+  if (fillEl) fillEl.style.width = '15%';
+  if (statusEl) statusEl.innerText = 'Connecting to 5 TB Google Drive byte stream...';
+  if (modal) modal.classList.add('active');
+
+  // Animate Progress Bar
+  let progress = 15;
+  const progressInterval = setInterval(() => {
+    progress += Math.floor(Math.random() * 15) + 10;
+    if (progress > 85) progress = 85;
+    if (fillEl) fillEl.style.width = `${progress}%`;
+  }, 200);
+
   try {
     const checkRes = await fetch(`/api/files/check-download/${fileId}`);
     const checkData = await checkRes.json();
 
     if (!checkRes.ok || checkData.allowed === false) {
+      clearInterval(progressInterval);
+      if (modal) modal.classList.remove('active');
+      delete isDownloadingMap[fileId];
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-download"></i> Download`;
+      }
+
       const msg = checkData.error || 'Your temporary passcode download limit has been reached.';
       document.getElementById('download-limit-msg').innerText = msg;
       document.getElementById('download-limit-modal').classList.add('active');
       return;
     }
 
+    if (fillEl) fillEl.style.width = '95%';
+    if (statusEl) statusEl.innerText = 'Stream starting... Download popped up in browser!';
+
     const downloadUrl = `/api/files/download/${fileId}`;
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = '';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = downloadUrl;
+    document.body.appendChild(iframe);
 
     setTimeout(() => {
-      loadFiles();
-    }, 1500);
+      clearInterval(progressInterval);
+      if (fillEl) fillEl.style.width = '100%';
+      if (statusEl) statusEl.innerText = 'Download started successfully!';
+      
+      setTimeout(() => {
+        if (modal) modal.classList.remove('active');
+        delete isDownloadingMap[fileId];
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i class="fa-solid fa-download"></i> Download`;
+        }
+        try { document.body.removeChild(iframe); } catch(err){}
+        loadFiles();
+      }, 800);
+    }, 1200);
 
   } catch (err) {
+    clearInterval(progressInterval);
     console.error('Error triggering download:', err);
+    if (modal) modal.classList.remove('active');
+    delete isDownloadingMap[fileId];
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-download"></i> Download`;
+    }
     window.location.href = `/api/files/download/${fileId}`;
   }
 }
