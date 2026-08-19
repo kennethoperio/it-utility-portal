@@ -10,6 +10,7 @@ import subprocess
 import re
 import zipfile
 import base64
+import threading
 from datetime import datetime, timedelta
 from functools import wraps
 
@@ -291,6 +292,14 @@ def upload_db_to_cloud():
         except Exception as e:
             print(f"Error syncing DB to S3: {e}")
 
+def async_upload_db_to_cloud():
+    def _worker():
+        try:
+            upload_db_to_cloud()
+        except Exception as e:
+            print(f"Async DB upload exception: {e}")
+    threading.Thread(target=_worker, daemon=True).start()
+
 download_db_from_cloud()
 
 # --- Database Initialization ---
@@ -465,7 +474,7 @@ def log_audit(action, details=""):
         conn.execute('INSERT INTO audit_logs (action, details, ip_address) VALUES (?, ?, ?)', (action, details, ip))
         conn.commit()
         conn.close()
-        upload_db_to_cloud()
+        async_upload_db_to_cloud()
     except Exception as e:
         print(f"Audit log error: {e}")
 
@@ -496,7 +505,7 @@ def set_setting(key, value):
     conn.execute('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', (key, str(value)))
     conn.commit()
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
 
 def compute_sha256(filepath):
     hasher = hashlib.sha256()
@@ -571,8 +580,7 @@ def migrate_to_gdrive():
     
     if not files:
         conn.close()
-        # Also organize existing GDrive files into subfolders
-        organize_res = organize_gdrive_folders()
+        organize_gdrive_folders()
         return jsonify({'success': True, 'message': 'All files are stored and organized on 5 TB Google Drive!'})
 
     s3_client = get_s3_client()
@@ -601,10 +609,9 @@ def migrate_to_gdrive():
                 errors.append(f"Failed to upload {f['original_name']} to GDrive: {err}")
 
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
     log_audit('MIGRATION_GDRIVE', f"Migrated {migrated_count} files (172 MB) from Backblaze to 5 TB Google Drive")
 
-    # Organize files after migration
     try:
         organize_gdrive_folders()
     except Exception: pass
@@ -750,7 +757,7 @@ def create_category():
     conn.commit()
     cat_id = cursor.lastrowid
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
     
     log_audit('CATEGORY_CREATED', f"Created category '{name}' (ID: {cat_id})")
     return jsonify({'success': True, 'id': cat_id, 'message': f"Folder '{name}' created successfully!"})
@@ -780,7 +787,7 @@ def update_category(cat_id):
                  (name, parent_id, icon, description, cat_id))
     conn.commit()
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
     
     log_audit('CATEGORY_UPDATED', f"Updated category '{name}' (ID: {cat_id})")
     return jsonify({'success': True, 'message': f"Folder '{name}' updated successfully!"})
@@ -797,7 +804,7 @@ def delete_category(cat_id):
     conn.execute('DELETE FROM categories WHERE id = ?', (cat_id,))
     conn.commit()
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
     
     log_audit('CATEGORY_DELETED', f"Deleted category '{cat['name']}' (ID: {cat_id})")
     return jsonify({'success': True, 'message': f"Folder '{cat['name']}' deleted."})
@@ -841,9 +848,15 @@ def list_files():
 @app.route('/api/files/check-download/<int:file_id>', methods=['GET'])
 @passcode_required
 def check_download_permission(file_id):
+    conn = get_db()
+    file_record = conn.execute('SELECT * FROM files WHERE id = ?', (file_id,)).fetchone()
+    
+    if not file_record:
+        conn.close()
+        return jsonify({'allowed': False, 'error': 'Requested file does not exist.'}), 404
+
     if session.get('is_guest') and session.get('guest_passcode_id'):
         g_id = session.get('guest_passcode_id')
-        conn = get_db()
         g_row = conn.execute('SELECT * FROM guest_passcodes WHERE id = ?', (g_id,)).fetchone()
         conn.close()
 
@@ -855,8 +868,14 @@ def check_download_permission(file_id):
                 'current_uses': g_row['current_uses'],
                 'error': f"Temporary passcode download limit reached ({g_row['current_uses']}/{g_row['max_uses']}). Please request a new passcode from your administrator."
             }), 403
+    else:
+        conn.close()
 
-    return jsonify({'allowed': True})
+    return jsonify({
+        'allowed': True,
+        'filename': file_record['original_name'],
+        'file_size': file_record['file_size']
+    })
 
 @app.route('/api/tools/cmd-scripts', methods=['GET'])
 @passcode_required
@@ -886,7 +905,7 @@ def create_cmd_script():
     conn.commit()
     script_id = cursor.lastrowid
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
 
     log_audit('CMD_SCRIPT_CREATED', f"Created troubleshooting command '{title}' (ID: {script_id})")
     return jsonify({'success': True, 'id': script_id, 'message': f"Command '{title}' created successfully!"})
@@ -908,7 +927,7 @@ def update_cmd_script(script_id):
                  (title, script_type, command, description, script_id))
     conn.commit()
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
 
     log_audit('CMD_SCRIPT_UPDATED', f"Updated command '{title}' (ID: {script_id})")
     return jsonify({'success': True, 'message': f"Command '{title}' updated."})
@@ -920,7 +939,7 @@ def delete_cmd_script(script_id):
     conn.execute('DELETE FROM cmd_scripts WHERE id = ?', (script_id,))
     conn.commit()
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
 
     log_audit('CMD_SCRIPT_DELETED', f"Deleted command script ID: {script_id}")
     return jsonify({'success': True, 'message': 'Troubleshooting command deleted.'})
@@ -1017,7 +1036,7 @@ def delete_audit_log(log_id):
     conn.execute('DELETE FROM audit_logs WHERE id = ?', (log_id,))
     conn.commit()
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
     return jsonify({'success': True, 'message': f'Audit log #{log_id} deleted.'})
 
 @app.route('/api/admin/audit-logs', methods=['DELETE'])
@@ -1027,7 +1046,7 @@ def clear_all_audit_logs():
     conn.execute('DELETE FROM audit_logs')
     conn.commit()
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
     log_audit('AUDIT_LOGS_CLEARED', 'Admin cleared all activity audit logs')
     return jsonify({'success': True, 'message': 'All audit logs cleared successfully.'})
 
@@ -1036,7 +1055,7 @@ def clear_all_audit_logs():
 @admin_required
 def force_sync_database():
     try:
-        upload_db_to_cloud()
+        async_upload_db_to_cloud()
         return jsonify({'success': True, 'message': 'Database WAL checkpointed and synced to Cloud Storage!'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -1092,7 +1111,7 @@ def upload_file():
     conn.commit()
     file_id = cursor.lastrowid
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
 
     storage_used = "5 TB Google Drive" if unique_key.startswith("gdrive:") else "Backblaze B2"
     log_audit('FILE_UPLOADED', f"Uploaded '{original_filename}' via {storage_used} (ID: {file_id})")
@@ -1154,7 +1173,7 @@ def download_file(file_id):
             conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
             conn.commit()
             conn.close()
-            upload_db_to_cloud()
+            async_upload_db_to_cloud()
             log_audit('FILE_DOWNLOADED', f"Downloaded from 5 TB Google Drive: '{file_record['original_name']}'")
 
             def generate_stream():
@@ -1190,7 +1209,7 @@ def download_file(file_id):
     conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
     conn.commit()
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
 
     log_audit('FILE_DOWNLOADED', f"Downloaded '{file_record['original_name']}' (ID: {file_id})")
     
@@ -1307,7 +1326,7 @@ def delete_file(file_id):
     conn.execute('DELETE FROM files WHERE id = ?', (file_id,))
     conn.commit()
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
 
     log_audit('FILE_DELETED', f"Deleted file '{file_record['original_name']}' (ID: {file_id})")
     return jsonify({'success': True, 'message': f"File '{file_record['original_name']}' deleted permanently."})
@@ -1402,7 +1421,7 @@ def create_guest_passcode():
     ''', (code, label, max_uses, expires_at))
     conn.commit()
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
 
     log_audit('GUEST_PASSCODE_CREATED', f"Created temporary passcode '{code}' for '{label}'")
     return jsonify({'success': True, 'passcode': code, 'message': f"Created guest passcode {code}"})
@@ -1414,7 +1433,7 @@ def delete_guest_passcode(code_id):
     conn.execute('DELETE FROM guest_passcodes WHERE id = ?', (code_id,))
     conn.commit()
     conn.close()
-    upload_db_to_cloud()
+    async_upload_db_to_cloud()
     
     log_audit('GUEST_PASSCODE_DELETED', f"Deleted guest passcode ID: {code_id}")
     return jsonify({'success': True, 'message': 'Guest passcode deleted.'})
