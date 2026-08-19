@@ -5,14 +5,11 @@ let currentSearchQuery = "";
 let allFiles = [];
 let categoriesTreeData = [];
 let expandedCategoryIds = new Set();
-let inactivityTimer = null;
 let isDownloadingMap = {};
-const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   checkAuthStatus();
-  setupInactivityAutoLogout();
 });
 
 function initTheme() {
@@ -34,23 +31,6 @@ function updateThemeIcon(theme) {
   if (icon) {
     icon.className = theme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
   }
-}
-
-function setupInactivityAutoLogout() {
-  const resetTimer = () => {
-    if (inactivityTimer) clearTimeout(inactivityTimer);
-    inactivityTimer = setTimeout(async () => {
-      alert('Session unlocked access expired due to 5 minutes of inactivity.');
-      await fetch('/api/auth/logout', { method: 'POST' });
-      window.location.reload();
-    }, INACTIVITY_LIMIT);
-  };
-
-  ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'].forEach(evt => {
-    document.addEventListener(evt, resetTimer, { passive: true });
-  });
-
-  resetTimer();
 }
 
 async function checkAuthStatus() {
