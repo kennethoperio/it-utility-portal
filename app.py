@@ -11,6 +11,7 @@ import re
 import zipfile
 import base64
 import threading
+import traceback
 from datetime import datetime, timedelta
 from functools import wraps
 
@@ -1123,62 +1124,64 @@ def upload_file():
 @app.route('/api/files/download/<int:file_id>', methods=['GET'])
 @passcode_required
 def download_file(file_id):
-    conn = get_db()
-    
-    if session.get('is_guest') and session.get('guest_passcode_id'):
-        g_id = session.get('guest_passcode_id')
-        g_row = conn.execute('SELECT * FROM guest_passcodes WHERE id = ?', (g_id,)).fetchone()
+    try:
+        conn = get_db()
         
-        if not g_row:
-            conn.close()
-            return jsonify({'error': 'Guest passcode invalid or expired.', 'limit_reached': True}), 403
+        if session.get('is_guest') and session.get('guest_passcode_id'):
+            g_id = session.get('guest_passcode_id')
+            g_row = conn.execute('SELECT * FROM guest_passcodes WHERE id = ?', (g_id,)).fetchone()
             
-        if g_row['max_uses'] > 0 and g_row['current_uses'] >= g_row['max_uses']:
+            if not g_row:
+                conn.close()
+                return jsonify({'error': 'Guest passcode invalid or expired.', 'limit_reached': True}), 403
+                
+            if g_row['max_uses'] > 0 and g_row['current_uses'] >= g_row['max_uses']:
+                conn.close()
+                return jsonify({
+                    'error': f"Download limit reached ({g_row['current_uses']}/{g_row['max_uses']}). Please request a new passcode from your administrator.",
+                    'limit_reached': True,
+                    'max_uses': g_row['max_uses'],
+                    'current_uses': g_row['current_uses']
+                }), 403
+                
+            new_uses = g_row['current_uses'] + 1
+            conn.execute('UPDATE guest_passcodes SET current_uses = ? WHERE id = ?', (new_uses, g_id))
+            conn.commit()
+
+        file_record = conn.execute('SELECT * FROM files WHERE id = ?', (file_id,)).fetchone()
+        
+        if not file_record:
             conn.close()
-            return jsonify({
-                'error': f"Download limit reached ({g_row['current_uses']}/{g_row['max_uses']}). Please request a new passcode from your administrator.",
-                'limit_reached': True,
-                'max_uses': g_row['max_uses'],
-                'current_uses': g_row['current_uses']
-            }), 403
-            
-        new_uses = g_row['current_uses'] + 1
-        conn.execute('UPDATE guest_passcodes SET current_uses = ? WHERE id = ?', (new_uses, g_id))
-        conn.commit()
+            return jsonify({'error': 'Requested file does not exist.'}), 404
 
-    file_record = conn.execute('SELECT * FROM files WHERE id = ?', (file_id,)).fetchone()
-    
-    if not file_record:
-        conn.close()
-        return jsonify({'error': 'Requested file does not exist.'}), 404
+        unique_key = file_record['file_key']
 
-    unique_key = file_record['file_key']
-
-    if unique_key.startswith('gdrive:'):
-        gdrive_id = unique_key.replace('gdrive:', '')
-        service = get_gdrive_service()
-        if service:
-            try:
+        if unique_key.startswith('gdrive:'):
+            gdrive_id = unique_key.replace('gdrive:', '')
+            service = get_gdrive_service()
+            if service:
                 conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
                 conn.commit()
                 conn.close()
                 async_upload_db_to_cloud()
-                log_audit('FILE_DOWNLOADED', f"Downloaded from 5 TB Google Drive: '{file_record['original_name']}'")
 
-                # Get fresh OAuth access token from credentials
-                creds = getattr(service._http, 'credentials', None)
+                import google.auth.transport.requests
+                import requests
+                
+                req = service.files().get_media(fileId=gdrive_id, supportsAllDrives=True)
+                creds = req.headers.get('Authorization')
+                
+                headers_req = {}
                 if creds:
-                    import google.auth.transport.requests
+                    headers_req['Authorization'] = creds
+                elif hasattr(service, '_http') and hasattr(service._http, 'credentials'):
+                    c = service._http.credentials
                     req_trans = google.auth.transport.requests.Request()
-                    if not creds.valid:
-                        creds.refresh(req_trans)
-                    access_token = creds.token
-                else:
-                    access_token = None
+                    if not c.valid:
+                        c.refresh(req_trans)
+                    headers_req['Authorization'] = f"Bearer {c.token}"
 
                 gdrive_url = f"https://www.googleapis.com/drive/v3/files/{gdrive_id}?alt=media"
-                import requests
-                headers_req = {'Authorization': f'Bearer {access_token}'} if access_token else {}
                 r = requests.get(gdrive_url, headers=headers_req, stream=True)
 
                 if r.status_code == 200:
@@ -1194,34 +1197,35 @@ def download_file(file_id):
                     return Response(stream_with_context(generate_stream()), mimetype='application/octet-stream', headers=headers)
                 else:
                     print(f"GDrive streaming HTTP error: {r.status_code} {r.text}")
+
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
+
+        s3_client = get_s3_client()
+        if not os.path.exists(filepath) and s3_client and S3_BUCKET:
+            try:
+                s3_client.download_file(S3_BUCKET.strip(), unique_key, filepath)
             except Exception as e:
-                print(f"GDrive direct stream exception: {e}")
+                print(f"Error downloading from S3: {e}")
 
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
+        if not os.path.exists(filepath):
+            try: conn.close()
+            except Exception: pass
+            return jsonify({'error': 'Physical file missing from server storage.'}), 404
 
-    s3_client = get_s3_client()
-    if not os.path.exists(filepath) and s3_client and S3_BUCKET:
-        try:
-            s3_client.download_file(S3_BUCKET.strip(), unique_key, filepath)
-        except Exception as e:
-            print(f"Error downloading from S3: {e}")
-
-    if not os.path.exists(filepath):
+        conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
+        conn.commit()
         conn.close()
-        return jsonify({'error': 'Physical file missing from server storage.'}), 404
+        async_upload_db_to_cloud()
 
-    conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
-    conn.commit()
-    conn.close()
-    async_upload_db_to_cloud()
-
-    log_audit('FILE_DOWNLOADED', f"Downloaded '{file_record['original_name']}' (ID: {file_id})")
-    
-    return send_file(
-        filepath,
-        as_attachment=True,
-        download_name=file_record['original_name']
-    )
+        return send_file(
+            filepath,
+            as_attachment=True,
+            download_name=file_record['original_name']
+        )
+    except Exception as err:
+        tb = traceback.format_exc()
+        print(f"CRITICAL DOWNLOAD ERROR: {err}\n{tb}")
+        return jsonify({'error': str(err), 'traceback': tb}), 500
 
 @app.route('/api/admin/download-all-zip', methods=['GET'])
 @admin_required
