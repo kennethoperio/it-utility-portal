@@ -430,13 +430,13 @@ function renderFiles(files) {
 async function handleDownloadClick(e, fileId, fileName) {
   if (e) e.preventDefault();
   
-  if (isDownloadingMap[fileId]) return; // Prevent multiple clicks!
+  if (isDownloadingMap[fileId]) return; // Lock to prevent multiple clicks!
   isDownloadingMap[fileId] = true;
 
   const btn = document.getElementById(`btn-download-${fileId}`);
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Downloading...`;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing...`;
   }
 
   // Show Download Progress Overlay Modal
@@ -446,51 +446,54 @@ async function handleDownloadClick(e, fileId, fileName) {
   const statusEl = document.getElementById('download-progress-status');
 
   if (filenameEl) filenameEl.innerText = fileName ? `Downloading: ${fileName}` : 'Connecting to 5 TB Google Drive...';
-  if (fillEl) fillEl.style.width = '15%';
-  if (statusEl) statusEl.innerText = 'Connecting to 5 TB Google Drive byte stream...';
+  if (fillEl) fillEl.style.width = '5%';
+  if (statusEl) statusEl.innerText = 'Connecting to 5 TB Google Drive vault...';
   if (modal) modal.classList.add('active');
 
-  // Animate Progress Bar
-  let progress = 15;
-  const progressInterval = setInterval(() => {
-    progress += Math.floor(Math.random() * 15) + 10;
-    if (progress > 85) progress = 85;
-    if (fillEl) fillEl.style.width = `${progress}%`;
-  }, 200);
-
+  // Verify permission first (super fast <50ms)
   try {
     const checkRes = await fetch(`/api/files/check-download/${fileId}`);
     const checkData = await checkRes.json();
 
     if (!checkRes.ok || checkData.allowed === false) {
-      clearInterval(progressInterval);
       if (modal) modal.classList.remove('active');
       delete isDownloadingMap[fileId];
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = `<i class="fa-solid fa-download"></i> Download`;
       }
-
       const msg = checkData.error || 'Your temporary passcode download limit has been reached.';
       document.getElementById('download-limit-msg').innerText = msg;
       document.getElementById('download-limit-modal').classList.add('active');
       return;
     }
+  } catch (err) {
+    console.error('Check download permission error:', err);
+  }
 
-    if (fillEl) fillEl.style.width = '95%';
-    if (statusEl) statusEl.innerText = 'Stream starting... Download popped up in browser!';
+  // Smooth 5-second transition animation (0% -> 100%)
+  const startTime = Date.now();
+  const totalDuration = 5000; // 5 seconds smooth transition
 
-    const downloadUrl = `/api/files/download/${fileId}`;
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = downloadUrl;
-    document.body.appendChild(iframe);
+  const interval = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(Math.floor((elapsed / totalDuration) * 100), 100);
+    
+    if (fillEl) fillEl.style.width = `${progress}%`;
 
-    setTimeout(() => {
-      clearInterval(progressInterval);
-      if (fillEl) fillEl.style.width = '100%';
-      if (statusEl) statusEl.innerText = 'Download started successfully!';
-      
+    if (progress < 30) {
+      if (statusEl) statusEl.innerText = 'Establishing secure byte stream from 5 TB Google Drive...';
+    } else if (progress < 65) {
+      if (statusEl) statusEl.innerText = 'Allocating high-speed bandwidth buffer...';
+    } else if (progress < 95) {
+      if (statusEl) statusEl.innerText = 'Finalizing 1-click download stream...';
+    } else if (progress >= 100) {
+      clearInterval(interval);
+      if (statusEl) statusEl.innerText = '🚀 Download Started! Saving file to your computer...';
+
+      // 100% reliable direct browser trigger
+      window.location.href = `/api/files/download/${fileId}`;
+
       setTimeout(() => {
         if (modal) modal.classList.remove('active');
         delete isDownloadingMap[fileId];
@@ -498,22 +501,10 @@ async function handleDownloadClick(e, fileId, fileName) {
           btn.disabled = false;
           btn.innerHTML = `<i class="fa-solid fa-download"></i> Download`;
         }
-        try { document.body.removeChild(iframe); } catch(err){}
         loadFiles();
-      }, 800);
-    }, 1200);
-
-  } catch (err) {
-    clearInterval(progressInterval);
-    console.error('Error triggering download:', err);
-    if (modal) modal.classList.remove('active');
-    delete isDownloadingMap[fileId];
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = `<i class="fa-solid fa-download"></i> Download`;
+      }, 1500);
     }
-    window.location.href = `/api/files/download/${fileId}`;
-  }
+  }, 100);
 }
 
 function closeDownloadLimitModal() {
