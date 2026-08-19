@@ -60,6 +60,7 @@ def get_gdrive_service():
                 client_id=client_id,
                 client_secret=client_secret
             )
+            print("Using Google Drive OAuth2 User Credentials (5 TB Quota)!")
             return build('drive', 'v3', credentials=creds)
         except Exception as e:
             print(f"Google Drive OAuth2 Service Init Error: {e}")
@@ -78,6 +79,7 @@ def get_gdrive_service():
         creds = service_account.Credentials.from_service_account_info(
             info, scopes=['https://www.googleapis.com/auth/drive']
         )
+        print("Using Google Drive Service Account Credentials.")
         return build('drive', 'v3', credentials=creds)
     except Exception as e:
         print(f"Google Drive Service Init Error: {e}")
