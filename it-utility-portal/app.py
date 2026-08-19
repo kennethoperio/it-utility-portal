@@ -468,6 +468,50 @@ def index_page():
 def admin_page():
     return app.send_static_file('admin.html')
 
+@app.route('/api/admin/debug-gdrive', methods=['GET'])
+@admin_required
+def debug_gdrive():
+    client_id = (os.environ.get('GDRIVE_CLIENT_ID') or '').strip()
+    client_secret = (os.environ.get('GDRIVE_CLIENT_SECRET') or '').strip()
+    refresh_token = (os.environ.get('GDRIVE_REFRESH_TOKEN') or '').strip()
+    json_str = (os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON') or '').strip()
+    folder_id = (os.environ.get('GDRIVE_FOLDER_ID') or '').strip()
+
+    status_info = {
+        'has_client_id': bool(client_id),
+        'client_id_prefix': client_id[:15] if client_id else None,
+        'has_client_secret': bool(client_secret),
+        'has_refresh_token': bool(refresh_token),
+        'refresh_token_len': len(refresh_token) if refresh_token else 0,
+        'has_service_account_json': bool(json_str),
+        'folder_id': folder_id
+    }
+
+    if client_id and client_secret and refresh_token:
+        try:
+            from google.oauth2.credentials import Credentials
+            from googleapiclient.discovery import build
+            creds = Credentials(
+                token=None,
+                refresh_token=refresh_token,
+                token_uri="https://oauth2.googleapis.com/token",
+                client_id=client_id,
+                client_secret=client_secret
+            )
+            service = build('drive', 'v3', credentials=creds)
+            about = service.about().get(fields="user, storageQuota").execute()
+            status_info['oauth2_success'] = True
+            status_info['about_user'] = about.get('user')
+            status_info['storageQuota'] = about.get('storageQuota')
+        except Exception as e:
+            status_info['oauth2_success'] = False
+            status_info['oauth2_error'] = str(e)
+    else:
+        status_info['oauth2_success'] = False
+        status_info['oauth2_error'] = 'Missing one or more OAuth2 env vars.'
+
+    return jsonify(status_info)
+
 # --- Migration Endpoint: Copy files from Backblaze B2 into 5 TB Google Drive ---
 @app.route('/api/admin/migrate-to-gdrive', methods=['POST'])
 @admin_required
