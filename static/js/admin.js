@@ -681,6 +681,11 @@ async function loadAdminSettingsData(isSilent = false) {
       document.getElementById('stat-files').innerText = data.stats.total_files || 0;
       document.getElementById('stat-storage').innerText = `${usedMB.toFixed(1)} MB (${percentUsed}%)`;
       
+      const usedLabelEl = document.querySelector('#stat-storage').previousElementSibling;
+      if (usedLabelEl) {
+        usedLabelEl.innerText = isGDrive ? 'Google Drive Storage Used' : 'Backblaze Storage Used';
+      }
+
       const leftEl = document.getElementById('stat-storage-left');
       const leftLabelEl = document.querySelector('#stat-storage-left').previousElementSibling;
 
