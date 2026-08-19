@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IT Troubleshooting Utility Hub</title>
-  <link rel="stylesheet" href="css/style.css?v=3.0">
+  <link rel="stylesheet" href="css/style.css?v=3.5">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -26,9 +26,9 @@
         <button class="btn btn-secondary btn-sm" id="theme-toggle-btn" title="Toggle Theme">
           <i class="fa-solid fa-moon"></i>
         </button>
-        <a href="/admin" class="btn btn-primary btn-sm" target="_blank">
-          <i class="fa-solid fa-lock"></i> Admin Portal
-        </a>
+        <button class="btn btn-secondary btn-sm" onclick="logoutClient()" id="client-logout-btn" style="display: none;" title="Exit / Lock Session">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
       </div>
     </div>
   </header>
@@ -171,6 +171,23 @@
 
   </div>
 
+  <!-- Download Progress Overlay Modal -->
+  <div class="modal-overlay" id="download-progress-modal">
+    <div class="modal-card" style="text-align: center; max-width: 420px; padding: 2rem 1.5rem;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background-color: rgba(56, 189, 248, 0.15); color: var(--accent-color); display: inline-flex; align-items: center; justify-content: center; font-size: 1.6rem; margin: 0 auto 1rem;">
+        <i class="fa-solid fa-cloud-arrow-down fa-bounce"></i>
+      </div>
+      <h3 style="font-size: 1.2rem; margin-bottom: 0.4rem;">Preparing 1-Click Stream</h3>
+      <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem; word-break: break-word;" id="download-progress-filename">Connecting to 5 TB Google Drive...</p>
+      
+      <div class="progress-bar" style="display: block; margin-bottom: 0.75rem; height: 8px;">
+        <div class="progress-fill" id="download-progress-fill" style="width: 15%; transition: width 0.3s ease;"></div>
+      </div>
+      
+      <p style="font-size: 0.8rem; color: var(--accent-color); font-weight: 600;" id="download-progress-status">Initiating direct byte stream... Please wait</p>
+    </div>
+  </div>
+
   <!-- Passcode Unlock Modal -->
   <div class="modal-overlay" id="passcode-modal">
     <div class="modal-card">
@@ -224,6 +241,6 @@
     </div>
   </div>
 
-  <script src="js/app.js?v=3.0"></script>
+  <script src="js/app.js?v=3.5"></script>
 </body>
 </html>
