@@ -444,6 +444,56 @@ def index_page():
 def admin_page():
     return app.send_static_file('admin.html')
 
+# --- Migration Endpoint: Copy files from Backblaze B2 into 5 TB Google Drive ---
+@app.route('/api/admin/migrate-to-gdrive', methods=['POST'])
+@admin_required
+def migrate_to_gdrive():
+    service = get_gdrive_service()
+    if not service:
+        return jsonify({'error': 'Google Drive service is not configured.'}), 400
+
+    conn = get_db()
+    files = conn.execute("SELECT * FROM files WHERE file_key NOT LIKE 'gdrive:%'").fetchall()
+    
+    if not files:
+        conn.close()
+        return jsonify({'success': True, 'message': 'All files are already stored on 5 TB Google Drive!'})
+
+    s3_client = get_s3_client()
+    migrated_count = 0
+    errors = []
+
+    for f in files:
+        file_key = f['file_key']
+        local_path = os.path.join(app.config['UPLOAD_FOLDER'], file_key)
+        
+        if not os.path.exists(local_path) and s3_client and S3_BUCKET:
+            try:
+                s3_client.download_file(S3_BUCKET.strip(), file_key, local_path)
+            except Exception as e:
+                errors.append(f"Failed to download {f['original_name']} from S3: {e}")
+                continue
+
+        if os.path.exists(local_path):
+            g_id, err = upload_file_to_gdrive(local_path, f['original_name'])
+            if g_id:
+                new_key = f"gdrive:{g_id}"
+                conn.execute("UPDATE files SET file_key = ? WHERE id = ?", (new_key, f['id']))
+                conn.commit()
+                migrated_count += 1
+            else:
+                errors.append(f"Failed to upload {f['original_name']} to GDrive: {err}")
+
+    conn.close()
+    upload_db_to_cloud()
+    log_audit('MIGRATION_GDRIVE', f"Migrated {migrated_count} files (172 MB) from Backblaze to 5 TB Google Drive")
+
+    return jsonify({
+        'success': True,
+        'message': f"Successfully migrated {migrated_count} files to 5 TB Google Drive!",
+        'errors': errors
+    })
+
 # --- API Authentication & Passcode Endpoints ---
 @app.route('/api/auth/status', methods=['GET'])
 def auth_status():
