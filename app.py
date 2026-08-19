@@ -9,10 +9,11 @@ import socket
 import subprocess
 import re
 import zipfile
+import base64
 from datetime import datetime, timedelta
 from functools import wraps
 
-from flask import Flask, request, jsonify, send_file, render_template, session, redirect, url_for, Response
+from flask import Flask, request, jsonify, send_file, render_template, session, redirect, url_for, Response, stream_with_context
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
@@ -30,12 +31,77 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Cloudflare R2 / S3 / Backblaze Storage Credentials from Environment
+# Credentials Environment Settings
 S3_ENDPOINT = os.environ.get('S3_ENDPOINT')
 S3_ACCESS_KEY = os.environ.get('S3_ACCESS_KEY')
 S3_SECRET_KEY = os.environ.get('S3_SECRET_KEY')
 S3_BUCKET = os.environ.get('S3_BUCKET')
 
+GDRIVE_SERVICE_ACCOUNT_JSON = os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON')
+GDRIVE_FOLDER_ID = os.environ.get('GDRIVE_FOLDER_ID')
+
+# --- Google Drive Storage Integration ---
+def get_gdrive_service():
+    json_str = (os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON') or '').strip()
+    if not json_str:
+        return None
+    try:
+        from google.oauth2 import service_account
+        from googleapiclient.discovery import build
+        
+        if not json_str.startswith('{'):
+            json_str = base64.b64decode(json_str).decode('utf-8')
+            
+        info = json.loads(json_str)
+        creds = service_account.Credentials.from_service_account_info(
+            info, scopes=['https://www.googleapis.com/auth/drive']
+        )
+        return build('drive', 'v3', credentials=creds)
+    except Exception as e:
+        print(f"Google Drive Service Init Error: {e}")
+        return None
+
+def upload_file_to_gdrive(filepath, filename, mime_type='application/octet-stream'):
+    service = get_gdrive_service()
+    if not service:
+        return None
+    try:
+        from googleapiclient.http import MediaFileUpload
+        folder_id = (os.environ.get('GDRIVE_FOLDER_ID') or '').strip()
+        
+        file_metadata = {'name': filename}
+        if folder_id:
+            file_metadata['parents'] = [folder_id]
+
+        media = MediaFileUpload(filepath, mimetype=mime_type, resumable=True)
+        gfile = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+        return gfile.get('id')
+    except Exception as e:
+        print(f"Error uploading file to Google Drive: {e}")
+        return None
+
+def download_file_stream_from_gdrive(gdrive_file_id):
+    service = get_gdrive_service()
+    if not service:
+        return None
+    try:
+        from googleapiclient.http import MediaIoBaseDownload
+        req = service.files().get_media(fileId=gdrive_file_id)
+        return req
+    except Exception as e:
+        print(f"Error getting Google Drive download request: {e}")
+        return None
+
+def delete_file_from_gdrive(gdrive_file_id):
+    service = get_gdrive_service()
+    if service and gdrive_file_id:
+        try:
+            service.files().delete(fileId=gdrive_file_id).execute()
+            print(f"Deleted Google Drive file ID: {gdrive_file_id}")
+        except Exception as e:
+            print(f"Error deleting Google Drive file: {e}")
+
+# --- Backblaze B2 / S3 Integration ---
 def get_s3_client():
     if S3_ENDPOINT and S3_ACCESS_KEY and S3_SECRET_KEY:
         try:
@@ -64,35 +130,85 @@ def get_s3_client():
             print(f"Backblaze B2 S3 client init error: {e}")
     return None
 
-def download_db_from_s3():
+def download_db_from_cloud():
+    # Try Google Drive DB sync first
+    service = get_gdrive_service()
+    if service:
+        try:
+            folder_id = (os.environ.get('GDRIVE_FOLDER_ID') or '').strip()
+            q = "name = 'it_vault.db' and trashed = false"
+            if folder_id:
+                q += f" and '{folder_id}' in parents"
+            res = service.files().list(q=q, fields='files(id, name)').execute()
+            files = res.get('files', [])
+            if files:
+                from googleapiclient.http import MediaIoBaseDownload
+                file_id = files[0]['id']
+                req = service.files().get_media(fileId=file_id)
+                fh = io.FileIO(DB_PATH, 'wb')
+                downloader = MediaIoBaseDownload(fh, req)
+                done = False
+                while not done:
+                    status, done = downloader.next_chunk()
+                fh.close()
+                print("Successfully downloaded latest database from 5 TB Google Drive!")
+                return
+        except Exception as e:
+            print(f"Google Drive DB download note: {e}")
+
+    # Fallback to S3/B2
     s3_client = get_s3_client()
     if s3_client and S3_BUCKET:
         try:
             s3_client.download_file(S3_BUCKET.strip(), 'it_vault.db', DB_PATH)
-            print("Successfully downloaded latest database from cloud storage!")
+            print("Successfully downloaded latest database from S3/B2 storage!")
         except Exception as e:
-            print(f"No existing database found in cloud storage (or initial boot): {e}")
+            print(f"No existing database found in S3/B2: {e}")
 
-def upload_db_to_s3():
-    s3_client = get_s3_client()
-    if s3_client and S3_BUCKET and os.path.exists(DB_PATH):
+def upload_db_to_cloud():
+    # Sync DB to Google Drive if active
+    service = get_gdrive_service()
+    if service and os.path.exists(DB_PATH):
         try:
             try:
                 conn = sqlite3.connect(DB_PATH)
                 conn.execute("PRAGMA wal_checkpoint(FULL)")
                 conn.close()
-            except Exception as chk_e:
-                print(f"WAL checkpoint note: {chk_e}")
+            except Exception: pass
 
+            folder_id = (os.environ.get('GDRIVE_FOLDER_ID') or '').strip()
+            q = "name = 'it_vault.db' and trashed = false"
+            if folder_id:
+                q += f" and '{folder_id}' in parents"
+            res = service.files().list(q=q, fields='files(id, name)').execute()
+            files = res.get('files', [])
+
+            from googleapiclient.http import MediaFileUpload
+            media = MediaFileUpload(DB_PATH, mimetype='application/x-sqlite3', resumable=True)
+
+            if files:
+                service.files().update(fileId=files[0]['id'], media_body=media).execute()
+            else:
+                file_metadata = {'name': 'it_vault.db'}
+                if folder_id: file_metadata['parents'] = [folder_id]
+                service.files().create(body=file_metadata, media_body=media).execute()
+
+            print("SUCCESS: Uploaded updated database to 5 TB Google Drive!")
+        except Exception as e:
+            print(f"Error syncing DB to Google Drive: {e}")
+
+    # Sync DB to S3/B2
+    s3_client = get_s3_client()
+    if s3_client and S3_BUCKET and os.path.exists(DB_PATH):
+        try:
             s3_client.upload_file(DB_PATH, S3_BUCKET.strip(), 'it_vault.db')
             print("SUCCESS: Uploaded updated database to Backblaze B2!")
         except Exception as e:
             print(f"Error syncing DB to S3: {e}")
 
-# Download latest DB on server boot before initializing sqlite
-download_db_from_s3()
+download_db_from_cloud()
 
-# --- Database Initialization & Maintenance ---
+# --- Database Initialization ---
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -264,7 +380,7 @@ def log_audit(action, details=""):
         conn.execute('INSERT INTO audit_logs (action, details, ip_address) VALUES (?, ?, ?)', (action, details, ip))
         conn.commit()
         conn.close()
-        upload_db_to_s3()
+        upload_db_to_cloud()
     except Exception as e:
         print(f"Audit log error: {e}")
 
@@ -295,7 +411,7 @@ def set_setting(key, value):
     conn.execute('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', (key, str(value)))
     conn.commit()
     conn.close()
-    upload_db_to_s3()
+    upload_db_to_cloud()
 
 def compute_sha256(filepath):
     hasher = hashlib.sha256()
@@ -316,12 +432,14 @@ def admin_page():
 # --- API Authentication & Passcode Endpoints ---
 @app.route('/api/auth/status', methods=['GET'])
 def auth_status():
+    gdrive_active = bool(get_gdrive_service())
     return jsonify({
         'is_admin': bool(session.get('is_admin')),
         'is_unlocked': bool(session.get('is_unlocked') or session.get('is_admin')),
         'site_title': get_setting('site_title', 'IT Troubleshooting Utility Hub'),
         'announcement': get_setting('announcement', ''),
-        'theme': get_setting('theme', 'dark')
+        'theme': get_setting('theme', 'dark'),
+        'storage_provider': 'Google Drive (5 TB)' if gdrive_active else 'Backblaze B2'
     })
 
 @app.route('/api/auth/verify-passcode', methods=['POST'])
@@ -446,7 +564,7 @@ def create_category():
     conn.commit()
     cat_id = cursor.lastrowid
     conn.close()
-    upload_db_to_s3()
+    upload_db_to_cloud()
     
     log_audit('CATEGORY_CREATED', f"Created category '{name}' (ID: {cat_id})")
     return jsonify({'success': True, 'id': cat_id, 'message': f"Folder '{name}' created successfully!"})
@@ -476,7 +594,7 @@ def update_category(cat_id):
                  (name, parent_id, icon, description, cat_id))
     conn.commit()
     conn.close()
-    upload_db_to_s3()
+    upload_db_to_cloud()
     
     log_audit('CATEGORY_UPDATED', f"Updated category '{name}' (ID: {cat_id})")
     return jsonify({'success': True, 'message': f"Folder '{name}' updated successfully!"})
@@ -493,7 +611,7 @@ def delete_category(cat_id):
     conn.execute('DELETE FROM categories WHERE id = ?', (cat_id,))
     conn.commit()
     conn.close()
-    upload_db_to_s3()
+    upload_db_to_cloud()
     
     log_audit('CATEGORY_DELETED', f"Deleted category '{cat['name']}' (ID: {cat_id})")
     return jsonify({'success': True, 'message': f"Folder '{cat['name']}' deleted."})
@@ -582,7 +700,7 @@ def create_cmd_script():
     conn.commit()
     script_id = cursor.lastrowid
     conn.close()
-    upload_db_to_s3()
+    upload_db_to_cloud()
 
     log_audit('CMD_SCRIPT_CREATED', f"Created troubleshooting command '{title}' (ID: {script_id})")
     return jsonify({'success': True, 'id': script_id, 'message': f"Command '{title}' created successfully!"})
@@ -604,7 +722,7 @@ def update_cmd_script(script_id):
                  (title, script_type, command, description, script_id))
     conn.commit()
     conn.close()
-    upload_db_to_s3()
+    upload_db_to_cloud()
 
     log_audit('CMD_SCRIPT_UPDATED', f"Updated command '{title}' (ID: {script_id})")
     return jsonify({'success': True, 'message': f"Command '{title}' updated."})
@@ -616,7 +734,7 @@ def delete_cmd_script(script_id):
     conn.execute('DELETE FROM cmd_scripts WHERE id = ?', (script_id,))
     conn.commit()
     conn.close()
-    upload_db_to_s3()
+    upload_db_to_cloud()
 
     log_audit('CMD_SCRIPT_DELETED', f"Deleted command script ID: {script_id}")
     return jsonify({'success': True, 'message': 'Troubleshooting command deleted.'})
@@ -713,7 +831,7 @@ def delete_audit_log(log_id):
     conn.execute('DELETE FROM audit_logs WHERE id = ?', (log_id,))
     conn.commit()
     conn.close()
-    upload_db_to_s3()
+    upload_db_to_cloud()
     return jsonify({'success': True, 'message': f'Audit log #{log_id} deleted.'})
 
 @app.route('/api/admin/audit-logs', methods=['DELETE'])
@@ -723,7 +841,7 @@ def clear_all_audit_logs():
     conn.execute('DELETE FROM audit_logs')
     conn.commit()
     conn.close()
-    upload_db_to_s3()
+    upload_db_to_cloud()
     log_audit('AUDIT_LOGS_CLEARED', 'Admin cleared all activity audit logs')
     return jsonify({'success': True, 'message': 'All audit logs cleared successfully.'})
 
@@ -732,44 +850,10 @@ def clear_all_audit_logs():
 @admin_required
 def force_sync_database():
     try:
-        upload_db_to_s3()
-        return jsonify({'success': True, 'message': 'Database WAL checkpointed and synced to Backblaze B2!'})
+        upload_db_to_cloud()
+        return jsonify({'success': True, 'message': 'Database WAL checkpointed and synced to Cloud Storage!'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
-
-# --- Backblaze B2 Diagnostic Test Endpoint ---
-@app.route('/api/admin/test-s3', methods=['GET'])
-@admin_required
-def test_s3_connection():
-    s3_client = get_s3_client()
-    if not s3_client:
-        return jsonify({
-            'success': False,
-            'message': 'Failed to initialize boto3 S3 client. Check S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY.',
-            'config': {
-                'S3_ENDPOINT': S3_ENDPOINT,
-                'S3_ACCESS_KEY': S3_ACCESS_KEY[:6] + '***' if S3_ACCESS_KEY else None,
-                'S3_BUCKET': S3_BUCKET
-            }
-        }), 500
-
-    try:
-        bucket = (S3_BUCKET or '').strip()
-        res = s3_client.list_objects_v2(Bucket=bucket)
-        objs = [o['Key'] for o in res.get('Contents', [])]
-        
-        return jsonify({
-            'success': True,
-            'message': f"Successfully connected to Backblaze B2 bucket '{bucket}'!",
-            'bucket_objects_count': len(objs),
-            'bucket_files': objs[:10]
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'message': f"Error connecting to Backblaze B2: {str(e)}"
-        }), 500
 
 @app.route('/api/files/upload', methods=['POST'])
 @admin_required
@@ -789,7 +873,6 @@ def upload_file():
         return jsonify({'error': 'Category selection is required.'}), 400
 
     original_filename = secure_filename(file.filename) or file.filename
-    ext = os.path.splitext(original_filename)[1]
     unique_key = f"{uuid.uuid4().hex}_{original_filename}"
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
 
@@ -797,15 +880,23 @@ def upload_file():
     file_size = os.path.getsize(filepath)
     sha256_hash = compute_sha256(filepath)
 
+    # 1. Upload to 5 TB Google Drive if configured
+    gdrive_service = get_gdrive_service()
+    if gdrive_service:
+        gdrive_id = upload_file_to_gdrive(filepath, original_filename)
+        if gdrive_id:
+            unique_key = f"gdrive:{gdrive_id}"
+            print(f"SUCCESS: Uploaded {original_filename} to 5 TB Google Drive! File ID: {gdrive_id}")
+
+    # 2. Upload to Backblaze B2 if S3 active
     s3_client = get_s3_client()
-    if s3_client and S3_BUCKET:
+    if not unique_key.startswith('gdrive:') and s3_client and S3_BUCKET:
         try:
             bucket_name = S3_BUCKET.strip()
             s3_client.upload_file(filepath, bucket_name, unique_key)
             print(f"SUCCESS: Uploaded {unique_key} to Backblaze B2 bucket '{bucket_name}'")
         except Exception as e:
             print(f"ERROR uploading to Backblaze B2: {e}")
-            log_audit('S3_UPLOAD_ERROR', f"Failed uploading {original_filename} to B2: {str(e)}")
 
     conn = get_db()
     cursor = conn.cursor()
@@ -816,7 +907,7 @@ def upload_file():
     conn.commit()
     file_id = cursor.lastrowid
     conn.close()
-    upload_db_to_s3()
+    upload_db_to_cloud()
 
     log_audit('FILE_UPLOADED', f"Uploaded file '{original_filename}' ({file_size} bytes, ID: {file_id})")
     return jsonify({
@@ -863,6 +954,36 @@ def download_file(file_id):
         return jsonify({'error': 'Requested file does not exist.'}), 404
 
     unique_key = file_record['file_key']
+
+    # 1. Download Stream directly from 5 TB Google Drive
+    if unique_key.startswith('gdrive:'):
+        gdrive_id = unique_key.replace('gdrive:', '')
+        greq = download_file_stream_from_gdrive(gdrive_id)
+        if greq:
+            conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
+            conn.commit()
+            conn.close()
+            upload_db_to_cloud()
+            log_audit('FILE_DOWNLOADED', f"Downloaded from 5 TB Google Drive: '{file_record['original_name']}'")
+
+            def generate_stream():
+                fh = io.BytesIO()
+                from googleapiclient.http import MediaIoBaseDownload
+                downloader = MediaIoBaseDownload(fh, greq, chunksize=16*1024*1024)
+                done = False
+                while not done:
+                    status, done = downloader.next_chunk()
+                    yield fh.getvalue()
+                    fh.seek(0)
+                    fh.truncate(0)
+
+            headers = {
+                'Content-Disposition': f'attachment; filename="{file_record["original_name"]}"',
+                'Content-Length': str(file_record['file_size'])
+            }
+            return Response(stream_with_context(generate_stream()), mimetype='application/octet-stream', headers=headers)
+
+    # 2. Local/S3 Download
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
 
     s3_client = get_s3_client()
@@ -870,7 +991,7 @@ def download_file(file_id):
         try:
             s3_client.download_file(S3_BUCKET.strip(), unique_key, filepath)
         except Exception as e:
-            print(f"Error downloading from S3/R2/B2: {e}")
+            print(f"Error downloading from S3: {e}")
 
     if not os.path.exists(filepath):
         conn.close()
@@ -879,7 +1000,7 @@ def download_file(file_id):
     conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
     conn.commit()
     conn.close()
-    upload_db_to_s3()
+    upload_db_to_cloud()
 
     log_audit('FILE_DOWNLOADED', f"Downloaded '{file_record['original_name']}' (ID: {file_id})")
     
@@ -912,6 +1033,30 @@ def download_all_zip():
             file_key = f['file_key']
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], file_key)
             
+            if file_key.startswith('gdrive:'):
+                gdrive_id = file_key.replace('gdrive:', '')
+                greq = download_file_stream_from_gdrive(gdrive_id)
+                if greq:
+                    file_bytes = io.BytesIO()
+                    from googleapiclient.http import MediaIoBaseDownload
+                    downloader = MediaIoBaseDownload(file_bytes, greq)
+                    done = False
+                    while not done:
+                        status, done = downloader.next_chunk()
+                    file_bytes.seek(0)
+                    
+                    cat_id = f['category_id']
+                    path_parts = []
+                    curr = categories.get(cat_id)
+                    while curr:
+                        path_parts.insert(0, curr['name'])
+                        curr = categories.get(curr['parent_id']) if curr.get('parent_id') else None
+                    
+                    folder_path = "/".join(path_parts) if path_parts else "General"
+                    zip_path = f"{folder_path}/{f['original_name']}"
+                    zf.writestr(zip_path, file_bytes.getvalue())
+                    continue
+
             s3_client = get_s3_client()
             if not os.path.exists(filepath) and s3_client and S3_BUCKET:
                 try:
@@ -953,35 +1098,26 @@ def delete_file(file_id):
         return jsonify({'error': 'File not found.'}), 404
 
     unique_key = file_record['file_key']
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
     
-    if os.path.exists(filepath):
-        try:
-            os.remove(filepath)
-        except Exception as e:
-            print(f"Error removing local file: {e}")
+    if unique_key.startswith('gdrive:'):
+        gdrive_id = unique_key.replace('gdrive:', '')
+        delete_file_from_gdrive(gdrive_id)
+    else:
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
+        if os.path.exists(filepath):
+            try: os.remove(filepath)
+            except Exception: pass
 
-    s3_client = get_s3_client()
-    if s3_client and S3_BUCKET:
-        try:
-            bucket_name = S3_BUCKET.strip()
+        s3_client = get_s3_client()
+        if s3_client and S3_BUCKET:
             try:
-                versions = s3_client.list_object_versions(Bucket=bucket_name, Prefix=unique_key)
-                for ver in versions.get('Versions', []):
-                    s3_client.delete_object(Bucket=bucket_name, Key=unique_key, VersionId=ver['VersionId'])
-                for dm in versions.get('DeleteMarkers', []):
-                    s3_client.delete_object(Bucket=bucket_name, Key=unique_key, VersionId=dm['VersionId'])
-            except Exception as ve:
-                print(f"B2 version cleanup note: {ve}")
-
-            s3_client.delete_object(Bucket=bucket_name, Key=unique_key)
-        except Exception as e:
-            print(f"Error deleting from S3/R2/B2: {e}")
+                s3_client.delete_object(Bucket=S3_BUCKET.strip(), Key=unique_key)
+            except Exception: pass
 
     conn.execute('DELETE FROM files WHERE id = ?', (file_id,))
     conn.commit()
     conn.close()
-    upload_db_to_s3()
+    upload_db_to_cloud()
 
     log_audit('FILE_DELETED', f"Deleted file '{file_record['original_name']}' (ID: {file_id})")
     return jsonify({'success': True, 'message': f"File '{file_record['original_name']}' deleted permanently."})
@@ -1027,12 +1163,15 @@ def admin_settings():
             FROM files
         ''').fetchone()
         
+        gdrive_active = bool(get_gdrive_service())
+
         conn.close()
         return jsonify({
             'site_title': get_setting('site_title', 'IT Troubleshooting Utility Hub'),
             'announcement': get_setting('announcement', ''),
             'access_passcode': get_setting('access_passcode', 'tech2026'),
             'theme': get_setting('theme', 'dark'),
+            'gdrive_active': gdrive_active,
             'stats': dict(file_stats),
             'audit_logs': [dict(l) for l in logs],
             'guest_passcodes': [dict(g) for g in guest_codes]
@@ -1073,7 +1212,7 @@ def create_guest_passcode():
     ''', (code, label, max_uses, expires_at))
     conn.commit()
     conn.close()
-    upload_db_to_s3()
+    upload_db_to_cloud()
 
     log_audit('GUEST_PASSCODE_CREATED', f"Created temporary passcode '{code}' for '{label}'")
     return jsonify({'success': True, 'passcode': code, 'message': f"Created guest passcode {code}"})
@@ -1085,7 +1224,7 @@ def delete_guest_passcode(code_id):
     conn.execute('DELETE FROM guest_passcodes WHERE id = ?', (code_id,))
     conn.commit()
     conn.close()
-    upload_db_to_s3()
+    upload_db_to_cloud()
     
     log_audit('GUEST_PASSCODE_DELETED', f"Deleted guest passcode ID: {code_id}")
     return jsonify({'success': True, 'message': 'Guest passcode deleted.'})
