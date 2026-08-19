@@ -5,16 +5,12 @@ let adminFilesList = [];
 let allAuditLogsList = [];
 let adminCmdScriptsList = [];
 let currentLogsPage = 1;
-let logsPerPage = 10;
 let autoRefreshTimer = null;
-let inactivityTimer = null;
-const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   checkAdminAuth();
   setupDragAndDrop();
-  setupInactivityAutoLogout();
 });
 
 function initTheme() {
@@ -36,23 +32,6 @@ function updateThemeIcon(theme) {
   if (icon) {
     icon.className = theme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
   }
-}
-
-function setupInactivityAutoLogout() {
-  const resetTimer = () => {
-    if (inactivityTimer) clearTimeout(inactivityTimer);
-    inactivityTimer = setTimeout(async () => {
-      alert('Admin session expired due to 5 minutes of inactivity.');
-      await fetch('/api/auth/logout', { method: 'POST' });
-      window.location.reload();
-    }, INACTIVITY_LIMIT);
-  };
-
-  ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'].forEach(evt => {
-    document.addEventListener(evt, resetTimer, { passive: true });
-  });
-
-  resetTimer();
 }
 
 async function checkAdminAuth() {
