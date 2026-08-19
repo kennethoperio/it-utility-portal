@@ -230,7 +230,6 @@ async function loadAdminCategories() {
       filterSelectEl.value = selectedVal;
     }
 
-    // Populate Categories Table
     const tableBody = document.getElementById('admin-categories-table-body');
     let tableHtml = '';
 
@@ -672,21 +671,30 @@ async function loadAdminSettingsData(isSilent = false) {
     if (data.stats) {
       const totalBytes = data.stats.total_bytes || 0;
       const usedMB = totalBytes / (1024 * 1024);
-      const limitBytes = 10 * 1024 * 1024 * 1024; // 10 GB
-      const freeBytes = Math.max(0, limitBytes - totalBytes);
-      const freeGB = (freeBytes / (1024 * 1024 * 1024)).toFixed(2);
-      const percentUsed = ((totalBytes / limitBytes) * 100).toFixed(1);
+      const usedGB = usedMB / 1024;
+      
+      const isGDrive = data.gdrive_active;
+      const limitGB = isGDrive ? 5000 : 10; // 5 TB vs 10 GB
+      const freeGB = Math.max(0, limitGB - usedGB);
+      const percentUsed = ((usedGB / limitGB) * 100).toFixed(2);
 
       document.getElementById('stat-files').innerText = data.stats.total_files || 0;
       document.getElementById('stat-storage').innerText = `${usedMB.toFixed(1)} MB (${percentUsed}%)`;
       
       const leftEl = document.getElementById('stat-storage-left');
+      const leftLabelEl = document.querySelector('#stat-storage-left').previousElementSibling;
+
       if (leftEl) {
-        leftEl.innerText = `${freeGB} GB Free`;
-        if (freeBytes < 1 * 1024 * 1024 * 1024) {
-          leftEl.style.color = 'var(--danger-color)';
-        } else {
+        if (isGDrive) {
+          if (leftLabelEl) leftLabelEl.innerText = '5 TB Google Drive Storage Left';
+          const freeTB = (freeGB / 1024).toFixed(3);
+          leftEl.innerText = `${freeTB} TB Free`;
           leftEl.style.color = 'var(--success-color)';
+        } else {
+          if (leftLabelEl) leftLabelEl.innerText = '10 GB Free Storage Left';
+          leftEl.innerText = `${freeGB.toFixed(2)} GB Free`;
+          if (freeGB < 1) leftEl.style.color = 'var(--danger-color)';
+          else leftEl.style.color = 'var(--success-color)';
         }
       }
 
