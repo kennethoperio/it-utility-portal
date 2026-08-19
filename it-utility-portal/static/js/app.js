@@ -439,24 +439,12 @@ async function handleDownloadClick(e, fileId, fileName) {
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing...`;
   }
 
-  // Show Download Progress Overlay Modal
-  const modal = document.getElementById('download-progress-modal');
-  const filenameEl = document.getElementById('download-progress-filename');
-  const fillEl = document.getElementById('download-progress-fill');
-  const statusEl = document.getElementById('download-progress-status');
-
-  if (filenameEl) filenameEl.innerText = fileName ? `Downloading: ${fileName}` : 'Connecting to 5 TB Google Drive...';
-  if (fillEl) fillEl.style.width = '5%';
-  if (statusEl) statusEl.innerText = 'Connecting to 5 TB Google Drive vault...';
-  if (modal) modal.classList.add('active');
-
   // Verify permission first (super fast <50ms)
   try {
     const checkRes = await fetch(`/api/files/check-download/${fileId}`);
     const checkData = await checkRes.json();
 
     if (!checkRes.ok || checkData.allowed === false) {
-      if (modal) modal.classList.remove('active');
       delete isDownloadingMap[fileId];
       if (btn) {
         btn.disabled = false;
@@ -471,28 +459,38 @@ async function handleDownloadClick(e, fileId, fileName) {
     console.error('Check download permission error:', err);
   }
 
-  // Smooth 5-second transition animation (0% -> 100%)
+  // Show Download Progress Overlay Modal
+  const modal = document.getElementById('download-progress-modal');
+  const filenameEl = document.getElementById('download-progress-filename');
+  const fillEl = document.getElementById('download-progress-fill');
+  const statusEl = document.getElementById('download-progress-status');
+
+  if (filenameEl) filenameEl.innerText = fileName ? `Downloading: ${fileName}` : 'Connecting to 5 TB Google Drive...';
+  if (fillEl) fillEl.style.width = '10%';
+  if (statusEl) statusEl.innerText = '🚀 Download Started! Browser pop-up triggered...';
+  if (modal) modal.classList.add('active');
+
+  // Trigger browser download INSTANTLY so popup appears in <100ms!
+  const downloadUrl = `/api/files/download/${fileId}`;
+  window.location.href = downloadUrl;
+
+  // Smooth 4-second progress modal transition while file streams into browser
   const startTime = Date.now();
-  const totalDuration = 5000; // 5 seconds smooth transition
+  const totalDuration = 4000;
 
   const interval = setInterval(() => {
     const elapsed = Date.now() - startTime;
-    const progress = Math.min(Math.floor((elapsed / totalDuration) * 100), 100);
+    const progress = Math.min(Math.floor(10 + (elapsed / totalDuration) * 90), 100);
     
     if (fillEl) fillEl.style.width = `${progress}%`;
 
-    if (progress < 30) {
-      if (statusEl) statusEl.innerText = 'Establishing secure byte stream from 5 TB Google Drive...';
-    } else if (progress < 65) {
-      if (statusEl) statusEl.innerText = 'Allocating high-speed bandwidth buffer...';
-    } else if (progress < 95) {
-      if (statusEl) statusEl.innerText = 'Finalizing 1-click download stream...';
+    if (progress < 40) {
+      if (statusEl) statusEl.innerText = 'Streaming installer bytes directly from 5 TB Google Drive...';
+    } else if (progress < 85) {
+      if (statusEl) statusEl.innerText = 'Transferring file package to your computer...';
     } else if (progress >= 100) {
       clearInterval(interval);
-      if (statusEl) statusEl.innerText = '🚀 Download Started! Saving file to your computer...';
-
-      // 100% reliable direct browser trigger
-      window.location.href = `/api/files/download/${fileId}`;
+      if (statusEl) statusEl.innerText = '✅ Transfer Complete!';
 
       setTimeout(() => {
         if (modal) modal.classList.remove('active');
@@ -502,7 +500,7 @@ async function handleDownloadClick(e, fileId, fileName) {
           btn.innerHTML = `<i class="fa-solid fa-download"></i> Download`;
         }
         loadFiles();
-      }, 1500);
+      }, 600);
     }
   }, 100);
 }
