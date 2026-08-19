@@ -64,7 +64,8 @@ def get_gdrive_service():
 def upload_file_to_gdrive(filepath, filename, mime_type='application/octet-stream'):
     service = get_gdrive_service()
     if not service:
-        return None
+        print("Google Drive service unavailable for upload.")
+        return None, "Google Drive service unavailable."
     try:
         from googleapiclient.http import MediaFileUpload
         folder_id = (os.environ.get('GDRIVE_FOLDER_ID') or '').strip()
@@ -75,10 +76,13 @@ def upload_file_to_gdrive(filepath, filename, mime_type='application/octet-strea
 
         media = MediaFileUpload(filepath, mimetype=mime_type, resumable=True)
         gfile = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-        return gfile.get('id')
+        g_id = gfile.get('id')
+        print(f"Uploaded to Google Drive successfully! File ID: {g_id}")
+        return g_id, None
     except Exception as e:
-        print(f"Error uploading file to Google Drive: {e}")
-        return None
+        err_msg = str(e)
+        print(f"Error uploading file to Google Drive: {err_msg}")
+        return None, err_msg
 
 def download_file_stream_from_gdrive(gdrive_file_id):
     service = get_gdrive_service()
@@ -131,7 +135,6 @@ def get_s3_client():
     return None
 
 def download_db_from_cloud():
-    # Try Google Drive DB sync first
     service = get_gdrive_service()
     if service:
         try:
@@ -156,7 +159,6 @@ def download_db_from_cloud():
         except Exception as e:
             print(f"Google Drive DB download note: {e}")
 
-    # Fallback to S3/B2
     s3_client = get_s3_client()
     if s3_client and S3_BUCKET:
         try:
@@ -166,7 +168,6 @@ def download_db_from_cloud():
             print(f"No existing database found in S3/B2: {e}")
 
 def upload_db_to_cloud():
-    # Sync DB to Google Drive if active
     service = get_gdrive_service()
     if service and os.path.exists(DB_PATH):
         try:
@@ -197,7 +198,6 @@ def upload_db_to_cloud():
         except Exception as e:
             print(f"Error syncing DB to Google Drive: {e}")
 
-    # Sync DB to S3/B2
     s3_client = get_s3_client()
     if s3_client and S3_BUCKET and os.path.exists(DB_PATH):
         try:
@@ -880,15 +880,14 @@ def upload_file():
     file_size = os.path.getsize(filepath)
     sha256_hash = compute_sha256(filepath)
 
-    # 1. Upload to 5 TB Google Drive if configured
+    gdrive_error = None
     gdrive_service = get_gdrive_service()
     if gdrive_service:
-        gdrive_id = upload_file_to_gdrive(filepath, original_filename)
+        gdrive_id, gdrive_error = upload_file_to_gdrive(filepath, original_filename)
         if gdrive_id:
             unique_key = f"gdrive:{gdrive_id}"
             print(f"SUCCESS: Uploaded {original_filename} to 5 TB Google Drive! File ID: {gdrive_id}")
 
-    # 2. Upload to Backblaze B2 if S3 active
     s3_client = get_s3_client()
     if not unique_key.startswith('gdrive:') and s3_client and S3_BUCKET:
         try:
@@ -909,15 +908,22 @@ def upload_file():
     conn.close()
     upload_db_to_cloud()
 
-    log_audit('FILE_UPLOADED', f"Uploaded file '{original_filename}' ({file_size} bytes, ID: {file_id})")
+    storage_used = "5 TB Google Drive" if unique_key.startswith("gdrive:") else "Backblaze B2"
+    log_audit('FILE_UPLOADED', f"Uploaded '{original_filename}' via {storage_used} (ID: {file_id})")
+
+    msg = f"File '{original_filename}' uploaded successfully to {storage_used}!"
+    if gdrive_error and not unique_key.startswith("gdrive:"):
+        msg += f" (Google Drive note: {gdrive_error})"
+
     return jsonify({
         'success': True,
-        'message': f"File '{original_filename}' uploaded successfully!",
+        'message': msg,
         'file': {
             'id': file_id,
             'original_name': original_filename,
             'file_size': file_size,
-            'sha256_hash': sha256_hash
+            'sha256_hash': sha256_hash,
+            'storage_provider': storage_used
         }
     })
 
@@ -955,7 +961,6 @@ def download_file(file_id):
 
     unique_key = file_record['file_key']
 
-    # 1. Download Stream directly from 5 TB Google Drive
     if unique_key.startswith('gdrive:'):
         gdrive_id = unique_key.replace('gdrive:', '')
         greq = download_file_stream_from_gdrive(gdrive_id)
@@ -983,7 +988,6 @@ def download_file(file_id):
             }
             return Response(stream_with_context(generate_stream()), mimetype='application/octet-stream', headers=headers)
 
-    # 2. Local/S3 Download
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
 
     s3_client = get_s3_client()
