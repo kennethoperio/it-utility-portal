@@ -160,18 +160,6 @@ def upload_file_to_gdrive(filepath, filename, category_id=None, mime_type='appli
         print(f"Error uploading file to Google Drive: {err_msg}")
         return None, err_msg
 
-def download_file_stream_from_gdrive(gdrive_file_id):
-    service = get_gdrive_service()
-    if not service:
-        return None
-    try:
-        from googleapiclient.http import MediaIoBaseDownload
-        req = service.files().get_media(fileId=gdrive_file_id, supportsAllDrives=True)
-        return req
-    except Exception as e:
-        print(f"Error getting Google Drive download request: {e}")
-        return None
-
 def delete_file_from_gdrive(gdrive_file_id):
     service = get_gdrive_service()
     if service and gdrive_file_id:
@@ -1168,30 +1156,46 @@ def download_file(file_id):
 
     if unique_key.startswith('gdrive:'):
         gdrive_id = unique_key.replace('gdrive:', '')
-        greq = download_file_stream_from_gdrive(gdrive_id)
-        if greq:
-            conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
-            conn.commit()
-            conn.close()
-            async_upload_db_to_cloud()
-            log_audit('FILE_DOWNLOADED', f"Downloaded from 5 TB Google Drive: '{file_record['original_name']}'")
+        service = get_gdrive_service()
+        if service:
+            try:
+                conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
+                conn.commit()
+                conn.close()
+                async_upload_db_to_cloud()
+                log_audit('FILE_DOWNLOADED', f"Downloaded from 5 TB Google Drive: '{file_record['original_name']}'")
 
-            def generate_stream():
-                fh = io.BytesIO()
-                # Gold Standard 4 MB chunksize: Instant <150ms popup & 100% max speed for 5 GB ISOs!
-                downloader = MediaIoBaseDownload(fh, greq, chunksize=4*1024*1024)
-                done = False
-                while not done:
-                    status, done = downloader.next_chunk()
-                    yield fh.getvalue()
-                    fh.seek(0)
-                    fh.truncate(0)
+                # Get fresh OAuth access token from credentials
+                creds = getattr(service._http, 'credentials', None)
+                if creds:
+                    import google.auth.transport.requests
+                    req_trans = google.auth.transport.requests.Request()
+                    if not creds.valid:
+                        creds.refresh(req_trans)
+                    access_token = creds.token
+                else:
+                    access_token = None
 
-            headers = {
-                'Content-Disposition': f'attachment; filename="{file_record["original_name"]}"',
-                'Content-Length': str(file_record['file_size'])
-            }
-            return Response(stream_with_context(generate_stream()), mimetype='application/octet-stream', headers=headers)
+                gdrive_url = f"https://www.googleapis.com/drive/v3/files/{gdrive_id}?alt=media"
+                import requests
+                headers_req = {'Authorization': f'Bearer {access_token}'} if access_token else {}
+                r = requests.get(gdrive_url, headers=headers_req, stream=True)
+
+                if r.status_code == 200:
+                    def generate_stream():
+                        for chunk in r.iter_content(chunk_size=1024*1024):
+                            if chunk:
+                                yield chunk
+
+                    headers = {
+                        'Content-Disposition': f'attachment; filename="{file_record["original_name"]}"',
+                        'Content-Length': str(file_record['file_size'])
+                    }
+                    return Response(stream_with_context(generate_stream()), mimetype='application/octet-stream', headers=headers)
+                else:
+                    print(f"GDrive streaming HTTP error: {r.status_code} {r.text}")
+            except Exception as e:
+                print(f"GDrive direct stream exception: {e}")
 
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
 
