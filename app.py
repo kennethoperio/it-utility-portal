@@ -75,7 +75,12 @@ def upload_file_to_gdrive(filepath, filename, mime_type='application/octet-strea
             file_metadata['parents'] = [folder_id]
 
         media = MediaFileUpload(filepath, mimetype=mime_type, resumable=True)
-        gfile = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+        gfile = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            supportsAllDrives=True,
+            fields='id'
+        ).execute()
         g_id = gfile.get('id')
         print(f"Uploaded to Google Drive successfully! File ID: {g_id}")
         return g_id, None
@@ -90,7 +95,7 @@ def download_file_stream_from_gdrive(gdrive_file_id):
         return None
     try:
         from googleapiclient.http import MediaIoBaseDownload
-        req = service.files().get_media(fileId=gdrive_file_id)
+        req = service.files().get_media(fileId=gdrive_file_id, supportsAllDrives=True)
         return req
     except Exception as e:
         print(f"Error getting Google Drive download request: {e}")
@@ -100,7 +105,7 @@ def delete_file_from_gdrive(gdrive_file_id):
     service = get_gdrive_service()
     if service and gdrive_file_id:
         try:
-            service.files().delete(fileId=gdrive_file_id).execute()
+            service.files().delete(fileId=gdrive_file_id, supportsAllDrives=True).execute()
             print(f"Deleted Google Drive file ID: {gdrive_file_id}")
         except Exception as e:
             print(f"Error deleting Google Drive file: {e}")
@@ -142,12 +147,17 @@ def download_db_from_cloud():
             q = "name = 'it_vault.db' and trashed = false"
             if folder_id:
                 q += f" and '{folder_id}' in parents"
-            res = service.files().list(q=q, fields='files(id, name)').execute()
+            res = service.files().list(
+                q=q,
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+                fields='files(id, name)'
+            ).execute()
             files = res.get('files', [])
             if files:
                 from googleapiclient.http import MediaIoBaseDownload
                 file_id = files[0]['id']
-                req = service.files().get_media(fileId=file_id)
+                req = service.files().get_media(fileId=file_id, supportsAllDrives=True)
                 fh = io.FileIO(DB_PATH, 'wb')
                 downloader = MediaIoBaseDownload(fh, req)
                 done = False
@@ -181,18 +191,23 @@ def upload_db_to_cloud():
             q = "name = 'it_vault.db' and trashed = false"
             if folder_id:
                 q += f" and '{folder_id}' in parents"
-            res = service.files().list(q=q, fields='files(id, name)').execute()
+            res = service.files().list(
+                q=q,
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+                fields='files(id, name)'
+            ).execute()
             files = res.get('files', [])
 
             from googleapiclient.http import MediaFileUpload
             media = MediaFileUpload(DB_PATH, mimetype='application/x-sqlite3', resumable=True)
 
             if files:
-                service.files().update(fileId=files[0]['id'], media_body=media).execute()
+                service.files().update(fileId=files[0]['id'], media_body=media, supportsAllDrives=True).execute()
             else:
                 file_metadata = {'name': 'it_vault.db'}
                 if folder_id: file_metadata['parents'] = [folder_id]
-                service.files().create(body=file_metadata, media_body=media).execute()
+                service.files().create(body=file_metadata, media_body=media, supportsAllDrives=True).execute()
 
             print("SUCCESS: Uploaded updated database to 5 TB Google Drive!")
         except Exception as e:
