@@ -416,6 +416,19 @@ def init_db():
             FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
         )
     ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS file_comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            file_id INTEGER NOT NULL,
+            author_name TEXT DEFAULT 'Technician',
+            status TEXT DEFAULT 'working',
+            comment_text TEXT NOT NULL,
+            ip_address TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
+        )
+    ''')
     
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS audit_logs (
@@ -540,6 +553,100 @@ def index_page():
 @app.route('/admin')
 def admin_page():
     return app.send_static_file('admin.html')
+
+# --- Tool Feedback / Comments API ---
+@app.route('/api/files/<int:file_id>/comments', methods=['GET'])
+@passcode_required
+def get_file_comments(file_id):
+    conn = get_db()
+    rows = conn.execute('''
+        SELECT * FROM file_comments WHERE file_id = ? ORDER BY created_at DESC LIMIT 100
+    ''', (file_id,)).fetchall()
+
+    stats = conn.execute('''
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'working' THEN 1 ELSE 0 END) as working_count,
+            SUM(CASE WHEN status = 'broken' THEN 1 ELSE 0 END) as broken_count
+        FROM file_comments WHERE file_id = ?
+    ''', (file_id,)).fetchone()
+
+    conn.close()
+
+    total = stats['total'] or 0
+    working = stats['working_count'] or 0
+    broken = stats['broken_count'] or 0
+    working_pct = round((working / total) * 100) if total > 0 else 100
+
+    return jsonify({
+        'comments': [dict(r) for r in rows],
+        'stats': {
+            'total': total,
+            'working_count': working,
+            'broken_count': broken,
+            'working_pct': working_pct
+        }
+    })
+
+@app.route('/api/files/<int:file_id>/comments', methods=['POST'])
+@passcode_required
+def add_file_comment(file_id):
+    data = request.get_json() or {}
+    author_name = (data.get('author_name') or 'Technician').strip() or 'Technician'
+    status = (data.get('status') or 'working').strip().lower()
+    comment_text = (data.get('comment_text') or '').strip()
+
+    if status not in ['working', 'broken']:
+        status = 'working'
+
+    if not comment_text:
+        return jsonify({'error': 'Comment text is required.'}), 400
+
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    conn = get_db()
+    file_record = conn.execute('SELECT original_name FROM files WHERE id = ?', (file_id,)).fetchone()
+    if not file_record:
+        conn.close()
+        return jsonify({'error': 'File not found.'}), 404
+
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO file_comments (file_id, author_name, status, comment_text, ip_address, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (file_id, author_name, status, comment_text, client_ip, now_str))
+    conn.commit()
+    conn.close()
+
+    async_upload_db_to_cloud()
+    log_audit('FILE_COMMENT_ADDED', f"Client comment added on '{file_record['original_name']}': {status.upper()} - {comment_text[:40]}")
+
+    return jsonify({'success': True, 'message': 'Thank you! Your feedback has been submitted successfully.'})
+
+@app.route('/api/admin/comments', methods=['GET'])
+@admin_required
+def get_admin_comments():
+    conn = get_db()
+    rows = conn.execute('''
+        SELECT c.*, f.original_name as file_name 
+        FROM file_comments c
+        JOIN files f ON c.file_id = f.id
+        ORDER BY c.created_at DESC LIMIT 500
+    ''').fetchall()
+    conn.close()
+    return jsonify({'comments': [dict(r) for r in rows]})
+
+@app.route('/api/admin/comments/<int:comment_id>', methods=['DELETE'])
+@admin_required
+def delete_admin_comment(comment_id):
+    conn = get_db()
+    conn.execute('DELETE FROM file_comments WHERE id = ?', (comment_id,))
+    conn.commit()
+    conn.close()
+    async_upload_db_to_cloud()
+    log_audit('FILE_COMMENT_DELETED', f"Admin deleted client comment #{comment_id}")
+    return jsonify({'success': True, 'message': 'Comment deleted.'})
 
 # --- Migration & Organization Endpoints ---
 @app.route('/api/admin/organize-gdrive-folders', methods=['POST'])
@@ -991,7 +1098,10 @@ def list_files():
     
     conn = get_db()
     query = '''
-        SELECT f.*, c.name as category_name, c.parent_id as category_parent_id 
+        SELECT f.*, c.name as category_name, c.parent_id as category_parent_id,
+               (SELECT COUNT(*) FROM file_comments WHERE file_id = f.id) as comment_count,
+               (SELECT SUM(CASE WHEN status = 'working' THEN 1 ELSE 0 END) FROM file_comments WHERE file_id = f.id) as working_comments,
+               (SELECT SUM(CASE WHEN status = 'broken' THEN 1 ELSE 0 END) FROM file_comments WHERE file_id = f.id) as broken_comments
         FROM files f 
         JOIN categories c ON f.category_id = c.id
     '''
