@@ -648,7 +648,48 @@ def delete_admin_comment(comment_id):
     log_audit('FILE_COMMENT_DELETED', f"Admin deleted client comment #{comment_id}")
     return jsonify({'success': True, 'message': 'Comment deleted.'})
 
-# --- Migration & Organization Endpoints ---
+# --- Migration & Auto-Linking Endpoints ---
+@app.route('/api/admin/auto-link-gdrive-files', methods=['POST'])
+@admin_required
+def auto_link_gdrive_files():
+    service = get_gdrive_service()
+    if not service:
+        return jsonify({'error': 'Google Drive service unavailable.'}), 400
+
+    conn = get_db()
+    unlinked_files = conn.execute("SELECT * FROM files WHERE file_key NOT LIKE 'gdrive:%'").fetchall()
+    
+    linked_count = 0
+    not_found = []
+
+    for f in unlinked_files:
+        try:
+            filename = f['original_name']
+            q = f"name = '{filename}' and trashed = false"
+            res = service.files().list(q=q, supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name)').execute()
+            g_files = res.get('files', [])
+            if g_files:
+                g_id = g_files[0]['id']
+                new_key = f"gdrive:{g_id}"
+                conn.execute('UPDATE files SET file_key = ? WHERE id = ?', (new_key, f['id']))
+                linked_count += 1
+            else:
+                not_found.append(filename)
+        except Exception as e:
+            not_found.append(f"{f['original_name']} ({e})")
+
+    conn.commit()
+    conn.close()
+    async_upload_db_to_cloud()
+
+    log_audit('GDRIVE_AUTO_LINKED', f"Auto-linked {linked_count} legacy files to 5 TB Google Drive")
+
+    return jsonify({
+        'success': True,
+        'message': f"Successfully auto-linked {linked_count} legacy files to 5 TB Google Drive!",
+        'unlinked_remaining': not_found
+    })
+
 @app.route('/api/admin/organize-gdrive-folders', methods=['POST'])
 @admin_required
 def organize_gdrive_folders():
@@ -1538,9 +1579,28 @@ def download_file(file_id):
             return jsonify({'error': 'Requested file does not exist.'}), 404
 
         unique_key = file_record['file_key']
+        gdrive_id = None
 
         if unique_key.startswith('gdrive:'):
             gdrive_id = unique_key.replace('gdrive:', '')
+        else:
+            # Fallback auto-discovery: check if file exists on Google Drive by original_name
+            service = get_gdrive_service()
+            if service:
+                try:
+                    q = f"name = '{file_record['original_name']}' and trashed = false"
+                    res = service.files().list(q=q, supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name)').execute()
+                    g_files = res.get('files', [])
+                    if g_files:
+                        gdrive_id = g_files[0]['id']
+                        unique_key = f"gdrive:{gdrive_id}"
+                        conn.execute('UPDATE files SET file_key = ? WHERE id = ?', (unique_key, file_id))
+                        conn.commit()
+                        print(f"AUTO-REPAIRED file #{file_id} ({file_record['original_name']}) -> GDrive ID {gdrive_id}")
+                except Exception as ex:
+                    print(f"GDrive fallback search note for {file_record['original_name']}: {ex}")
+
+        if gdrive_id:
             service = get_gdrive_service()
             if service:
                 token = get_cached_gdrive_token(service)
