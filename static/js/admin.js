@@ -708,19 +708,27 @@ function renderAdminFilesTable(files) {
   tableBody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;">No files found matching criteria.</td></tr>';
 }
 
-function openMoveFileModal(fileId, fileName, currentCatId) {
+async function openMoveFileModal(fileId, fileName, currentCatId) {
   document.getElementById('move-file-id').value = fileId;
   document.getElementById('move-file-name').innerText = fileName;
 
   const selectEl = document.getElementById('move-file-target-category');
   if (selectEl) {
-    let optionsHtml = '';
-    flatCategoriesData.forEach(c => {
-      const prefix = '--'.repeat(c.depth || 0);
-      const isSelected = c.id === currentCatId ? 'selected' : '';
-      optionsHtml += `<option value="${c.id}" ${isSelected}>${prefix} ${escapeHtml(c.name)}</option>`;
-    });
-    selectEl.innerHTML = optionsHtml;
+    try {
+      const res = await fetch('/api/categories');
+      const data = await res.json();
+      const catList = data.flat_list || [];
+
+      let optionsHtml = '';
+      catList.forEach(c => {
+        const prefix = c.depth > 0 ? '  '.repeat(c.depth) + '└── ' : '';
+        const isSelected = c.id === currentCatId ? 'selected' : '';
+        optionsHtml += `<option value="${c.id}" ${isSelected}>${prefix}${escapeHtml(c.name)}</option>`;
+      });
+      selectEl.innerHTML = optionsHtml;
+    } catch (err) {
+      console.error('Error loading categories for move modal:', err);
+    }
   }
 
   document.getElementById('move-file-modal').classList.add('active');
