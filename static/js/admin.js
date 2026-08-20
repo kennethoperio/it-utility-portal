@@ -109,7 +109,7 @@ function loadAdminDashboardData() {
 
 // Tab Switching
 function switchAdminTab(tabName) {
-  const tabs = ['upload', 'files', 'categories', 'commands', 'passcodes', 'logs', 'settings'];
+  const tabs = ['upload', 'files', 'categories', 'commands', 'passcodes', 'feedback', 'logs', 'settings'];
   tabs.forEach(t => {
     const el = document.getElementById(`admin-sec-${t}`);
     if (el) el.style.display = 'none';
@@ -128,6 +128,7 @@ function switchAdminTab(tabName) {
   if (tabName === 'categories') loadAdminCategories();
   if (tabName === 'commands') loadAdminCmdScripts();
   if (tabName === 'passcodes' || tabName === 'settings') loadAdminSettingsData();
+  if (tabName === 'feedback') loadAdminComments();
   if (tabName === 'logs') loadAuditLogs();
 }
 
@@ -876,8 +877,65 @@ async function migrateFilesToGDrive() {
     } else {
       alert(data.error || 'Migration failed.');
     }
+// Client Tool Comments & Feedback Moderation
+async function loadAdminComments() {
+  const tableBody = document.getElementById('admin-comments-table-body');
+  if (!tableBody) return;
+
+  tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Loading feedback...</td></tr>';
+
+  try {
+    const res = await fetch('/api/admin/comments');
+    const data = await res.json();
+    const comments = data.comments || [];
+
+    if (comments.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No technician feedback submitted yet.</td></tr>';
+      return;
+    }
+
+    let html = '';
+    comments.forEach(c => {
+      const isWorking = c.status === 'working';
+      const badgeClass = isWorking ? 'badge-success' : 'badge-danger';
+      const statusLabel = isWorking ? '🟢 Working' : '🔴 Issue Reported';
+      const dateStr = c.created_at ? c.created_at.split(' ')[0] : '-';
+
+      html += `
+        <tr>
+          <td>#${c.id}</td>
+          <td><strong>${escapeHtml(c.file_name)}</strong></td>
+          <td>${escapeHtml(c.author_name)}</td>
+          <td><span class="badge ${badgeClass}">${statusLabel}</span></td>
+          <td style="max-width: 320px; word-break: break-word;">${escapeHtml(c.comment_text)}</td>
+          <td>${dateStr}</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteComment(${c.id})"><i class="fa-solid fa-trash"></i> Delete</button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tableBody.innerHTML = html;
   } catch (err) {
-    alert('Server error executing migration.');
+    tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--danger-color);">Error loading client feedback.</td></tr>';
+  }
+}
+
+async function deleteComment(commentId) {
+  if (!confirm(`Are you sure you want to delete comment #${commentId}?`)) return;
+
+  try {
+    const res = await fetch(`/api/admin/comments/${commentId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      alert(data.message || 'Comment deleted.');
+      loadAdminComments();
+    } else {
+      alert(data.error || 'Failed deleting comment.');
+    }
+  } catch (err) {
+    alert('Server error deleting comment.');
   }
 }
 
