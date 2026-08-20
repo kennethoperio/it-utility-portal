@@ -508,6 +508,34 @@
     </div>
   </div>
 
+  <!-- Move File Modal Overlay -->
+  <div class="modal-overlay" id="move-file-modal">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-folder-arrow-right" style="color: var(--accent-color);"></i> Move File to Another Folder</h3>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="closeMoveFileModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="move-file-form" onsubmit="handleMoveFileSubmit(event)">
+        <input type="hidden" id="move-file-id">
+
+        <div style="margin-bottom: 1.25rem; background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.85rem; border-radius: var(--radius);">
+          <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Selected File to Move:</label>
+          <div style="font-weight: 700; font-size: 0.95rem; color: var(--accent-color); word-break: break-all;" id="move-file-name">filename.exe</div>
+        </div>
+
+        <div class="form-group">
+          <label for="move-file-target-category">Select Destination Folder / Category *</label>
+          <select id="move-file-target-category" required>
+            <!-- Populated dynamically via JS -->
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;"><i class="fa-solid fa-truck-ramp-box"></i> Move File Now</button>
+      </form>
+    </div>
+  </div>
+
   <script src="js/admin.js?v=3.5"></script>
 </body>
 </html>
