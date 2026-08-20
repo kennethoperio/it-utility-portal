@@ -398,6 +398,9 @@ function renderFiles(files) {
           <button class="btn btn-primary" id="btn-download-${f.id}" style="flex: 1;" ${isDownloading ? 'disabled' : ''} onclick="handleDownloadClick(event, ${f.id}, '${escapeJs(f.original_name)}')">
             ${isDownloading ? '<i class="fa-solid fa-spinner fa-spin"></i> Downloading...' : '<i class="fa-solid fa-download"></i> Download'}
           </button>
+          <button class="btn btn-secondary btn-icon" onclick="openCommentsModal(${f.id}, '${escapeJs(f.original_name)}')" title="Technician Feedback & Comments">
+            <i class="fa-solid fa-comments"></i> ${f.comment_count ? `<span style="font-size:0.75rem; font-weight:700; margin-left:2px;">${f.comment_count}</span>` : ''}
+          </button>
           <button class="btn btn-secondary btn-icon" onclick="copyHash('${f.sha256_hash}')" title="Copy SHA-256 Hash">
             <i class="fa-solid fa-fingerprint"></i>
           </button>
@@ -410,6 +413,123 @@ function renderFiles(files) {
   });
 
   gridEl.innerHTML = html;
+}
+
+// Tool Comments & Technician Feedback Logic
+async function openCommentsModal(fileId, fileName) {
+  document.getElementById('comment-file-id').value = fileId;
+  document.getElementById('comments-tool-title').innerText = fileName;
+  document.getElementById('comment-text').value = '';
+  document.getElementById('comments-modal').classList.add('active');
+
+  await loadComments(fileId);
+}
+
+function closeCommentsModal() {
+  document.getElementById('comments-modal').classList.remove('active');
+}
+
+async function loadComments(fileId) {
+  const container = document.getElementById('comments-list-container');
+  const summaryEl = document.getElementById('comments-health-summary');
+  const badgeEl = document.getElementById('comments-health-badge');
+
+  container.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading feedback...</div>`;
+
+  try {
+    const res = await fetch(`/api/files/${fileId}/comments`);
+    const data = await res.json();
+    const comments = data.comments || [];
+    const stats = data.stats || { total: 0, working_count: 0, broken_count: 0, working_pct: 100 };
+
+    if (summaryEl && badgeEl) {
+      if (stats.total === 0) {
+        summaryEl.innerText = 'No technician feedback posted yet. Be the first!';
+        badgeEl.className = 'badge badge-info';
+        badgeEl.innerText = 'No Reviews Yet';
+      } else {
+        summaryEl.innerText = `${stats.working_count} Working vs ${stats.broken_count} Reported Issues (${stats.total} total reviews)`;
+        if (stats.broken_count > 0 && stats.working_pct < 60) {
+          badgeEl.className = 'badge badge-danger';
+          badgeEl.innerText = `🔴 ${stats.working_pct}% Working`;
+        } else {
+          badgeEl.className = 'badge badge-success';
+          badgeEl.innerText = `🟢 ${stats.working_pct}% Working`;
+        }
+      }
+    }
+
+    if (comments.length === 0) {
+      container.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 1.5rem; background: var(--bg-secondary); border-radius: 8px;">No comments posted for this tool yet.</div>`;
+      return;
+    }
+
+    let html = '';
+    comments.forEach(c => {
+      const isWorking = c.status === 'working';
+      const badgeHtml = isWorking 
+        ? `<span class="badge badge-success" style="font-size: 0.75rem;"><i class="fa-solid fa-check"></i> Working Great</span>`
+        : `<span class="badge badge-danger" style="font-size: 0.75rem;"><i class="fa-solid fa-triangle-exclamation"></i> Issue Found</span>`;
+      const dateStr = c.created_at ? c.created_at.split(' ')[0] : '';
+
+      html += `
+        <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 0.85rem; margin-bottom: 0.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <strong style="font-size: 0.88rem; color: var(--text-primary);"><i class="fa-solid fa-user-gear" style="color: var(--accent-color);"></i> ${escapeHtml(c.author_name)}</strong>
+              ${badgeHtml}
+            </div>
+            <span style="font-size: 0.75rem; color: var(--text-secondary);">${dateStr}</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">${escapeHtml(c.comment_text)}</p>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = `<div style="text-align: center; color: var(--danger-color); padding: 1rem;">Error loading tool comments.</div>`;
+  }
+}
+
+async function submitToolComment(e) {
+  if (e) e.preventDefault();
+  const fileId = document.getElementById('comment-file-id').value;
+  const author_name = document.getElementById('comment-author').value.trim();
+  const status = document.getElementById('comment-status').value;
+  const comment_text = document.getElementById('comment-text').value.trim();
+  const submitBtn = document.getElementById('comment-submit-btn');
+
+  if (!fileId || !comment_text) {
+    alert('Please enter your comment notes.');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Submitting...`;
+
+  try {
+    const res = await fetch(`/api/files/${fileId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ author_name, status, comment_text })
+    });
+    const data = await res.json();
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Submit Feedback`;
+
+    if (res.ok && data.success) {
+      document.getElementById('comment-text').value = '';
+      await loadComments(fileId);
+      loadFiles();
+    } else {
+      alert(data.error || 'Failed submitting feedback.');
+    }
+  } catch (err) {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Submit Feedback`;
+    alert('Network error submitting feedback.');
+  }
 }
 
 async function handleDownloadClick(e, fileId, fileName) {
