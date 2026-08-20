@@ -1,3 +1,4 @@
+const API_BASE = (window.location.pathname.includes('it-utility-portal') || window.location.hostname.includes('github.io')) ? 'static/api' : 'api';
 // Admin Dashboard JavaScript Logic
 
 let categoriesList = [];
@@ -36,7 +37,7 @@ function updateThemeIcon(theme) {
 
 async function checkAdminAuth() {
   try {
-    const res = await fetch('/api/auth/status');
+    const res = await fetch(`${API_BASE}/auth/status');
     const data = await res.json();
 
     if (data.is_admin) {
@@ -73,7 +74,7 @@ async function submitAdminLogin(e) {
   errorEl.style.display = 'none';
 
   try {
-    const res = await fetch('/api/auth/admin-login', {
+    const res = await fetch(`${API_BASE}/auth/admin-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -96,7 +97,7 @@ async function submitAdminLogin(e) {
 }
 
 async function logoutAdmin() {
-  await fetch('/api/auth/logout', { method: 'POST' });
+  await fetch(`${API_BASE}/auth/logout', { method: 'POST' });
   window.location.reload();
 }
 
@@ -182,7 +183,7 @@ function getCategoryIconClass(categoryName, iconName) {
 // Categories Management
 async function loadAdminCategories() {
   try {
-    const res = await fetch('/api/categories');
+    const res = await fetch(`${API_BASE}/categories');
     const data = await res.json();
 
     categoriesList = data.flat_list || [];
@@ -264,7 +265,7 @@ async function handleCreateCategory(e) {
   const description = document.getElementById('cat-description').value.trim();
 
   try {
-    const res = await fetch('/api/categories', {
+    const res = await fetch(`${API_BASE}/categories', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, parent_id, icon, description })
@@ -318,7 +319,7 @@ async function handleSaveCategoryEdit(e) {
   const description = document.getElementById('edit-cat-description').value.trim();
 
   try {
-    const res = await fetch(`/api/categories/${id}`, {
+    const res = await fetch(`${API_BASE}/categories/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, parent_id, icon, description })
@@ -342,7 +343,7 @@ async function deleteCategory(id, name) {
   if (!confirm(`Are you sure you want to delete category "${name}"?\nWarning: This will also delete all subfolders and files assigned to this folder!`)) return;
 
   try {
-    const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/categories/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (data.success) {
       alert(data.message);
@@ -359,7 +360,7 @@ async function deleteCategory(id, name) {
 // Troubleshooting Commands Management
 async function loadAdminCmdScripts() {
   try {
-    const res = await fetch('/api/tools/cmd-scripts');
+    const res = await fetch(`${API_BASE}/tools/cmd-scripts');
     const data = await res.json();
     adminCmdScriptsList = data.scripts || [];
     renderAdminCmdScriptsTable(adminCmdScriptsList);
@@ -402,7 +403,7 @@ async function handleCreateCmdScript(e) {
   const description = document.getElementById('cmd-description').value.trim();
 
   try {
-    const res = await fetch('/api/admin/cmd-scripts', {
+    const res = await fetch(`${API_BASE}/admin/cmd-scripts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, type, command, description })
@@ -432,7 +433,7 @@ async function editCmdScript(id, currentTitle, currentType, currentCmd, currentD
   const description = prompt("Edit Description:", currentDesc) || "";
 
   try {
-    const res = await fetch(`/api/admin/cmd-scripts/${id}`, {
+    const res = await fetch(`${API_BASE}/admin/cmd-scripts/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: title.trim(), type: type.trim(), command: command.trim(), description: description.trim() })
@@ -454,7 +455,7 @@ async function deleteCmdScript(id, title) {
   if (!confirm(`Are you sure you want to delete command "${title}"?`)) return;
 
   try {
-    const res = await fetch(`/api/admin/cmd-scripts/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/admin/cmd-scripts/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (data.success) {
       alert(data.message);
@@ -547,7 +548,7 @@ async function handleFileUpload(e) {
 
   try {
     // Step 1: Init Resumable Upload Session
-    const initRes = await fetch('/api/files/upload/init-resumable', {
+    const initRes = await fetch(`${API_BASE}/files/upload/init-resumable', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -586,7 +587,7 @@ async function handleFileUpload(e) {
           const totalMB = (file.size / (1024 * 1024)).toFixed(1);
           statusText.innerText = `Uploading Chunk ${chunkIdx + 1}/${totalChunks} (${currentMB} MB / ${totalMB} MB)...`;
 
-          const chunkRes = await fetch('/api/files/upload/chunk-proxy', {
+          const chunkRes = await fetch(`${API_BASE}/files/upload/chunk-proxy', {
             method: 'POST',
             headers: {
               'X-Resumable-Url': resumableUrl,
@@ -628,7 +629,7 @@ async function handleFileUpload(e) {
 
     // Step 3: Finalize DB Registration
     statusText.innerText = 'Finalizing file registration in vault...';
-    const finalRes = await fetch('/api/files/upload/finalize-resumable', {
+    const finalRes = await fetch(`${API_BASE}/files/upload/finalize-resumable', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -728,7 +729,7 @@ async function openMoveFileModal(fileId, fileName, currentCatId) {
   const selectEl = document.getElementById('move-file-target-category');
   if (selectEl) {
     try {
-      const res = await fetch('/api/categories');
+      const res = await fetch(`${API_BASE}/categories');
       const data = await res.json();
       const catList = data.flat_list || [];
 
@@ -762,7 +763,7 @@ async function handleMoveFileSubmit(e) {
   }
 
   try {
-    const res = await fetch(`/api/files/${fileId}/move`, {
+    const res = await fetch(`${API_BASE}/files/${fileId}/move`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ category_id: targetCatId })
@@ -785,7 +786,7 @@ async function deleteFile(id, name) {
   if (!confirm(`Are you sure you want to delete file "${name}" from server storage?`)) return;
 
   try {
-    const res = await fetch(`/api/files/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/files/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (data.success) {
       alert(data.message);
@@ -801,7 +802,7 @@ async function deleteFile(id, name) {
 // Settings, Guest Passcodes & Audit Logs Pagination
 async function loadAdminSettingsData(isSilent = false) {
   try {
-    const res = await fetch('/api/admin/settings');
+    const res = await fetch(`${API_BASE}/admin/settings');
     const data = await res.json();
 
     if (data.stats) {
@@ -881,7 +882,7 @@ async function migrateFilesToGDrive() {
   if (!confirm('Are you sure you want to copy all existing tools (172 MB) from Backblaze B2 into your 5 TB Google Drive folder?')) return;
 
   try {
-    const res = await fetch('/api/admin/migrate-to-gdrive', { method: 'POST' });
+    const res = await fetch(`${API_BASE}/admin/migrate-to-gdrive', { method: 'POST' });
     const data = await res.json();
     if (data.success) {
       alert(data.message);
@@ -898,7 +899,7 @@ async function autoLinkGDriveFiles() {
   if (!confirm('Scan 5 TB Google Drive and auto-link all legacy tools in your database?')) return;
 
   try {
-    const res = await fetch('/api/admin/auto-link-gdrive-files', { method: 'POST' });
+    const res = await fetch(`${API_BASE}/admin/auto-link-gdrive-files', { method: 'POST' });
     const data = await res.json();
     if (res.ok && data.success) {
       alert(data.message || 'Auto-linked files to Google Drive!');
@@ -916,7 +917,7 @@ let allAdminCommentsList = [];
 
 async function checkUnreadCommentsBadge() {
   try {
-    const res = await fetch('/api/admin/comments');
+    const res = await fetch(`${API_BASE}/admin/comments');
     const data = await res.json();
     const comments = data.comments || [];
     allAdminCommentsList = comments;
@@ -958,7 +959,7 @@ async function loadAdminComments() {
   tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Loading feedback...</td></tr>';
 
   try {
-    const res = await fetch('/api/admin/comments');
+    const res = await fetch(`${API_BASE}/admin/comments');
     const data = await res.json();
     allAdminCommentsList = data.comments || [];
 
@@ -1029,7 +1030,7 @@ async function deleteComment(commentId) {
   if (!confirm(`Are you sure you want to delete comment #${commentId}?`)) return;
 
   try {
-    const res = await fetch(`/api/admin/comments/${commentId}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/admin/comments/${commentId}`, { method: 'DELETE' });
     const data = await res.json();
     if (res.ok && data.success) {
       alert(data.message || 'Comment deleted.');
@@ -1047,7 +1048,7 @@ async function loadAdminAuditLogs() {
   const isClientOnly = (document.getElementById('audit-log-type-filter')?.value || 'client') === 'client';
 
   try {
-    const res = await fetch(`/api/admin/audit-logs?client_only=${isClientOnly}`);
+    const res = await fetch(`${API_BASE}/admin/audit-logs?client_only=${isClientOnly}`);
     const data = await res.json();
     allAuditLogsList = data.logs || [];
     // Sort latest timestamp first
@@ -1141,7 +1142,7 @@ function renderAuditLogsTable() {
 async function deleteSingleAuditLog(id) {
   if (!confirm(`Are you sure you want to delete audit log #${id}?`)) return;
   try {
-    const res = await fetch(`/api/admin/audit-logs/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/admin/audit-logs/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (data.success) {
       allAuditLogsList = allAuditLogsList.filter(l => l.id !== id);
@@ -1157,7 +1158,7 @@ async function deleteSingleAuditLog(id) {
 async function clearAllAuditLogs() {
   if (!confirm('Are you sure you want to CLEAR ALL AUDIT LOGS?\nWarning: This action cannot be undone!')) return;
   try {
-    const res = await fetch('/api/admin/audit-logs', { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/admin/audit-logs', { method: 'DELETE' });
     const data = await res.json();
     if (data.success) {
       alert(data.message);
@@ -1178,7 +1179,7 @@ async function handleCreateGuestPasscode(e) {
   const days_valid = document.getElementById('passcode-valid-days').value;
 
   try {
-    const res = await fetch('/api/admin/guest-passcodes', {
+    const res = await fetch(`${API_BASE}/admin/guest-passcodes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ label, max_uses, days_valid })
@@ -1200,7 +1201,7 @@ async function handleCreateGuestPasscode(e) {
 async function deleteGuestPasscode(id) {
   if (!confirm('Are you sure you want to delete this temporary guest passcode?')) return;
   try {
-    const res = await fetch(`/api/admin/guest-passcodes/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/admin/guest-passcodes/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (data.success) loadAdminSettingsData();
   } catch (err) {
@@ -1237,7 +1238,7 @@ async function handleSaveSettings(e) {
   }
 
   try {
-    const res = await fetch('/api/admin/settings', {
+    const res = await fetch(`${API_BASE}/admin/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
