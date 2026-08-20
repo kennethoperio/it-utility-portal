@@ -143,11 +143,47 @@ def get_cached_gdrive_token(service):
         return token
     return None
 
+def find_gdrive_file_id_by_name(service, filename):
+    if not service or not filename:
+        return None
+    try:
+        # 1. Exact match (escape single quotes for GDrive API syntax)
+        safe_name = filename.replace("'", "\\'")
+        q = f"name = '{safe_name}' and trashed = false"
+        res = service.files().list(q=q, supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name)').execute()
+        files = res.get('files', [])
+        if files:
+            return files[0]['id']
+
+        # 2. Fuzzy match by base name without extension
+        base_name = os.path.splitext(filename)[0].replace("'", "\\'").strip()
+        if len(base_name) >= 3:
+            q_fuzzy = f"name contains '{base_name}' and trashed = false"
+            res_fuzzy = service.files().list(q=q_fuzzy, supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name)').execute()
+            files_fuzzy = res_fuzzy.get('files', [])
+            if files_fuzzy:
+                print(f"Fuzzy GDrive match for '{filename}' -> '{files_fuzzy[0]['name']}' (ID: {files_fuzzy[0]['id']})")
+                return files_fuzzy[0]['id']
+
+        # 3. First word fallback (e.g. "Classroom" for "Classroom Spy Pro.exe")
+        first_word = base_name.split()[0] if base_name.split() else ""
+        if len(first_word) >= 4:
+            q_word = f"name contains '{first_word}' and trashed = false"
+            res_word = service.files().list(q=q_word, supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name)').execute()
+            files_word = res_word.get('files', [])
+            if files_word:
+                print(f"First-word GDrive match for '{filename}' -> '{files_word[0]['name']}' (ID: {files_word[0]['id']})")
+                return files_word[0]['id']
+    except Exception as e:
+        print(f"GDrive search exception for '{filename}': {e}")
+    return None
+
 def get_or_create_gdrive_folder(service, folder_name, parent_id):
     if not service or not folder_name or not parent_id:
         return parent_id
     try:
-        q = f"name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false and '{parent_id}' in parents"
+        safe_name = folder_name.replace("'", "\\'")
+        q = f"name = '{safe_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false and '{parent_id}' in parents"
         res = service.files().list(q=q, supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name)').execute()
         files = res.get('files', [])
         if files:
@@ -663,20 +699,13 @@ def auto_link_gdrive_files():
     not_found = []
 
     for f in unlinked_files:
-        try:
-            filename = f['original_name']
-            q = f"name = '{filename}' and trashed = false"
-            res = service.files().list(q=q, supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name)').execute()
-            g_files = res.get('files', [])
-            if g_files:
-                g_id = g_files[0]['id']
-                new_key = f"gdrive:{g_id}"
-                conn.execute('UPDATE files SET file_key = ? WHERE id = ?', (new_key, f['id']))
-                linked_count += 1
-            else:
-                not_found.append(filename)
-        except Exception as e:
-            not_found.append(f"{f['original_name']} ({e})")
+        g_id = find_gdrive_file_id_by_name(service, f['original_name'])
+        if g_id:
+            new_key = f"gdrive:{g_id}"
+            conn.execute('UPDATE files SET file_key = ? WHERE id = ?', (new_key, f['id']))
+            linked_count += 1
+        else:
+            not_found.append(f['original_name'])
 
     conn.commit()
     conn.close()
@@ -1587,21 +1616,15 @@ def download_file(file_id):
         if unique_key.startswith('gdrive:'):
             gdrive_id = unique_key.replace('gdrive:', '')
         else:
-            # Fallback auto-discovery: check if file exists on Google Drive by original_name
+            # Enhanced Multi-Tier GDrive Auto-Discovery (Exact -> Base -> Fuzzy Word)
             service = get_gdrive_service()
             if service:
-                try:
-                    q = f"name = '{file_record['original_name']}' and trashed = false"
-                    res = service.files().list(q=q, supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name)').execute()
-                    g_files = res.get('files', [])
-                    if g_files:
-                        gdrive_id = g_files[0]['id']
-                        unique_key = f"gdrive:{gdrive_id}"
-                        conn.execute('UPDATE files SET file_key = ? WHERE id = ?', (unique_key, file_id))
-                        conn.commit()
-                        print(f"AUTO-REPAIRED file #{file_id} ({file_record['original_name']}) -> GDrive ID {gdrive_id}")
-                except Exception as ex:
-                    print(f"GDrive fallback search note for {file_record['original_name']}: {ex}")
+                gdrive_id = find_gdrive_file_id_by_name(service, file_record['original_name'])
+                if gdrive_id:
+                    unique_key = f"gdrive:{gdrive_id}"
+                    conn.execute('UPDATE files SET file_key = ? WHERE id = ?', (unique_key, file_id))
+                    conn.commit()
+                    print(f"AUTO-REPAIRED file #{file_id} ({file_record['original_name']}) -> GDrive ID {gdrive_id}")
 
         if gdrive_id:
             service = get_gdrive_service()
