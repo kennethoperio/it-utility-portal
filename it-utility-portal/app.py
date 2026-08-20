@@ -170,6 +170,15 @@ def get_gdrive_folder_id_for_category(service, category_id):
         print(f"Error resolving GDrive path for category {category_id}: {e}")
         return root_folder_id
 
+def delete_file_from_gdrive(gdrive_file_id):
+    service = get_gdrive_service()
+    if service and gdrive_file_id:
+        try:
+            service.files().delete(fileId=gdrive_file_id, supportsAllDrives=True).execute()
+            print(f"Deleted Google Drive file ID: {gdrive_file_id}")
+        except Exception as e:
+            print(f"Error deleting Google Drive file: {e}")
+
 # --- Backblaze B2 / S3 Integration ---
 def get_s3_client():
     if S3_ENDPOINT and S3_ACCESS_KEY and S3_SECRET_KEY:
@@ -556,6 +565,78 @@ def organize_gdrive_folders():
         'success': True,
         'message': f"Organized {moved_count} files into category subfolders on Google Drive!",
         'errors': errors
+    })
+
+# --- Move File to Another Folder Endpoint (With GDrive Folder Sync) ---
+@app.route('/api/files/<int:file_id>/move', methods=['PUT'])
+@admin_required
+def move_file(file_id):
+    data = request.get_json() or {}
+    new_category_id = data.get('category_id')
+
+    if not new_category_id:
+        return jsonify({'error': 'Target category_id is required.'}), 400
+
+    try:
+        new_category_id = int(new_category_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid category_id.'}), 400
+
+    conn = get_db()
+    file_record = conn.execute('SELECT * FROM files WHERE id = ?', (file_id,)).fetchone()
+
+    if not file_record:
+        conn.close()
+        return jsonify({'error': 'File not found.'}), 404
+
+    old_category_id = file_record['category_id']
+    if old_category_id == new_category_id:
+        conn.close()
+        return jsonify({'success': True, 'message': 'File is already in the selected target folder.'})
+
+    new_cat_row = conn.execute('SELECT name FROM categories WHERE id = ?', (new_category_id,)).fetchone()
+    if not new_cat_row:
+        conn.close()
+        return jsonify({'error': 'Target category folder does not exist.'}), 404
+
+    target_category_name = new_cat_row['name']
+    unique_key = file_record['file_key']
+    gdrive_moved = False
+
+    if unique_key.startswith('gdrive:'):
+        gdrive_id = unique_key.replace('gdrive:', '')
+        service = get_gdrive_service()
+        if service:
+            try:
+                target_folder_id = get_gdrive_folder_id_for_category(service, new_category_id)
+                if target_folder_id:
+                    file_info = service.files().get(fileId=gdrive_id, fields='parents', supportsAllDrives=True).execute()
+                    previous_parents = ",".join(file_info.get('parents', []))
+
+                    service.files().update(
+                        fileId=gdrive_id,
+                        addParents=target_folder_id,
+                        removeParents=previous_parents,
+                        supportsAllDrives=True,
+                        fields='id, parents'
+                    ).execute()
+                    gdrive_moved = True
+                    print(f"Moved Google Drive file {file_record['original_name']} to new folder ID {target_folder_id}")
+            except Exception as e:
+                print(f"Error moving file on Google Drive: {e}")
+
+    conn.execute('UPDATE files SET category_id = ? WHERE id = ?', (new_category_id, file_id))
+    conn.commit()
+    conn.close()
+
+    async_upload_db_to_cloud()
+
+    gdrive_msg = " and updated on 5 TB Google Drive" if gdrive_moved else ""
+    log_audit('FILE_MOVED', f"Moved '{file_record['original_name']}' to category '{target_category_name}' (ID: {new_category_id})")
+
+    return jsonify({
+        'success': True,
+        'message': f"File '{file_record['original_name']}' successfully moved to '{target_category_name}'{gdrive_msg}!"
     })
 
 # --- Chunked Resumable Upload Engine (10 MB Chunks to Prevent Gateway Timeouts) ---
