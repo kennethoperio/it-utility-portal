@@ -128,8 +128,11 @@ function switchAdminTab(tabName) {
   if (tabName === 'categories') loadAdminCategories();
   if (tabName === 'commands') loadAdminCmdScripts();
   if (tabName === 'passcodes' || tabName === 'settings') loadAdminSettingsData();
-  if (tabName === 'feedback') loadAdminComments();
-  if (tabName === 'logs') loadAuditLogs();
+  if (tabName === 'feedback') {
+    markFeedbackAsSeen();
+    loadAdminComments();
+  }
+  if (tabName === 'logs') loadAdminAuditLogs();
 }
 
 function confirmDownloadAllZip() {
@@ -190,9 +193,12 @@ async function loadAdminCategories() {
     const parentSelectEl = document.getElementById('cat-parent');
     const filterSelectEl = document.getElementById('admin-file-category-filter');
 
+    const commentFolderSelectEl = document.getElementById('admin-comment-folder-filter');
+
     let selectHtml = '<option value="">-- Select Target Folder --</option>';
     let parentHtml = '<option value="">-- Main Folder (Top Level) --</option>';
     let filterHtml = '<option value="">All Categories & Folders</option>';
+    let commentFolderHtml = '<option value="">-- All Folders / Categories --</option>';
 
     categoriesList.forEach(c => {
       const depth = c.depth || 0;
@@ -201,6 +207,7 @@ async function loadAdminCategories() {
       selectHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)}</option>`;
       filterHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)}</option>`;
       parentHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)}</option>`;
+      commentFolderHtml += `<option value="${c.id}">${prefix}${escapeHtml(c.name)}</option>`;
     });
 
     if (selectEl) selectEl.innerHTML = selectHtml;
@@ -209,6 +216,11 @@ async function loadAdminCategories() {
       const selectedVal = filterSelectEl.value;
       filterSelectEl.innerHTML = filterHtml;
       filterSelectEl.value = selectedVal;
+    }
+    if (commentFolderSelectEl) {
+      const selectedFolder = commentFolderSelectEl.value;
+      commentFolderSelectEl.innerHTML = commentFolderHtml;
+      commentFolderSelectEl.value = selectedFolder;
     }
 
     const tableBody = document.getElementById('admin-categories-table-body');
@@ -900,6 +912,45 @@ async function autoLinkGDriveFiles() {
 }
 
 // Client Tool Comments & Feedback Moderation
+let allAdminCommentsList = [];
+
+async function checkUnreadCommentsBadge() {
+  try {
+    const res = await fetch('/api/admin/comments');
+    const data = await res.json();
+    const comments = data.comments || [];
+    allAdminCommentsList = comments;
+
+    const lastSeenId = parseInt(localStorage.getItem('admin_last_seen_comment_id') || '0');
+    const unreadCount = comments.filter(c => c.id > lastSeenId).length;
+
+    const badgeEl = document.getElementById('feedback-unread-badge');
+    if (badgeEl) {
+      if (unreadCount > 0) {
+        badgeEl.innerText = unreadCount;
+        badgeEl.style.display = 'inline-block';
+      } else {
+        badgeEl.style.display = 'none';
+      }
+    }
+  } catch (err) {
+    console.error('Error checking unread comments badge:', err);
+  }
+}
+
+function markFeedbackAsSeen() {
+  if (allAdminCommentsList.length > 0) {
+    const maxId = Math.max(...allAdminCommentsList.map(c => c.id));
+    localStorage.setItem('admin_last_seen_comment_id', maxId.toString());
+  }
+  const badgeEl = document.getElementById('feedback-unread-badge');
+  if (badgeEl) badgeEl.style.display = 'none';
+}
+
+// Check unread feedback badge every 15 seconds
+setInterval(checkUnreadCommentsBadge, 15000);
+document.addEventListener('DOMContentLoaded', checkUnreadCommentsBadge);
+
 async function loadAdminComments() {
   const tableBody = document.getElementById('admin-comments-table-body');
   if (!tableBody) return;
@@ -909,39 +960,69 @@ async function loadAdminComments() {
   try {
     const res = await fetch('/api/admin/comments');
     const data = await res.json();
-    const comments = data.comments || [];
+    allAdminCommentsList = data.comments || [];
 
-    if (comments.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No technician feedback submitted yet.</td></tr>';
-      return;
-    }
-
-    let html = '';
-    comments.forEach(c => {
-      const isWorking = c.status === 'working';
-      const badgeClass = isWorking ? 'badge-success' : 'badge-danger';
-      const statusLabel = isWorking ? '🟢 Working' : '🔴 Issue Reported';
-      const dateStr = c.created_at ? c.created_at.split(' ')[0] : '-';
-
-      html += `
-        <tr>
-          <td>#${c.id}</td>
-          <td><strong>${escapeHtml(c.file_name)}</strong></td>
-          <td>${escapeHtml(c.author_name)}</td>
-          <td><span class="badge ${badgeClass}">${statusLabel}</span></td>
-          <td style="max-width: 320px; word-break: break-word;">${escapeHtml(c.comment_text)}</td>
-          <td>${dateStr}</td>
-          <td>
-            <button class="btn btn-danger btn-sm" onclick="deleteComment(${c.id})"><i class="fa-solid fa-trash"></i> Delete</button>
-          </td>
-        </tr>
-      `;
-    });
-
-    tableBody.innerHTML = html;
+    filterAdminCommentsTable();
+    checkUnreadCommentsBadge();
   } catch (err) {
     tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--danger-color);">Error loading client feedback.</td></tr>';
   }
+}
+
+function filterAdminCommentsTable() {
+  const tableBody = document.getElementById('admin-comments-table-body');
+  if (!tableBody) return;
+
+  const folderFilter = (document.getElementById('admin-comment-folder-filter')?.value || '').toString();
+  const statusFilter = (document.getElementById('admin-comment-status-filter')?.value || '').toLowerCase();
+  const searchQuery = (document.getElementById('admin-comment-search-input')?.value || '').toLowerCase().trim();
+
+  let filtered = allAdminCommentsList.filter(c => {
+    if (folderFilter && c.category_id && c.category_id.toString() !== folderFilter) return false;
+    if (statusFilter && (c.status || '').toLowerCase() !== statusFilter) return false;
+    if (searchQuery) {
+      const toolName = (c.file_name || '').toLowerCase();
+      const authorName = (c.author_name || '').toLowerCase();
+      const noteText = (c.comment_text || '').toLowerCase();
+      const catName = (c.category_name || '').toLowerCase();
+      if (!toolName.includes(searchQuery) && !authorName.includes(searchQuery) && !noteText.includes(searchQuery) && !catName.includes(searchQuery)) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  // Sort by latest date / ID descending
+  filtered.sort((a, b) => b.id - a.id);
+
+  if (filtered.length === 0) {
+    tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--text-secondary);">No matching technician feedback found.</td></tr>';
+    return;
+  }
+
+  let html = '';
+  filtered.forEach(c => {
+    const isWorking = c.status === 'working';
+    const badgeClass = isWorking ? 'badge-success' : 'badge-danger';
+    const statusLabel = isWorking ? '🟢 Working Great' : '🔴 Issue Found';
+    const folderBadge = c.category_name ? `<br><small style="color: var(--text-secondary);"><i class="fa-solid fa-folder"></i> ${escapeHtml(c.category_name)}</small>` : '';
+
+    html += `
+      <tr>
+        <td>#${c.id}</td>
+        <td><strong>${escapeHtml(c.file_name)}</strong>${folderBadge}</td>
+        <td>${escapeHtml(c.author_name)}</td>
+        <td><span class="badge ${badgeClass}">${statusLabel}</span></td>
+        <td style="max-width: 320px; word-break: break-word;">${escapeHtml(c.comment_text)}</td>
+        <td>${escapeHtml(c.created_at || '-')}</td>
+        <td>
+          <button class="btn btn-danger btn-sm" onclick="deleteComment(${c.id})"><i class="fa-solid fa-trash"></i> Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+
+  tableBody.innerHTML = html;
 }
 
 async function deleteComment(commentId) {
@@ -961,16 +1042,25 @@ async function deleteComment(commentId) {
   }
 }
 
-// Audit Logs Pagination & Actions
-async function loadAuditLogs() {
+// Audit Logs Pagination, Client-Only Filter & Live Search
+async function loadAdminAuditLogs() {
+  const isClientOnly = (document.getElementById('audit-log-type-filter')?.value || 'client') === 'client';
+
   try {
-    const res = await fetch('/api/admin/audit-logs');
+    const res = await fetch(`/api/admin/audit-logs?client_only=${isClientOnly}`);
     const data = await res.json();
     allAuditLogsList = data.logs || [];
+    // Sort latest timestamp first
+    allAuditLogsList.sort((a, b) => b.id - a.id);
     renderAuditLogsTable();
   } catch (err) {
     console.error('Error loading audit logs:', err);
   }
+}
+
+function filterAuditLogsTable() {
+  currentLogsPage = 1;
+  renderAuditLogsTable();
 }
 
 function changeLogsPerPage(val) {
@@ -998,13 +1088,22 @@ function renderAuditLogsTable() {
   const logsTable = document.getElementById('admin-audit-logs-body');
   if (!logsTable) return;
 
-  const totalLogs = allAuditLogsList.length;
+  const searchQuery = (document.getElementById('audit-log-search-input')?.value || '').toLowerCase().trim();
+  let filteredLogs = allAuditLogsList.filter(l => {
+    if (!searchQuery) return true;
+    const action = (l.action || '').toLowerCase();
+    const details = (l.details || '').toLowerCase();
+    const ip = (l.ip_address || '').toLowerCase();
+    return action.includes(searchQuery) || details.includes(searchQuery) || ip.includes(searchQuery);
+  });
+
+  const totalLogs = filteredLogs.length;
   const maxPage = Math.ceil(totalLogs / logsPerPage) || 1;
   if (currentLogsPage > maxPage) currentLogsPage = maxPage;
 
   const startIndex = (currentLogsPage - 1) * logsPerPage;
   const endIndex = Math.min(startIndex + logsPerPage, totalLogs);
-  const pageLogs = allAuditLogsList.slice(startIndex, endIndex);
+  const pageLogs = filteredLogs.slice(startIndex, endIndex);
 
   let logsHtml = '';
   pageLogs.forEach(l => {
