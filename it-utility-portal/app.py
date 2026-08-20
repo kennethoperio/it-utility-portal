@@ -988,6 +988,9 @@ def verify_passcode():
 @app.route('/api/auth/admin-login', methods=['POST'])
 def admin_login():
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if is_ip_rate_limited(client_ip):
+        return jsonify({'success': False, 'message': 'Account locked temporarily due to multiple failed login attempts. Please wait 5 minutes.'}), 429
+
     data = request.get_json() or {}
     username = (data.get('username') or '').strip()
     password = (data.get('password') or '').strip()
@@ -996,28 +999,10 @@ def admin_login():
         return jsonify({'success': False, 'message': 'Username and Password are required.'}), 400
 
     conn = get_db()
-
-    # Unbreakable Master Emergency Fallback (accepts admin123 or tech2026 or hash)
-    if username.lower() == 'admin' and password in ['admin123', 'tech2026', 'admin', '123456']:
-        new_hash = generate_password_hash(password)
-        conn.execute('INSERT OR REPLACE INTO users (id, username, password_hash) VALUES (1, ?, ?)', (username, new_hash))
-        conn.commit()
-        conn.close()
-        clear_failed_attempts(client_ip)
-        session['is_admin'] = True
-        session['is_unlocked'] = True
-        session['admin_user'] = username
-        log_audit('ADMIN_LOGIN', f"User '{username}' logged in successfully via master fallback.")
-        return jsonify({'success': True, 'message': 'Admin login successful.'})
-
     user = conn.execute('SELECT * FROM users WHERE LOWER(username) = ?', (username.lower(),)).fetchone()
-    is_valid = False
-    if user and check_password_hash(user['password_hash'], password):
-        is_valid = True
-
     conn.close()
 
-    if is_valid:
+    if user and check_password_hash(user['password_hash'], password):
         clear_failed_attempts(client_ip)
         session['is_admin'] = True
         session['is_unlocked'] = True
