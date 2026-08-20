@@ -127,7 +127,8 @@ function switchAdminTab(tabName) {
   if (tabName === 'files') loadAdminFiles();
   if (tabName === 'categories') loadAdminCategories();
   if (tabName === 'commands') loadAdminCmdScripts();
-  if (tabName === 'passcodes' || tabName === 'logs' || tabName === 'settings') loadAdminSettingsData();
+  if (tabName === 'passcodes' || tabName === 'settings') loadAdminSettingsData();
+  if (tabName === 'logs') loadAuditLogs();
 }
 
 function confirmDownloadAllZip() {
@@ -738,6 +739,17 @@ async function migrateFilesToGDrive() {
 }
 
 // Audit Logs Pagination & Actions
+async function loadAuditLogs() {
+  try {
+    const res = await fetch('/api/admin/audit-logs');
+    const data = await res.json();
+    allAuditLogsList = data.logs || [];
+    renderAuditLogsTable();
+  } catch (err) {
+    console.error('Error loading audit logs:', err);
+  }
+}
+
 function changeLogsPerPage(val) {
   logsPerPage = parseInt(val) || 10;
   currentLogsPage = 1;
