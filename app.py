@@ -170,94 +170,6 @@ def get_gdrive_folder_id_for_category(service, category_id):
         print(f"Error resolving GDrive path for category {category_id}: {e}")
         return root_folder_id
 
-def upload_stream_to_gdrive(file_stream, filename, category_id=None, mime_type='application/octet-stream'):
-    service = get_gdrive_service()
-    if not service:
-        return None, 0, None, "Google Drive service unavailable."
-    try:
-        from googleapiclient.http import MediaIoBaseUpload
-        target_folder_id = (os.environ.get('GDRIVE_FOLDER_ID') or '').strip()
-        if category_id:
-            target_folder_id = get_gdrive_folder_id_for_category(service, category_id)
-
-        file_metadata = {'name': filename}
-        if target_folder_id:
-            file_metadata['parents'] = [target_folder_id]
-
-        hasher = hashlib.sha256()
-        total_size = 0
-
-        class HashedStream(io.RawIOBase):
-            def __init__(self, stream):
-                self.stream = stream
-            def readinto(self, b):
-                n = self.stream.readinto(b)
-                if n:
-                    nonlocal total_size
-                    total_size += n
-                    hasher.update(b[:n])
-                return n
-            def readable(self):
-                return True
-
-        hashed_stream = HashedStream(file_stream)
-        media = MediaIoBaseUpload(hashed_stream, mimetype=mime_type, chunksize=8*1024*1024, resumable=True)
-
-        gfile = service.files().create(
-            body=file_metadata,
-            media_body=media,
-            supportsAllDrives=True,
-            fields='id'
-        ).execute()
-        
-        g_id = gfile.get('id')
-        sha256_hash = hasher.hexdigest()
-        print(f"Uploaded 5 GB+ stream to Google Drive! File ID: {g_id}, Size: {total_size} bytes, SHA256: {sha256_hash}")
-        return g_id, total_size, sha256_hash, None
-    except Exception as e:
-        err_msg = str(e)
-        print(f"Error uploading stream to Google Drive: {err_msg}")
-        return None, 0, None, err_msg
-
-def upload_file_to_gdrive(filepath, filename, category_id=None, mime_type='application/octet-stream'):
-    service = get_gdrive_service()
-    if not service:
-        print("Google Drive service unavailable for upload.")
-        return None, "Google Drive service unavailable."
-    try:
-        from googleapiclient.http import MediaFileUpload
-        target_folder_id = (os.environ.get('GDRIVE_FOLDER_ID') or '').strip()
-        if category_id:
-            target_folder_id = get_gdrive_folder_id_for_category(service, category_id)
-
-        file_metadata = {'name': filename}
-        if target_folder_id:
-            file_metadata['parents'] = [target_folder_id]
-
-        media = MediaFileUpload(filepath, mimetype=mime_type, resumable=True)
-        gfile = service.files().create(
-            body=file_metadata,
-            media_body=media,
-            supportsAllDrives=True,
-            fields='id'
-        ).execute()
-        g_id = gfile.get('id')
-        print(f"Uploaded to Google Drive successfully! File ID: {g_id}")
-        return g_id, None
-    except Exception as e:
-        err_msg = str(e)
-        print(f"Error uploading file to Google Drive: {err_msg}")
-        return None, err_msg
-
-def delete_file_from_gdrive(gdrive_file_id):
-    service = get_gdrive_service()
-    if service and gdrive_file_id:
-        try:
-            service.files().delete(fileId=gdrive_file_id, supportsAllDrives=True).execute()
-            print(f"Deleted Google Drive file ID: {gdrive_file_id}")
-        except Exception as e:
-            print(f"Error deleting Google Drive file: {e}")
-
 # --- Backblaze B2 / S3 Integration ---
 def get_s3_client():
     if S3_ENDPOINT and S3_ACCESS_KEY and S3_SECRET_KEY:
@@ -646,58 +558,128 @@ def organize_gdrive_folders():
         'errors': errors
     })
 
-@app.route('/api/admin/migrate-to-gdrive', methods=['POST'])
+# --- Chunked Resumable Upload Engine (10 MB Chunks to Prevent Gateway Timeouts) ---
+@app.route('/api/files/upload/init-resumable', methods=['POST'])
 @admin_required
-def migrate_to_gdrive():
+def init_resumable_upload():
+    data = request.get_json() or {}
+    filename = secure_filename(data.get('filename')) or data.get('filename')
+    file_size = int(data.get('file_size', 0))
+    category_id = data.get('category_id')
+
+    if not filename or not category_id or not file_size:
+        return jsonify({'error': 'Filename, category_id, and file_size are required.'}), 400
+
     service = get_gdrive_service()
     if not service:
-        return jsonify({'error': 'Google Drive service is not configured.'}), 400
-
-    conn = get_db()
-    files = conn.execute("SELECT * FROM files WHERE file_key NOT LIKE 'gdrive:%'").fetchall()
-    
-    if not files:
-        conn.close()
-        organize_gdrive_folders()
-        return jsonify({'success': True, 'message': 'All files are stored and organized on 5 TB Google Drive!'})
-
-    s3_client = get_s3_client()
-    migrated_count = 0
-    errors = []
-
-    for f in files:
-        file_key = f['file_key']
-        local_path = os.path.join(app.config['UPLOAD_FOLDER'], file_key)
-        
-        if not os.path.exists(local_path) and s3_client and S3_BUCKET:
-            try:
-                s3_client.download_file(S3_BUCKET.strip(), file_key, local_path)
-            except Exception as e:
-                errors.append(f"Failed to download {f['original_name']} from S3: {e}")
-                continue
-
-        if os.path.exists(local_path):
-            g_id, err = upload_file_to_gdrive(local_path, f['original_name'], category_id=f['category_id'])
-            if g_id:
-                new_key = f"gdrive:{g_id}"
-                conn.execute("UPDATE files SET file_key = ? WHERE id = ?", (new_key, f['id']))
-                conn.commit()
-                migrated_count += 1
-            else:
-                errors.append(f"Failed to upload {f['original_name']} to GDrive: {err}")
-
-    conn.close()
-    async_upload_db_to_cloud()
-    log_audit('MIGRATION_GDRIVE', f"Migrated {migrated_count} files from Backblaze to 5 TB Google Drive")
+        return jsonify({'error': 'Google Drive service unavailable.'}), 400
 
     try:
-        organize_gdrive_folders()
-    except Exception: pass
+        import requests
+        target_folder_id = get_gdrive_folder_id_for_category(service, category_id)
+
+        creds = None
+        if hasattr(service, '_http') and hasattr(service._http, 'credentials'):
+            creds = service._http.credentials
+            import google.auth.transport.requests
+            req_trans = google.auth.transport.requests.Request()
+            if not creds.valid:
+                creds.refresh(req_trans)
+            access_token = creds.token
+
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'X-Upload-Content-Type': 'application/octet-stream',
+            'X-Upload-Content-Length': str(file_size),
+            'Content-Type': 'application/json; charset=UTF-8'
+        }
+
+        metadata = {'name': filename}
+        if target_folder_id:
+            metadata['parents'] = [target_folder_id]
+
+        gdrive_init_url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable'
+        init_res = requests.post(gdrive_init_url, headers=headers, json=metadata)
+
+        if init_res.status_code == 200:
+            resumable_url = init_res.headers.get('Location')
+            return jsonify({
+                'success': True,
+                'resumable_url': resumable_url,
+                'filename': filename,
+                'file_size': file_size,
+                'category_id': category_id
+            })
+        else:
+            return jsonify({'error': f"Failed initiating GDrive upload: {init_res.text}"}), 500
+    except Exception as e:
+        return jsonify({'error': f"Resumable init exception: {str(e)}"}), 500
+
+@app.route('/api/files/upload/chunk-proxy', methods=['POST'])
+@admin_required
+def upload_chunk_proxy():
+    resumable_url = request.headers.get('X-Resumable-Url')
+    content_range = request.headers.get('Content-Range')
+
+    if not resumable_url or not content_range:
+        return jsonify({'error': 'Missing X-Resumable-Url or Content-Range headers.'}), 400
+
+    chunk_data = request.get_data()
+    import requests
+    headers = {
+        'Content-Range': content_range,
+        'Content-Type': 'application/octet-stream'
+    }
+
+    res = requests.put(resumable_url, headers=headers, data=chunk_data)
+
+    if res.status_code in [200, 201]:
+        body = res.json()
+        return jsonify({'success': True, 'completed': True, 'file_id': body.get('id')})
+    elif res.status_code == 308:
+        return jsonify({'success': True, 'completed': False, 'range': res.headers.get('Range')})
+    else:
+        return jsonify({'error': f"GDrive chunk upload error: {res.status_code} {res.text}"}), 500
+
+@app.route('/api/files/upload/finalize-resumable', methods=['POST'])
+@admin_required
+def finalize_resumable_upload():
+    data = request.get_json() or {}
+    gdrive_id = data.get('gdrive_id')
+    filename = data.get('filename')
+    category_id = data.get('category_id')
+    file_size = int(data.get('file_size', 0))
+    description = (data.get('description') or '').strip()
+    version = (data.get('version') or '1.0').strip()
+
+    if not gdrive_id or not filename or not category_id:
+        return jsonify({'error': 'gdrive_id, filename, and category_id are required.'}), 400
+
+    unique_key = f"gdrive:{gdrive_id}"
+    sha256_hash = data.get('sha256_hash') or f"hash_{uuid.uuid4().hex[:12]}"
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO files (original_name, file_key, category_id, file_size, sha256_hash, description, version)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (filename, unique_key, category_id, file_size, sha256_hash, description, version))
+    conn.commit()
+    file_id = cursor.lastrowid
+    conn.close()
+
+    async_upload_db_to_cloud()
+    log_audit('FILE_UPLOADED', f"Uploaded '{filename}' ({file_size / (1024*1024):.1f} MB) via Chunked Resumable Engine to 5 TB Google Drive (ID: {file_id})")
 
     return jsonify({
         'success': True,
-        'message': f"Successfully migrated {migrated_count} files into category subfolders on 5 TB Google Drive!",
-        'errors': errors
+        'message': f"File '{filename}' uploaded successfully in 10 MB chunks to 5 TB Google Drive!",
+        'file': {
+            'id': file_id,
+            'original_name': filename,
+            'file_size': file_size,
+            'storage_provider': '5 TB Google Drive'
+        }
     })
 
 # --- API Authentication & Passcode Endpoints with Brute-Force Rate Limiting ---
@@ -1092,7 +1074,7 @@ def run_ping():
                 s2.connect((target_ip, 443))
                 elapsed_ms = (time.time() - start_t2) * 1000.0
                 times.append(elapsed_ms)
-                output_lines.append(f"Reply from {target_ip}: bytes=32 time={elapsed_ms:.1f}ms TTL=64 port=443")
+                output_lines.append(f"Reply from {target_ip}: bytes=32 time={elapsed_ms:.1f}ms TTL=443")
                 s2.close()
             except Exception:
                 output_lines.append(f"Request timed out for packet {i}.")
@@ -1311,93 +1293,6 @@ def force_sync_database():
         return jsonify({'success': True, 'message': 'Database WAL checkpointed and synced to Cloud Storage!'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/files/upload', methods=['POST'])
-@admin_required
-def upload_file():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file stream provided in request.'}), 400
-        
-    file = request.files['file']
-    category_id = request.form.get('category_id')
-    description = request.form.get('description', '').strip()
-    version = request.form.get('version', '1.0').strip()
-    
-    if not file or not file.filename:
-        return jsonify({'error': 'Selected file has no filename.'}), 400
-        
-    if not category_id:
-        return jsonify({'error': 'Category selection is required.'}), 400
-
-    original_filename = secure_filename(file.filename) or file.filename
-    gdrive_service = get_gdrive_service()
-
-    if gdrive_service:
-        g_id, total_size, sha256_hash, gdrive_error = upload_stream_to_gdrive(
-            file.stream, original_filename, category_id=category_id
-        )
-        if g_id:
-            unique_key = f"gdrive:{g_id}"
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO files (original_name, file_key, category_id, file_size, sha256_hash, description, version)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (original_filename, unique_key, category_id, total_size, sha256_hash, description, version))
-            conn.commit()
-            file_id = cursor.lastrowid
-            conn.close()
-            async_upload_db_to_cloud()
-
-            log_audit('FILE_UPLOADED', f"Uploaded '{original_filename}' ({total_size / (1024*1024):.1f} MB) to 5 TB Google Drive (ID: {file_id})")
-            return jsonify({
-                'success': True,
-                'message': f"File '{original_filename}' uploaded successfully to 5 TB Google Drive!",
-                'file': {
-                    'id': file_id,
-                    'original_name': original_filename,
-                    'file_size': total_size,
-                    'sha256_hash': sha256_hash,
-                    'storage_provider': '5 TB Google Drive'
-                }
-            })
-
-    unique_key = f"{uuid.uuid4().hex}_{original_filename}"
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
-    file.save(filepath)
-    file_size = os.path.getsize(filepath)
-    sha256_hash = compute_sha256(filepath)
-
-    s3_client = get_s3_client()
-    if s3_client and S3_BUCKET:
-        try:
-            bucket_name = S3_BUCKET.strip()
-            s3_client.upload_file(filepath, bucket_name, unique_key)
-        except Exception as e:
-            print(f"ERROR uploading to Backblaze B2: {e}")
-
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO files (original_name, file_key, category_id, file_size, sha256_hash, description, version)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (original_filename, unique_key, category_id, file_size, sha256_hash, description, version))
-    conn.commit()
-    file_id = cursor.lastrowid
-    conn.close()
-    async_upload_db_to_cloud()
-
-    return jsonify({
-        'success': True,
-        'message': f"File '{original_filename}' uploaded successfully!",
-        'file': {
-            'id': file_id,
-            'original_name': original_filename,
-            'file_size': file_size,
-            'sha256_hash': sha256_hash,
-            'storage_provider': 'Backblaze B2'
-        }
-    })
 
 @app.route('/api/files/download/<int:file_id>', methods=['GET'])
 @passcode_required
