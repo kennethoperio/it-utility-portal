@@ -155,7 +155,7 @@ def find_gdrive_file_id_by_name(service, filename):
         if files:
             return files[0]['id']
 
-        # 2. Fuzzy match by base name without extension
+        # 2. Fuzzy match replacing underscores with spaces or using base name
         clean_name = filename.replace('_', ' ')
         base_name = os.path.splitext(clean_name)[0].replace("'", "\\'").strip()
         if len(base_name) >= 3:
@@ -685,7 +685,7 @@ def delete_admin_comment(comment_id):
     log_audit('FILE_COMMENT_DELETED', f"Admin deleted client comment #{comment_id}")
     return jsonify({'success': True, 'message': 'Comment deleted.'})
 
-# --- Migration & Auto-Linking Endpoints ---
+# --- Migration & Comprehensive Auto-Linking Endpoints ---
 @app.route('/api/admin/auto-link-gdrive-files', methods=['POST'])
 @admin_required
 def auto_link_gdrive_files():
@@ -694,29 +694,51 @@ def auto_link_gdrive_files():
         return jsonify({'error': 'Google Drive service unavailable.'}), 400
 
     conn = get_db()
-    unlinked_files = conn.execute("SELECT * FROM files WHERE file_key NOT LIKE 'gdrive:%'").fetchall()
+    all_files = conn.execute("SELECT * FROM files").fetchall()
     
-    linked_count = 0
+    relinked_count = 0
+    already_valid = 0
     not_found = []
 
-    for f in unlinked_files:
-        g_id = find_gdrive_file_id_by_name(service, f['original_name'])
-        if g_id:
-            new_key = f"gdrive:{g_id}"
-            conn.execute('UPDATE files SET file_key = ? WHERE id = ?', (new_key, f['id']))
-            linked_count += 1
-        else:
-            not_found.append(f['original_name'])
+    for f in all_files:
+        current_key = f['file_key']
+        file_id = f['id']
+        orig_name = f['original_name']
+        
+        valid_g_id = None
+        if current_key.startswith('gdrive:'):
+            g_id = current_key.replace('gdrive:', '')
+            try:
+                meta = service.files().get(fileId=g_id, supportsAllDrives=True, fields='id, name').execute()
+                if meta and meta.get('id'):
+                    valid_g_id = meta.get('id')
+                    already_valid += 1
+            except Exception:
+                valid_g_id = None
+
+        if not valid_g_id:
+            new_g_id = find_gdrive_file_id_by_name(service, orig_name)
+            if new_g_id:
+                conn.execute("UPDATE files SET file_key = ? WHERE id = ?", (f"gdrive:{new_g_id}", file_id))
+                relinked_count += 1
+            else:
+                not_found.append(f"{orig_name} (ID #{file_id})")
 
     conn.commit()
     conn.close()
     async_upload_db_to_cloud()
 
-    log_audit('GDRIVE_AUTO_LINKED', f"Auto-linked {linked_count} legacy files to 5 TB Google Drive")
+    log_audit('GDRIVE_AUTO_LINKED', f"Verified {already_valid} valid GDrive links, auto-relinked {relinked_count} broken/legacy files.")
+
+    msg = f"Auto-link scan completed! Re-linked {relinked_count} files, verified {already_valid} existing files."
+    if not_found:
+        msg += f" Note: {len(not_found)} files were not found on Google Drive."
 
     return jsonify({
         'success': True,
-        'message': f"Successfully auto-linked {linked_count} legacy files to 5 TB Google Drive!",
+        'message': msg,
+        'relinked_count': relinked_count,
+        'already_valid': already_valid,
         'unlinked_remaining': not_found
     })
 
