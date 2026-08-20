@@ -588,11 +588,19 @@ def compute_sha256(filepath):
 # --- Static Web Pages ---
 @app.route('/')
 def index_page():
-    return app.send_static_file('index.html')
+    res = make_response(app.send_static_file('index.html'))
+    res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    res.headers['Pragma'] = 'no-cache'
+    res.headers['Expires'] = '0'
+    return res
 
 @app.route('/admin')
 def admin_page():
-    return app.send_static_file('admin.html')
+    res = make_response(app.send_static_file('admin.html'))
+    res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    res.headers['Pragma'] = 'no-cache'
+    res.headers['Expires'] = '0'
+    return res
 
 # --- Tool Feedback / Comments API ---
 @app.route('/api/files/<int:file_id>/comments', methods=['GET'])
