@@ -742,6 +742,19 @@ def auto_link_gdrive_files():
         'unlinked_remaining': not_found
     })
 
+@app.route('/api/admin/debug-gdrive-list', methods=['GET'])
+@admin_required
+def debug_gdrive_list():
+    service = get_gdrive_service()
+    if not service:
+        return jsonify({'error': 'No GDrive service'}), 400
+    try:
+        q = "trashed = false"
+        res = service.files().list(q=q, supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name, size)', pageSize=200).execute()
+        return jsonify({'files': res.get('files', [])})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/admin/organize-gdrive-folders', methods=['POST'])
 @admin_required
 def organize_gdrive_folders():
