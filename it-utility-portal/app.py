@@ -1654,19 +1654,34 @@ def download_file(file_id):
                 token = get_cached_gdrive_token(service)
                 if token:
                     import requests
-                    gdrive_url = f"https://www.googleapis.com/drive/v3/files/{gdrive_id}?alt=media"
+                    gdrive_url = f"https://www.googleapis.com/drive/v3/files/{gdrive_id}?alt=media&supportsAllDrives=true&acknowledgeAbuse=true"
                     r = requests.get(gdrive_url, headers={'Authorization': f"Bearer {token}"}, stream=True)
 
                     if r.status_code != 200:
-                        print(f"GDrive ID {gdrive_id} returned HTTP {r.status_code}. Attempting auto-healing filename search...")
-                        new_gdrive_id = find_gdrive_file_id_by_name(service, file_record['original_name'])
-                        if new_gdrive_id and new_gdrive_id != gdrive_id:
-                            gdrive_id = new_gdrive_id
-                            unique_key = f"gdrive:{gdrive_id}"
-                            conn.execute('UPDATE files SET file_key = ? WHERE id = ?', (unique_key, file_id))
+                        print(f"GDrive Direct HTTP Stream returned {r.status_code}. Retrying with official SDK get_media...")
+                        try:
+                            from googleapiclient.http import MediaIoBaseDownload
+                            req_media = service.files().get_media(fileId=gdrive_id, supportsAllDrives=True)
+                            buffer = io.BytesIO()
+                            downloader = MediaIoBaseDownload(buffer, req_media)
+                            done = False
+                            while not done:
+                                status, done = downloader.next_chunk()
+                            buffer.seek(0)
+                            
+                            conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
                             conn.commit()
-                            print(f"RE-LINKED file #{file_id} ({file_record['original_name']}) -> New GDrive ID {gdrive_id}")
-                            r = requests.get(f"https://www.googleapis.com/drive/v3/files/{gdrive_id}?alt=media", headers={'Authorization': f"Bearer {token}"}, stream=True)
+                            conn.close()
+                            async_upload_db_to_cloud()
+
+                            return send_file(
+                                buffer,
+                                mimetype='application/octet-stream',
+                                as_attachment=True,
+                                download_name=file_record['original_name']
+                            )
+                        except Exception as sdk_err:
+                            print(f"SDK get_media exception for GDrive ID {gdrive_id}: {sdk_err}")
 
                     if r.status_code == 200:
                         conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
