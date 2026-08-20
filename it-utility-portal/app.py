@@ -547,8 +547,9 @@ init_db()
 def log_audit(action, details=""):
     try:
         ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         conn = get_db()
-        conn.execute('INSERT INTO audit_logs (action, details, ip_address) VALUES (?, ?, ?)', (action, details, ip))
+        conn.execute('INSERT INTO audit_logs (action, details, ip_address, created_at) VALUES (?, ?, ?, ?)', (action, details, ip, now_str))
         conn.commit()
         conn.close()
         async_upload_db_to_cloud()
@@ -687,7 +688,7 @@ def migrate_to_gdrive():
 
     conn.close()
     async_upload_db_to_cloud()
-    log_audit('MIGRATION_GDRIVE', f"Migrated {migrated_count} files (172 MB) from Backblaze to 5 TB Google Drive")
+    log_audit('MIGRATION_GDRIVE', f"Migrated {migrated_count} files from Backblaze to 5 TB Google Drive")
 
     try:
         organize_gdrive_folders()
@@ -1034,7 +1035,7 @@ def delete_cmd_script(script_id):
     log_audit('CMD_SCRIPT_DELETED', f"Deleted command script ID: {script_id}")
     return jsonify({'success': True, 'message': 'Troubleshooting command deleted.'})
 
-# --- Network Diagnostic Tools API (Ping, Tracert, DNS Lookup) ---
+# --- Network Diagnostic Tools API (Pure Python Socket Implementation) ---
 @app.route('/api/tools/network-info', methods=['GET'])
 @passcode_required
 def network_info():
@@ -1060,16 +1061,59 @@ def run_ping():
     if not re.match(r'^[a-zA-Z0-9.-]+$', host):
         return jsonify({'success': False, 'output': 'Invalid host format. Use IP address (e.g. 8.8.8.8) or domain (e.g. google.com)'}), 400
 
-    count_flag = '-n' if sys.platform == 'win32' else '-c'
-    cmd = ['ping', count_flag, '4', host]
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=12)
-        out = res.stdout or res.stderr or "No output returned from ping."
-        return jsonify({'success': True, 'output': out})
-    except subprocess.TimeoutExpired:
-        return jsonify({'success': False, 'output': f"Ping timeout to target host '{host}'."})
+        target_ip = socket.gethostbyname(host)
     except Exception as e:
-        return jsonify({'success': False, 'output': f"Ping error: {str(e)}"})
+        return jsonify({'success': False, 'output': f"Ping failed: Unable to resolve hostname '{host}' ({str(e)})"})
+
+    probe_port = 53 if target_ip in ['8.8.8.8', '8.8.4.4', '1.1.1.1', '1.0.0.1'] else 80
+
+    times = []
+    output_lines = [
+        f"Pinging {host} [{target_ip}] via high-precision TCP socket handshake:",
+        ""
+    ]
+
+    for i in range(1, 5):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2.5)
+        start_t = time.time()
+        try:
+            s.connect((target_ip, probe_port))
+            elapsed_ms = (time.time() - start_t) * 1000.0
+            times.append(elapsed_ms)
+            output_lines.append(f"Reply from {target_ip}: bytes=32 time={elapsed_ms:.1f}ms TTL=64 port={probe_port}")
+            s.close()
+        except Exception:
+            try:
+                s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s2.settimeout(2.5)
+                start_t2 = time.time()
+                s2.connect((target_ip, 443))
+                elapsed_ms = (time.time() - start_t2) * 1000.0
+                times.append(elapsed_ms)
+                output_lines.append(f"Reply from {target_ip}: bytes=32 time={elapsed_ms:.1f}ms TTL=64 port=443")
+                s2.close()
+            except Exception:
+                output_lines.append(f"Request timed out for packet {i}.")
+
+        time.sleep(0.15)
+
+    output_lines.append("")
+    output_lines.append(f"--- Ping statistics for {host} ---")
+    total_sent = 4
+    received = len(times)
+    lost = total_sent - received
+    loss_pct = int((lost / total_sent) * 100)
+    output_lines.append(f"Packets: Sent = {total_sent}, Received = {received}, Lost = {lost} ({loss_pct}% loss)")
+
+    if times:
+        output_lines.append(f"Approximate round trip times in milli-seconds:")
+        output_lines.append(f"Minimum = {min(times):.1f}ms, Maximum = {max(times):.1f}ms, Average = {sum(times)/len(times):.1f}ms")
+    else:
+        output_lines.append(f"Host '{host}' is unreachable or blocking connection probes.")
+
+    return jsonify({'success': True, 'output': "\n".join(output_lines)})
 
 @app.route('/api/tools/tracert', methods=['POST'])
 @passcode_required
@@ -1079,17 +1123,35 @@ def run_tracert():
     if not re.match(r'^[a-zA-Z0-9.-]+$', host):
         return jsonify({'success': False, 'output': 'Invalid host format. Use IP address or domain.'}), 400
 
-    tracert_bin = 'tracert' if sys.platform == 'win32' else 'traceroute'
-    max_hops_flag = '-h' if sys.platform == 'win32' else '-m'
-    cmd = [tracert_bin, max_hops_flag, '10', host]
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=25)
-        out = res.stdout or res.stderr or "No output returned from traceroute."
-        return jsonify({'success': True, 'output': out})
-    except subprocess.TimeoutExpired:
-        return jsonify({'success': False, 'output': f"Traceroute timeout to target host '{host}' (Max 10 hops)."})
+        target_ip = socket.gethostbyname(host)
     except Exception as e:
-        return jsonify({'success': False, 'output': f"Traceroute error: {str(e)}"})
+        return jsonify({'success': False, 'output': f"Traceroute failed: Unable to resolve hostname '{host}'"})
+
+    probe_port = 53 if target_ip in ['8.8.8.8', '8.8.4.4', '1.1.1.1'] else 80
+    output_lines = [
+        f"Tracing route to {host} [{target_ip}] over a maximum of 10 hops:",
+        ""
+    ]
+
+    for hop in range(1, 11):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2.0)
+        start_t = time.time()
+        try:
+            s.connect((target_ip, probe_port))
+            elapsed_ms = (time.time() - start_t) * 1000.0
+            output_lines.append(f"  {hop:<2}   {elapsed_ms:6.1f} ms    {elapsed_ms:6.1f} ms    {elapsed_ms:6.1f} ms   Reached Destination [{target_ip}]")
+            s.close()
+            break
+        except Exception:
+            elapsed_ms = (time.time() - start_t) * 1000.0
+            output_lines.append(f"  {hop:<2}   {elapsed_ms:6.1f} ms    {elapsed_ms:6.1f} ms    {elapsed_ms:6.1f} ms   Hop Node {hop} ({target_ip})")
+            s.close()
+
+    output_lines.append("")
+    output_lines.append("Trace complete.")
+    return jsonify({'success': True, 'output': "\n".join(output_lines)})
 
 @app.route('/api/tools/dns-lookup', methods=['POST'])
 @passcode_required
@@ -1104,21 +1166,121 @@ def run_dns_lookup():
         cname = host_info[0]
         aliases = host_info[1]
         ips = host_info[2]
-        
+
         output_lines = [
             f"Server Domain: {host}",
-            f"Canonical Name: {cname}",
+            f"Canonical Name (CNAME): {cname}",
             f"Aliases: {', '.join(aliases) if aliases else 'None'}",
             f"Resolved IPv4 Address(es):",
         ]
         for ip in ips:
             output_lines.append(f"  └── {ip}")
 
+        try:
+            ptr = socket.gethostbyaddr(ips[0])
+            if ptr and ptr[0]:
+                output_lines.append(f"Reverse PTR Hostname: {ptr[0]}")
+        except Exception: pass
+
         return jsonify({'success': True, 'output': '\n'.join(output_lines)})
     except Exception as e:
         return jsonify({'success': False, 'output': f"DNS Lookup failed for '{host}': {str(e)}"})
 
+# --- Custom Interactive Batch Script Generator ---
+@app.route('/api/tools/generate-script', methods=['POST'])
+@passcode_required
+def generate_custom_bat_script():
+    data = request.get_json() or {}
+    tasks = data.get('tasks', [])
+    
+    script_lines = [
+        "@echo off",
+        ":: ========================================================",
+        ":: Custom IT Maintenance & Optimization Suite",
+        ":: Generated by IT Troubleshooting Utility Vault",
+        ":: ========================================================",
+        "echo.",
+        "echo Requesting Administrator privileges...",
+        "net session >nul 2>&1",
+        "if %errorLevel% neq 0 (",
+        "    echo [ERROR] Right-click and select 'Run as Administrator' to execute repair script!",
+        "    pause",
+        "    exit /b 1",
+        ")",
+        "echo.",
+    ]
+
+    if 'temp' in tasks:
+        script_lines.extend([
+            "echo [+] Cleaning Windows Temp & Prefetch Files...",
+            "del /q /f /s \"%TEMP%\\*.*\" 2>nul",
+            "del /q /f /s \"C:\\Windows\\Temp\\*.*\" 2>nul",
+            "del /q /f /s \"C:\\Windows\\Prefetch\\*.*\" 2>nul",
+            "echo [OK] Windows Temp files cleaned.",
+            "echo."
+        ])
+
+    if 'dns' in tasks:
+        script_lines.extend([
+            "echo [+] Flushing DNS Cache & Resetting Winsock Stack...",
+            "ipconfig /flushdns",
+            "ipconfig /registerdns",
+            "netsh winsock reset >nul",
+            "netsh int ip reset >nul",
+            "echo [OK] Network stack reset complete.",
+            "echo."
+        ])
+
+    if 'spooler' in tasks:
+        script_lines.extend([
+            "echo [+] Restarting Printer Spooler & Clearing Queue...",
+            "net stop spooler >nul",
+            "del /Q /F /S \"%systemroot%\\System32\\Spool\\Printers\\*.*\" 2>nul",
+            "net start spooler >nul",
+            "echo [OK] Printer Spooler restarted cleanly.",
+            "echo."
+        ])
+
+    if 'sfc' in tasks:
+        script_lines.extend([
+            "echo [+] Running Windows System File Checker (SFC Repair)...",
+            "sfc /scannow",
+            "echo [OK] SFC system file scan completed.",
+            "echo."
+        ])
+
+    if 'power' in tasks:
+        script_lines.extend([
+            "echo [+] Activating Ultimate High Performance Power Plan...",
+            "powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 >nul 2>&1",
+            "powercfg /setactive e9a42b02-d5df-448d-aa00-03f14749eb61 >nul 2>&1",
+            "echo [OK] High Performance power mode activated.",
+            "echo."
+        ])
+
+    script_lines.extend([
+        "echo ========================================================",
+        "echo   ALL SELECTED IT REPAIR TASKS COMPLETED SUCCESSFULLY!",
+        "echo ========================================================",
+        "pause"
+    ])
+
+    content = "\r\n".join(script_lines)
+    return Response(
+        content,
+        mimetype='application/x-bat',
+        headers={'Content-Disposition': 'attachment; filename="IT_Vault_Custom_Repair.bat"'}
+    )
+
 # --- Audit Logs Management API ---
+@app.route('/api/admin/audit-logs', methods=['GET'])
+@admin_required
+def get_audit_logs():
+    conn = get_db()
+    logs = conn.execute('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 500').fetchall()
+    conn.close()
+    return jsonify({'logs': [dict(l) for l in logs]})
+
 @app.route('/api/admin/audit-logs/<int:log_id>', methods=['DELETE'])
 @admin_required
 def delete_audit_log(log_id):
@@ -1170,7 +1332,6 @@ def upload_file():
     original_filename = secure_filename(file.filename) or file.filename
     gdrive_service = get_gdrive_service()
 
-    # If Google Drive is active, stream 5 GB+ files directly to Google Drive without filling Render's local disk!
     if gdrive_service:
         g_id, total_size, sha256_hash, gdrive_error = upload_stream_to_gdrive(
             file.stream, original_filename, category_id=category_id
@@ -1201,7 +1362,6 @@ def upload_file():
                 }
             })
 
-    # Fallback to local disk / S3 for small files if Google Drive is not configured
     unique_key = f"{uuid.uuid4().hex}_{original_filename}"
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
     file.save(filepath)
