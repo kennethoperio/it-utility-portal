@@ -156,7 +156,8 @@ def find_gdrive_file_id_by_name(service, filename):
             return files[0]['id']
 
         # 2. Fuzzy match by base name without extension
-        base_name = os.path.splitext(filename)[0].replace("'", "\\'").strip()
+        clean_name = filename.replace('_', ' ')
+        base_name = os.path.splitext(clean_name)[0].replace("'", "\\'").strip()
         if len(base_name) >= 3:
             q_fuzzy = f"name contains '{base_name}' and trashed = false"
             res_fuzzy = service.files().list(q=q_fuzzy, supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name)').execute()
@@ -1616,7 +1617,6 @@ def download_file(file_id):
         if unique_key.startswith('gdrive:'):
             gdrive_id = unique_key.replace('gdrive:', '')
         else:
-            # Enhanced Multi-Tier GDrive Auto-Discovery (Exact -> Base -> Fuzzy Word)
             service = get_gdrive_service()
             if service:
                 gdrive_id = find_gdrive_file_id_by_name(service, file_record['original_name'])
@@ -1634,6 +1634,17 @@ def download_file(file_id):
                     import requests
                     gdrive_url = f"https://www.googleapis.com/drive/v3/files/{gdrive_id}?alt=media"
                     r = requests.get(gdrive_url, headers={'Authorization': f"Bearer {token}"}, stream=True)
+
+                    if r.status_code != 200:
+                        print(f"GDrive ID {gdrive_id} returned HTTP {r.status_code}. Attempting auto-healing filename search...")
+                        new_gdrive_id = find_gdrive_file_id_by_name(service, file_record['original_name'])
+                        if new_gdrive_id and new_gdrive_id != gdrive_id:
+                            gdrive_id = new_gdrive_id
+                            unique_key = f"gdrive:{gdrive_id}"
+                            conn.execute('UPDATE files SET file_key = ? WHERE id = ?', (unique_key, file_id))
+                            conn.commit()
+                            print(f"RE-LINKED file #{file_id} ({file_record['original_name']}) -> New GDrive ID {gdrive_id}")
+                            r = requests.get(f"https://www.googleapis.com/drive/v3/files/{gdrive_id}?alt=media", headers={'Authorization': f"Bearer {token}"}, stream=True)
 
                     if r.status_code == 200:
                         conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
