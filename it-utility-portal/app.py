@@ -12,6 +12,7 @@ import zipfile
 import base64
 import threading
 import traceback
+import time
 from datetime import datetime, timedelta
 from functools import wraps
 
@@ -22,16 +23,54 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__, static_folder='static', static_url_path='')
 app.secret_key = os.environ.get('SECRET_KEY', 'it_vault_super_secret_key_2026')
 
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
 # Configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 DB_PATH = os.path.join(BASE_DIR, 'it_vault.db')
-MAX_CONTENT_LENGTH = 5 * 1024 * 1024 * 1024  # Support uploads up to 5 GB
+MAX_CONTENT_LENGTH = 50 * 1024 * 1024 * 1024  # Support uploads up to 50 GB
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# --- Security & Brute Force Rate Limiting ---
+FAILED_ATTEMPTS = {}  # ip -> {'count': int, 'reset_at': float}
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_TIME_SECONDS = 300  # 5 minutes
+
+def is_ip_rate_limited(ip):
+    now = time.time()
+    record = FAILED_ATTEMPTS.get(ip)
+    if not record:
+        return False
+    if now > record['reset_at']:
+        FAILED_ATTEMPTS.pop(ip, None)
+        return False
+    return record['count'] >= MAX_FAILED_ATTEMPTS
+
+def record_failed_attempt(ip):
+    now = time.time()
+    record = FAILED_ATTEMPTS.get(ip)
+    if not record or now > record['reset_at']:
+        FAILED_ATTEMPTS[ip] = {'count': 1, 'reset_at': now + LOCKOUT_TIME_SECONDS}
+    else:
+        record['count'] += 1
+
+def clear_failed_attempts(ip):
+    FAILED_ATTEMPTS.pop(ip, None)
+
+@app.after_request
+def apply_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Server'] = 'IT-Utility-Vault-Shield'
+    return response
 
 # Credentials Environment Settings
 S3_ENDPOINT = os.environ.get('S3_ENDPOINT')
@@ -130,6 +169,55 @@ def get_gdrive_folder_id_for_category(service, category_id):
     except Exception as e:
         print(f"Error resolving GDrive path for category {category_id}: {e}")
         return root_folder_id
+
+def upload_stream_to_gdrive(file_stream, filename, category_id=None, mime_type='application/octet-stream'):
+    service = get_gdrive_service()
+    if not service:
+        return None, 0, None, "Google Drive service unavailable."
+    try:
+        from googleapiclient.http import MediaIoBaseUpload
+        target_folder_id = (os.environ.get('GDRIVE_FOLDER_ID') or '').strip()
+        if category_id:
+            target_folder_id = get_gdrive_folder_id_for_category(service, category_id)
+
+        file_metadata = {'name': filename}
+        if target_folder_id:
+            file_metadata['parents'] = [target_folder_id]
+
+        hasher = hashlib.sha256()
+        total_size = 0
+
+        class HashedStream(io.RawIOBase):
+            def __init__(self, stream):
+                self.stream = stream
+            def readinto(self, b):
+                n = self.stream.readinto(b)
+                if n:
+                    nonlocal total_size
+                    total_size += n
+                    hasher.update(b[:n])
+                return n
+            def readable(self):
+                return True
+
+        hashed_stream = HashedStream(file_stream)
+        media = MediaIoBaseUpload(hashed_stream, mimetype=mime_type, chunksize=8*1024*1024, resumable=True)
+
+        gfile = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            supportsAllDrives=True,
+            fields='id'
+        ).execute()
+        
+        g_id = gfile.get('id')
+        sha256_hash = hasher.hexdigest()
+        print(f"Uploaded 5 GB+ stream to Google Drive! File ID: {g_id}, Size: {total_size} bytes, SHA256: {sha256_hash}")
+        return g_id, total_size, sha256_hash, None
+    except Exception as e:
+        err_msg = str(e)
+        print(f"Error uploading stream to Google Drive: {err_msg}")
+        return None, 0, None, err_msg
 
 def upload_file_to_gdrive(filepath, filename, category_id=None, mime_type='application/octet-stream'):
     service = get_gdrive_service()
@@ -611,7 +699,7 @@ def migrate_to_gdrive():
         'errors': errors
     })
 
-# --- API Authentication & Passcode Endpoints ---
+# --- API Authentication & Passcode Endpoints with Brute-Force Rate Limiting ---
 @app.route('/api/auth/status', methods=['GET'])
 def auth_status():
     gdrive_active = bool(get_gdrive_service())
@@ -626,6 +714,10 @@ def auth_status():
 
 @app.route('/api/auth/verify-passcode', methods=['POST'])
 def verify_passcode():
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if is_ip_rate_limited(client_ip):
+        return jsonify({'success': False, 'message': 'Access blocked temporarily due to multiple failed login attempts. Please wait 5 minutes.'}), 429
+
     data = request.get_json() or {}
     passcode_input = (data.get('passcode') or '').strip()
     
@@ -634,6 +726,7 @@ def verify_passcode():
 
     main_passcode = get_setting('access_passcode', 'tech2026')
     if passcode_input == main_passcode:
+        clear_failed_attempts(client_ip)
         session['is_unlocked'] = True
         session.pop('is_guest', None)
         session.pop('guest_passcode_id', None)
@@ -648,6 +741,7 @@ def verify_passcode():
     ''', (passcode_input, now_str)).fetchone()
 
     if guest:
+        clear_failed_attempts(client_ip)
         session['is_unlocked'] = True
         session['is_guest'] = True
         session['guest_passcode_id'] = guest['id']
@@ -656,11 +750,16 @@ def verify_passcode():
         return jsonify({'success': True, 'message': f"Access granted via guest passcode '{guest['label']}'!"})
 
     conn.close()
+    record_failed_attempt(client_ip)
     log_audit('PASSCODE_FAILED', f"Failed passcode attempt: {passcode_input}")
     return jsonify({'success': False, 'message': 'Invalid or expired passcode.'}), 401
 
 @app.route('/api/auth/admin-login', methods=['POST'])
 def admin_login():
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if is_ip_rate_limited(client_ip):
+        return jsonify({'success': False, 'message': 'Account locked temporarily due to multiple failed login attempts. Please wait 5 minutes.'}), 429
+
     data = request.get_json() or {}
     username = (data.get('username') or '').strip()
     password = (data.get('password') or '').strip()
@@ -670,12 +769,14 @@ def admin_login():
     conn.close()
 
     if user and check_password_hash(user['password_hash'], password):
+        clear_failed_attempts(client_ip)
         session['is_admin'] = True
         session['is_unlocked'] = True
         session['admin_user'] = username
         log_audit('ADMIN_LOGIN', f"User '{username}' logged in successfully.")
         return jsonify({'success': True, 'message': 'Admin login successful.'})
 
+    record_failed_attempt(client_ip)
     log_audit('ADMIN_LOGIN_FAILED', f"Failed admin login for '{username}'")
     return jsonify({'success': False, 'message': 'Invalid username or password.'}), 401
 
@@ -1067,27 +1168,51 @@ def upload_file():
         return jsonify({'error': 'Category selection is required.'}), 400
 
     original_filename = secure_filename(file.filename) or file.filename
+    gdrive_service = get_gdrive_service()
+
+    # If Google Drive is active, stream 5 GB+ files directly to Google Drive without filling Render's local disk!
+    if gdrive_service:
+        g_id, total_size, sha256_hash, gdrive_error = upload_stream_to_gdrive(
+            file.stream, original_filename, category_id=category_id
+        )
+        if g_id:
+            unique_key = f"gdrive:{g_id}"
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO files (original_name, file_key, category_id, file_size, sha256_hash, description, version)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (original_filename, unique_key, category_id, total_size, sha256_hash, description, version))
+            conn.commit()
+            file_id = cursor.lastrowid
+            conn.close()
+            async_upload_db_to_cloud()
+
+            log_audit('FILE_UPLOADED', f"Uploaded '{original_filename}' ({total_size / (1024*1024):.1f} MB) to 5 TB Google Drive (ID: {file_id})")
+            return jsonify({
+                'success': True,
+                'message': f"File '{original_filename}' uploaded successfully to 5 TB Google Drive!",
+                'file': {
+                    'id': file_id,
+                    'original_name': original_filename,
+                    'file_size': total_size,
+                    'sha256_hash': sha256_hash,
+                    'storage_provider': '5 TB Google Drive'
+                }
+            })
+
+    # Fallback to local disk / S3 for small files if Google Drive is not configured
     unique_key = f"{uuid.uuid4().hex}_{original_filename}"
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
-
     file.save(filepath)
     file_size = os.path.getsize(filepath)
     sha256_hash = compute_sha256(filepath)
 
-    gdrive_error = None
-    gdrive_service = get_gdrive_service()
-    if gdrive_service:
-        gdrive_id, gdrive_error = upload_file_to_gdrive(filepath, original_filename, category_id=category_id)
-        if gdrive_id:
-            unique_key = f"gdrive:{gdrive_id}"
-            print(f"SUCCESS: Uploaded {original_filename} to 5 TB Google Drive! File ID: {gdrive_id}")
-
     s3_client = get_s3_client()
-    if not unique_key.startswith('gdrive:') and s3_client and S3_BUCKET:
+    if s3_client and S3_BUCKET:
         try:
             bucket_name = S3_BUCKET.strip()
             s3_client.upload_file(filepath, bucket_name, unique_key)
-            print(f"SUCCESS: Uploaded {unique_key} to Backblaze B2 bucket '{bucket_name}'")
         except Exception as e:
             print(f"ERROR uploading to Backblaze B2: {e}")
 
@@ -1102,22 +1227,15 @@ def upload_file():
     conn.close()
     async_upload_db_to_cloud()
 
-    storage_used = "5 TB Google Drive" if unique_key.startswith("gdrive:") else "Backblaze B2"
-    log_audit('FILE_UPLOADED', f"Uploaded '{original_filename}' via {storage_used} (ID: {file_id})")
-
-    msg = f"File '{original_filename}' uploaded successfully to {storage_used}!"
-    if gdrive_error and not unique_key.startswith("gdrive:"):
-        msg += f" (Google Drive note: {gdrive_error})"
-
     return jsonify({
         'success': True,
-        'message': msg,
+        'message': f"File '{original_filename}' uploaded successfully!",
         'file': {
             'id': file_id,
             'original_name': original_filename,
             'file_size': file_size,
             'sha256_hash': sha256_hash,
-            'storage_provider': storage_used
+            'storage_provider': 'Backblaze B2'
         }
     })
 
@@ -1402,14 +1520,34 @@ def admin_settings():
         set_setting('access_passcode', data['access_passcode'].strip())
         
     if 'new_admin_password' in data and data['new_admin_password'].strip():
-        new_hash = generate_password_hash(data['new_admin_password'].strip())
+        old_pass = (data.get('old_admin_password') or '').strip()
+        new_pass = data['new_admin_password'].strip()
+        confirm_pass = (data.get('confirm_admin_password') or '').strip()
+
+        if not old_pass:
+            return jsonify({'error': 'Current admin password is required to change password.'}), 400
+
+        if new_pass != confirm_pass:
+            return jsonify({'error': 'New password and confirmation password do not match.'}), 400
+
+        if len(new_pass) < 6:
+            return jsonify({'error': 'New admin password must be at least 6 characters long.'}), 400
+
+        admin_user = session.get('admin_user', 'admin')
         conn = get_db()
-        conn.execute('UPDATE users SET password_hash = ? WHERE username = ?', (session.get('admin_user', 'admin'),))
+        user_row = conn.execute('SELECT * FROM users WHERE username = ?', (admin_user,)).fetchone()
+
+        if not user_row or not check_password_hash(user_row['password_hash'], old_pass):
+            conn.close()
+            return jsonify({'error': 'Current admin password is incorrect.'}), 400
+
+        new_hash = generate_password_hash(new_pass)
+        conn.execute('UPDATE users SET password_hash = ? WHERE username = ?', (new_hash, admin_user))
         conn.commit()
         conn.close()
 
     log_audit('SETTINGS_UPDATED', 'Admin updated portal configuration settings')
-    return jsonify({'success': True, 'message': 'Settings updated successfully.'})
+    return jsonify({'success': True, 'message': 'Settings & Admin Password updated successfully.'})
 
 @app.route('/api/admin/guest-passcodes', methods=['POST'])
 @admin_required
