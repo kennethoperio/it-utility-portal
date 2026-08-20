@@ -101,6 +101,7 @@
       <button class="tab-btn" onclick="switchAdminTab('categories')"><i class="fa-solid fa-folder-tree"></i> Category Builder</button>
       <button class="tab-btn" onclick="switchAdminTab('commands')"><i class="fa-solid fa-terminal"></i> Quick Commands</button>
       <button class="tab-btn" onclick="switchAdminTab('passcodes')"><i class="fa-solid fa-key"></i> Guest Passcodes</button>
+      <button class="tab-btn" onclick="switchAdminTab('feedback')"><i class="fa-solid fa-comments"></i> Tool Feedback</button>
       <button class="tab-btn" onclick="switchAdminTab('logs')"><i class="fa-solid fa-clipboard-list"></i> Activity Audit Logs</button>
       <button class="tab-btn" onclick="switchAdminTab('settings')"><i class="fa-solid fa-sliders"></i> Settings</button>
     </div>
@@ -446,6 +447,35 @@
           <h3 style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-brands fa-google-drive" style="color: #34a853;"></i> Storage Migration Utility</h3>
           <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Move your existing tools from Backblaze B2 into your 5 TB Google Drive folder automatically.</p>
           <button type="button" class="btn btn-secondary" onclick="migrateFilesToGDrive()"><i class="fa-solid fa-truck-ramp-box"></i> Migrate All Files to 5 TB Google Drive</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 8: Tool Comments & Feedback Review -->
+    <div id="admin-sec-feedback" style="display: none;">
+      <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Client & Technician Tool Feedback</h2>
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminComments()"><i class="fa-solid fa-rotate"></i> Refresh Feedback</button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>TOOL NAME</th>
+                <th>TECHNICIAN</th>
+                <th>STATUS</th>
+                <th>COMMENT / NOTES</th>
+                <th>DATE</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="admin-comments-table-body">
+              <tr><td colspan="7" style="text-align:center;">Loading feedback...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
