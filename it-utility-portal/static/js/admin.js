@@ -879,19 +879,49 @@ async function handleSaveSettings(e) {
   const site_title = document.getElementById('set-site-title').value.trim();
   const announcement = document.getElementById('set-announcement').value.trim();
   const access_passcode = document.getElementById('set-primary-passcode').value.trim();
+  const old_admin_password = document.getElementById('set-old-admin-password').value.trim();
   const new_admin_password = document.getElementById('set-admin-password').value.trim();
+  const confirm_admin_password = document.getElementById('set-confirm-admin-password').value.trim();
+
+  if (new_admin_password || old_admin_password || confirm_admin_password) {
+    if (!old_admin_password) {
+      alert('Please enter your current admin password to approve changing your password.');
+      return;
+    }
+    if (!new_admin_password) {
+      alert('Please enter a new admin password.');
+      return;
+    }
+    if (new_admin_password.length < 6) {
+      alert('New admin password must be at least 6 characters long.');
+      return;
+    }
+    if (new_admin_password !== confirm_admin_password) {
+      alert('New password and confirmation password do not match!');
+      return;
+    }
+  }
 
   try {
     const res = await fetch('/api/admin/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ site_title, announcement, access_passcode, new_admin_password })
+      body: JSON.stringify({
+        site_title,
+        announcement,
+        access_passcode,
+        old_admin_password,
+        new_admin_password,
+        confirm_admin_password
+      })
     });
     const data = await res.json();
 
     if (data.success) {
-      alert('Portal & Security Settings updated successfully!');
+      alert(data.message || 'Portal & Security Settings updated successfully!');
+      document.getElementById('set-old-admin-password').value = '';
       document.getElementById('set-admin-password').value = '';
+      document.getElementById('set-confirm-admin-password').value = '';
       loadAdminSettingsData();
     } else {
       alert(data.error || 'Failed to save settings.');
