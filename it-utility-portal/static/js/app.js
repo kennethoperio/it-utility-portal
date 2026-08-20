@@ -10,6 +10,7 @@ let isDownloadingMap = {};
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   checkAuthStatus();
+  loadDeviceInspectorDetails();
 });
 
 function initTheme() {
@@ -40,27 +41,29 @@ async function checkAuthStatus() {
 
     if (data.site_title) {
       document.getElementById('site-title-display').innerText = data.site_title;
-      document.title = data.site_title;
+      document.title = `${data.site_title} | IT Utilities`;
     }
 
     if (data.announcement) {
-      const banner = document.getElementById('banner-container');
       document.getElementById('announcement-text').innerText = data.announcement;
-      banner.style.display = 'flex';
+      document.getElementById('announcement-banner').style.display = 'block';
+    } else {
+      document.getElementById('announcement-banner').style.display = 'none';
     }
-
-    const logoutBtn = document.getElementById('client-logout-btn');
 
     if (data.is_unlocked) {
       document.getElementById('passcode-modal').classList.remove('active');
-      if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+      if (data.is_admin) {
+        document.getElementById('client-logout-btn').style.display = 'none';
+      } else {
+        document.getElementById('client-logout-btn').style.display = 'inline-flex';
+      }
       loadCategories();
       loadFiles();
       loadCmdScripts();
       loadNetworkInfo();
     } else {
       document.getElementById('passcode-modal').classList.add('active');
-      if (logoutBtn) logoutBtn.style.display = 'none';
     }
   } catch (err) {
     console.error('Error checking auth status:', err);
@@ -69,7 +72,7 @@ async function checkAuthStatus() {
 
 async function submitPasscode(e) {
   e.preventDefault();
-  const input = document.getElementById('passcode-input').value.trim();
+  const passcode = document.getElementById('passcode-input').value.trim();
   const errorEl = document.getElementById('passcode-error');
 
   errorEl.style.display = 'none';
@@ -78,14 +81,13 @@ async function submitPasscode(e) {
     const res = await fetch('/api/auth/verify-passcode', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passcode: input })
+      body: JSON.stringify({ passcode })
     });
     const data = await res.json();
 
     if (data.success) {
       document.getElementById('passcode-modal').classList.remove('active');
-      const logoutBtn = document.getElementById('client-logout-btn');
-      if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+      document.getElementById('client-logout-btn').style.display = 'inline-flex';
       loadCategories();
       loadFiles();
       loadCmdScripts();
@@ -95,14 +97,18 @@ async function submitPasscode(e) {
       errorEl.style.display = 'block';
     }
   } catch (err) {
-    errorEl.innerText = 'Network error while verifying passcode.';
+    errorEl.innerText = 'Server connection error.';
     errorEl.style.display = 'block';
   }
 }
 
 async function logoutClient() {
-  await fetch('/api/auth/logout', { method: 'POST' });
-  window.location.reload();
+  try {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.reload();
+  } catch (err) {
+    window.location.reload();
+  }
 }
 
 function getCategoryIconClass(categoryName, iconName) {
@@ -131,52 +137,34 @@ function getUniformCategoryIcon(categoryName, filename) {
   const cat = (categoryName || '').toLowerCase();
   const fn = (filename || '').toLowerCase();
 
-  // 1. Drivers (Uniform icon for all drivers)
   if (cat.includes('driver') || cat.includes('epson') || cat.includes('hp') || cat.includes('canon') || cat.includes('brother')) {
     return { icon: 'fa-microchip', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)' };
   }
-
-  // 2. Printers / Resetter
   if (cat.includes('printer') || cat.includes('reset')) {
     return { icon: 'fa-print', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.15)' };
   }
-
-  // 3. Recovery Tools
   if (cat.includes('recover') || cat.includes('undelete')) {
     return { icon: 'fa-life-ring', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' };
   }
-
-  // 4. Windows Repair
   if (cat.includes('repair') || cat.includes('fix') || cat.includes('windows')) {
     return { icon: 'fa-screwdriver-wrench', color: '#6366f1', bg: 'rgba(99, 102, 241, 0.15)' };
   }
-
-  // 5. Activators & License Tools
   if (cat.includes('key') || cat.includes('license') || cat.includes('activat')) {
     return { icon: 'fa-key', color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)' };
   }
-
-  // 6. Network & Connectivity
   if (cat.includes('network') || cat.includes('wifi') || cat.includes('ip')) {
     return { icon: 'fa-network-wired', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)' };
   }
-
-  // 7. Antivirus & Security
   if (cat.includes('anti') || cat.includes('malware') || cat.includes('shield') || cat.includes('secur')) {
     return { icon: 'fa-shield-virus', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' };
   }
-
-  // 8. Hardware Diagnostics
   if (cat.includes('hard') || cat.includes('diag') || cat.includes('cpu') || cat.includes('ram')) {
     return { icon: 'fa-microchip', color: '#14b8a6', bg: 'rgba(20, 184, 166, 0.15)' };
   }
-
-  // 9. Tools & Installers (General)
   if (cat.includes('tool') || cat.includes('install')) {
     return { icon: 'fa-toolbox', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.15)' };
   }
 
-  // Fallback by File Extension / Type
   const ext = fn.split('.').pop().toLowerCase();
   if (['zip', 'rar', '7z', 'tar', 'iso'].includes(ext)) {
     return { icon: 'fa-file-zipper', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.15)' };
@@ -410,7 +398,7 @@ function renderFiles(files) {
 async function handleDownloadClick(e, fileId, fileName) {
   if (e) e.preventDefault();
   
-  if (isDownloadingMap[fileId]) return; // Lock to prevent multiple clicks!
+  if (isDownloadingMap[fileId]) return;
   isDownloadingMap[fileId] = true;
 
   const btn = document.getElementById(`btn-download-${fileId}`);
@@ -419,7 +407,6 @@ async function handleDownloadClick(e, fileId, fileName) {
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing...`;
   }
 
-  // Verify permission first (super fast <50ms)
   try {
     const checkRes = await fetch(`/api/files/check-download/${fileId}`);
     const checkData = await checkRes.json();
@@ -439,7 +426,6 @@ async function handleDownloadClick(e, fileId, fileName) {
     console.error('Check download permission error:', err);
   }
 
-  // Show Download Progress Overlay Modal
   const modal = document.getElementById('download-progress-modal');
   const filenameEl = document.getElementById('download-progress-filename');
   const fillEl = document.getElementById('download-progress-fill');
@@ -448,29 +434,21 @@ async function handleDownloadClick(e, fileId, fileName) {
   if (filenameEl) filenameEl.innerText = fileName ? `Downloading: ${fileName}` : 'Connecting to 5 TB Google Drive...';
   if (fillEl) fillEl.style.width = '10%';
   if (statusEl) statusEl.innerText = '🚀 Download Started! Browser pop-up triggered...';
+
   if (modal) modal.classList.add('active');
 
-  // Trigger browser download INSTANTLY so popup appears in <100ms!
   const downloadUrl = `/api/files/download/${fileId}`;
   window.location.href = downloadUrl;
 
-  // Smooth 4-second progress modal transition while file streams into browser
-  const startTime = Date.now();
-  const totalDuration = 4000;
+  let currentPercent = 10;
+  const progressInterval = setInterval(() => {
+    currentPercent += 20;
+    if (currentPercent >= 100) {
+      currentPercent = 100;
+      clearInterval(progressInterval);
 
-  const interval = setInterval(() => {
-    const elapsed = Date.now() - startTime;
-    const progress = Math.min(Math.floor(10 + (elapsed / totalDuration) * 90), 100);
-    
-    if (fillEl) fillEl.style.width = `${progress}%`;
-
-    if (progress < 40) {
-      if (statusEl) statusEl.innerText = 'Streaming installer bytes directly from 5 TB Google Drive...';
-    } else if (progress < 85) {
-      if (statusEl) statusEl.innerText = 'Transferring file package to your computer...';
-    } else if (progress >= 100) {
-      clearInterval(interval);
-      if (statusEl) statusEl.innerText = '✅ Transfer Complete!';
+      if (fillEl) fillEl.style.width = '100%';
+      if (statusEl) statusEl.innerText = '✅ File Transfer Initialized!';
 
       setTimeout(() => {
         if (modal) modal.classList.remove('active');
@@ -479,22 +457,22 @@ async function handleDownloadClick(e, fileId, fileName) {
           btn.disabled = false;
           btn.innerHTML = `<i class="fa-solid fa-download"></i> Download`;
         }
-        loadFiles();
-      }, 600);
+      }, 1200);
+    } else {
+      if (fillEl) fillEl.style.width = `${currentPercent}%`;
+      if (statusEl) statusEl.innerText = `Streaming chunks... ${currentPercent}%`;
     }
-  }, 100);
-}
-
-function closeDownloadLimitModal() {
-  document.getElementById('download-limit-modal').classList.remove('active');
+  }, 800);
 }
 
 function copyHash(hash) {
   navigator.clipboard.writeText(hash).then(() => {
     alert(`SHA-256 Hash copied to clipboard:\n${hash}`);
-  }).catch(() => {
-    alert(`SHA-256 Hash: ${hash}`);
   });
+}
+
+function closeDownloadLimitModal() {
+  document.getElementById('download-limit-modal').classList.remove('active');
 }
 
 function openQrModal(fileId, fileName) {
@@ -512,19 +490,112 @@ function closeQrModal() {
 function switchMainTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('section-files').style.display = 'none';
+  document.getElementById('section-builder').style.display = 'none';
   document.getElementById('section-cmd').style.display = 'none';
   document.getElementById('section-net').style.display = 'none';
+  document.getElementById('section-inspector').style.display = 'none';
 
   if (tab === 'files') {
     document.getElementById('tab-files-btn').classList.add('active');
     document.getElementById('section-files').style.display = 'block';
+  } else if (tab === 'builder') {
+    document.getElementById('tab-builder-btn').classList.add('active');
+    document.getElementById('section-builder').style.display = 'block';
   } else if (tab === 'cmd') {
     document.getElementById('tab-cmd-btn').classList.add('active');
     document.getElementById('section-cmd').style.display = 'block';
   } else if (tab === 'net') {
     document.getElementById('tab-net-btn').classList.add('active');
     document.getElementById('section-net').style.display = 'block';
+  } else if (tab === 'inspector') {
+    document.getElementById('tab-inspector-btn').classList.add('active');
+    document.getElementById('section-inspector').style.display = 'block';
+    loadDeviceInspectorDetails();
   }
+}
+
+// 1-Click Interactive Batch Script Generator
+async function downloadCustomScript() {
+  const tasks = [];
+  if (document.getElementById('task-temp')?.checked) tasks.push('temp');
+  if (document.getElementById('task-dns')?.checked) tasks.push('dns');
+  if (document.getElementById('task-spooler')?.checked) tasks.push('spooler');
+  if (document.getElementById('task-sfc')?.checked) tasks.push('sfc');
+  if (document.getElementById('task-power')?.checked) tasks.push('power');
+
+  if (tasks.length === 0) {
+    alert('Please select at least one repair/optimization task.');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/tools/generate-script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tasks })
+    });
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'IT_Vault_Custom_Repair.bat';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert('Failed to generate script.');
+  }
+}
+
+// Device Inspector Logic
+function loadDeviceInspectorDetails() {
+  const osEl = document.getElementById('insp-os');
+  const browserEl = document.getElementById('insp-browser');
+  const screenEl = document.getElementById('insp-screen');
+  const coresEl = document.getElementById('insp-cores');
+  const ramEl = document.getElementById('insp-ram');
+
+  if (osEl) {
+    const ua = navigator.userAgent;
+    let os = "Windows PC";
+    if (ua.includes("Win")) os = "Windows OS";
+    else if (ua.includes("Mac")) os = "macOS";
+    else if (ua.includes("Android")) os = "Android Mobile";
+    else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS Device";
+    else if (ua.includes("Linux")) os = "Linux OS";
+    osEl.innerText = os;
+  }
+
+  if (browserEl) {
+    const ua = navigator.userAgent;
+    let browser = "Chrome / WebKit";
+    if (ua.includes("Firefox")) browser = "Mozilla Firefox";
+    else if (ua.includes("Edg")) browser = "Microsoft Edge";
+    else if (ua.includes("Chrome")) browser = "Google Chrome";
+    else if (ua.includes("Safari")) browser = "Apple Safari";
+    browserEl.innerText = browser;
+  }
+
+  if (screenEl) {
+    screenEl.innerText = `${window.screen.width} x ${window.screen.height} (${window.screen.colorDepth}-bit color)`;
+  }
+
+  if (coresEl) {
+    coresEl.innerText = `${navigator.hardwareConcurrency || 4} Logical Cores`;
+  }
+
+  if (ramEl) {
+    ramEl.innerText = navigator.deviceMemory ? `~${navigator.deviceMemory} GB RAM` : '8+ GB RAM (Approx)';
+  }
+}
+
+function copyPowerShellSpecsCmd() {
+  const cmd = `Get-ComputerInfo | Out-File -FilePath "$env:USERPROFILE\\Desktop\\SystemSpecs.txt"`;
+  navigator.clipboard.writeText(cmd).then(() => {
+    alert('PowerShell Hardware Specs export command copied to clipboard!');
+  });
 }
 
 async function loadCmdScripts() {
@@ -572,7 +643,7 @@ async function loadNetworkInfo() {
   }
 }
 
-// Interactive Network Testing Functions
+// Interactive Network Testing Functions (Pure Python Socket Probes)
 async function runPingTest() {
   const host = document.getElementById('ping-target').value.trim() || '8.8.8.8';
   appendTerminalOutput(`\n[+] Executing Ping test to target '${host}'...`);
