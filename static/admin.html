@@ -4,141 +4,164 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Portal</title>
-  <link rel="stylesheet" href="/css/style.css?v=4.5">
+  <link rel="stylesheet" href="css/style.css?v=3.5">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-  <!-- Top Navbar -->
+  <!-- Admin Header -->
   <header class="header">
     <div class="header-container">
       <div class="logo">
-        <i class="fa-solid fa-user-gear"></i>
+        <i class="fa-solid fa-user-shield"></i>
         <span>IT Portal Admin Dashboard</span>
       </div>
       <div class="user-actions">
-        <button class="btn btn-secondary btn-sm" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Light/Dark Theme">
+        <button class="btn btn-secondary btn-sm" id="theme-toggle-btn" title="Toggle Theme" onclick="toggleTheme()">
           <i class="fa-solid fa-moon"></i>
         </button>
-        <button class="btn btn-primary btn-sm" onclick="confirmDownloadAllZip()"><i class="fa-solid fa-file-zipper"></i> Download All Tools (.zip)</button>
-        <a href="/" class="btn btn-secondary btn-sm" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> View Public Portal</a>
-        <button class="btn btn-danger btn-sm" id="admin-logout-btn" onclick="logoutAdmin()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+        <button class="btn btn-info btn-sm" onclick="confirmDownloadAllZip()" title="Download All IT Utilities as ZIP Package">
+          <i class="fa-solid fa-file-zipper"></i> Download All Tools (.zip)
+        </button>
+        <a href="/" class="btn btn-secondary btn-sm" target="_blank">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> View Public Portal
+        </a>
+        <button class="btn btn-danger btn-sm" id="admin-logout-btn" onclick="logoutAdmin()" style="display: none;">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
       </div>
     </div>
   </header>
 
-  <!-- Main Content Container -->
+  <!-- Login Modal Overlay -->
+  <div class="modal-overlay active" id="admin-login-modal">
+    <div class="modal-card">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background-color: rgba(56, 189, 248, 0.15); color: var(--accent-color); display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 1rem;">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h2>Admin Authentication</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">Sign in to manage files, category folders, and guest passcodes.</p>
+      </div>
+
+      <form id="admin-login-form" onsubmit="submitAdminLogin(event)">
+        <div class="form-group">
+          <label for="admin-user-input">Username</label>
+          <input type="text" id="admin-user-input" value="admin" required autofocus>
+        </div>
+        <div class="form-group">
+          <label for="admin-pass-input">Password</label>
+          <input type="password" id="admin-pass-input" placeholder="Enter admin password..." required>
+        </div>
+        <div id="admin-login-error" style="color: var(--danger-color); font-size: 0.85rem; margin-bottom: 1rem; display: none;"></div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;"><i class="fa-solid fa-right-to-bracket"></i> Login as Administrator</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Admin Interface -->
   <div class="container" id="admin-main-content" style="display: none;">
 
-    <!-- Dashboard Stat Cards -->
+    <!-- Dashboard Stats Grid -->
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-icon"><i class="fa-solid fa-file-code"></i></div>
-        <div class="stat-info">
-          <small>Total Uploaded Tools</small>
-          <h3 id="stat-files">0</h3>
+        <div class="stat-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+        <div>
+          <div class="stat-lbl">Total Uploaded Tools</div>
+          <div class="stat-val" id="stat-files">0</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon"><i class="fa-solid fa-hard-drive"></i></div>
-        <div class="stat-info">
-          <small>Google Drive Storage Used</small>
-          <h3 id="stat-storage">0 MB</h3>
+        <div>
+          <div class="stat-lbl">Storage Space Used</div>
+          <div class="stat-val" id="stat-storage">0 MB</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon" style="background-color: rgba(34, 197, 94, 0.15); color: var(--success-color);"><i class="fa-solid fa-cloud-arrow-up"></i></div>
-        <div class="stat-info">
-          <small>5 TB Google Drive Storage Left</small>
-          <h3 id="stat-storage-left" style="color: var(--success-color);">5.00 TB Free</h3>
+        <div class="stat-icon"><i class="fa-brands fa-google-drive" style="color: #34a853;"></i></div>
+        <div>
+          <div class="stat-lbl">5 TB Google Drive Storage Left</div>
+          <div class="stat-val" id="stat-storage-left" style="color: var(--success-color);">5.000 TB Free</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon"><i class="fa-solid fa-download"></i></div>
-        <div class="stat-info">
-          <small>Total Downloads</small>
-          <h3 id="stat-downloads">0</h3>
+        <div>
+          <div class="stat-lbl">Total Downloads Served</div>
+          <div class="stat-val" id="stat-downloads">0</div>
         </div>
       </div>
     </div>
 
     <!-- Admin Navigation Tabs -->
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchAdminTab('upload')"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Utilities</button>
-      <button class="tab-btn" onclick="switchAdminTab('files')"><i class="fa-solid fa-boxes-stacked"></i> Manage Files</button>
-      <button class="tab-btn" onclick="switchAdminTab('categories')"><i class="fa-solid fa-folder-tree"></i> Categories & Folders</button>
-      <button class="tab-btn" onclick="switchAdminTab('commands')"><i class="fa-solid fa-terminal"></i> IT Commands</button>
-      <button class="tab-btn" onclick="switchAdminTab('passcodes')"><i class="fa-solid fa-users-gear"></i> Temporary Passcodes</button>
-      <button class="tab-btn" onclick="switchAdminTab('logs')"><i class="fa-solid fa-clock-rotate-left"></i> Audit Logs</button>
-      <button class="tab-btn" onclick="switchAdminTab('settings')"><i class="fa-solid fa-sliders"></i> Site Settings</button>
+      <button class="tab-btn active" onclick="switchAdminTab('upload')"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Software</button>
+      <button class="tab-btn" onclick="switchAdminTab('files')"><i class="fa-solid fa-list-check"></i> Manage Files</button>
+      <button class="tab-btn" onclick="switchAdminTab('categories')"><i class="fa-solid fa-folder-tree"></i> Category Builder</button>
+      <button class="tab-btn" onclick="switchAdminTab('commands')"><i class="fa-solid fa-terminal"></i> Quick Commands</button>
+      <button class="tab-btn" onclick="switchAdminTab('passcodes')"><i class="fa-solid fa-key"></i> Guest Passcodes</button>
+      <button class="tab-btn" onclick="switchAdminTab('logs')"><i class="fa-solid fa-clipboard-list"></i> Activity Audit Logs</button>
+      <button class="tab-btn" onclick="switchAdminTab('settings')"><i class="fa-solid fa-sliders"></i> Settings</button>
     </div>
 
-    <!-- TAB 1: File Uploader -->
+    <!-- TAB 1: Upload Utility File -->
     <div id="admin-sec-upload">
-      <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 2rem; max-width: 800px; margin: 0 auto;">
-        <h2 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;"><i class="fa-solid fa-upload" style="color: var(--accent-color);"></i> Upload IT Utility / Installer</h2>
+      <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 2rem; max-width: 760px; margin: 0 auto;">
+        <h2 style="margin-bottom: 1.5rem; text-align: center;"><i class="fa-solid fa-cloud-arrow-up"></i> Upload IT Utility / Installer</h2>
 
-        <form id="upload-form" onsubmit="handleFileUpload(event)">
+        <form id="upload-form" onsubmit="uploadFile(event)">
           <div class="form-group">
             <label for="upload-category">Target Folder / Category *</label>
             <select id="upload-category" required>
-              <option value="">-- Select Category --</option>
+              <option value="">-- Select Target Folder --</option>
             </select>
           </div>
 
           <div class="form-group">
             <label for="upload-description">Utility Description & Notes</label>
-            <input type="text" id="upload-description" placeholder="e.g. Official HP Print Spooler Fix & Reset Utility">
+            <input type="text" id="upload-description" placeholder="Short summary of what this tool does...">
           </div>
 
           <div class="form-group">
             <label for="upload-version">Version Tag</label>
-            <input type="text" id="upload-version" value="1.0" placeholder="e.g. v1.0 or 2026.1">
+            <input type="text" id="upload-version" value="1.0">
           </div>
 
           <div class="form-group">
             <label>Select File (.exe, .zip, .msi, .iso, .bat, etc.)</label>
             <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
-              <i class="fa-solid fa-file-arrow-up fa-3x" style="color: var(--accent-color); margin-bottom: 0.75rem;"></i>
-              <p style="font-weight: 600;" id="drop-zone-text">Drag & drop installer/executable file here or click to browse</p>
-              <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">Supports files of any size (up to 5GB+)</p>
-              <input type="file" id="file-input" style="display: none;" onchange="onFileSelected(event)" required>
+              <i class="fa-solid fa-cloud-arrow-up fa-3x" style="color: var(--accent-color); margin-bottom: 1rem;"></i>
+              <p id="drop-zone-text">Drag & drop installer/executable file here or click to browse</p>
+              <span style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.5rem; display: block;">Supports files of any size (5 GB+ ISOs supported via direct Google Drive streaming)</span>
             </div>
+            <input type="file" id="file-input" style="display: none;" onchange="handleFileSelect(event)">
           </div>
 
-          <!-- Progress Bar -->
-          <div class="progress-bar" id="upload-progress-bar">
+          <!-- Upload Progress Bar -->
+          <div class="progress-bar" id="upload-progress-bar" style="display: none;">
             <div class="progress-fill" id="upload-progress-fill"></div>
           </div>
-          <p style="font-size: 0.85rem; color: var(--accent-color); text-align: center; margin-top: 0.5rem; display: none;" id="upload-status-text">Uploading: 0%</p>
+          <div id="upload-status-text" style="font-size: 0.85rem; color: var(--text-secondary); text-align: center; margin-top: 0.5rem; display: none;">Uploading...</div>
 
-          <button type="submit" class="btn btn-primary" id="upload-submit-btn" style="width: 100%; margin-top: 1.5rem;"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Tool</button>
+          <button type="submit" class="btn btn-primary" id="upload-submit-btn" style="width: 100%; margin-top: 1.5rem;"><i class="fa-solid fa-upload"></i> Upload Tool</button>
         </form>
       </div>
     </div>
 
-    <!-- TAB 2: File Manager -->
+    <!-- TAB 2: Manage Files Table -->
     <div id="admin-sec-files" style="display: none;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
-        <h2><i class="fa-solid fa-boxes-stacked"></i> Uploaded IT Tools Directory</h2>
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-          <button class="btn btn-primary btn-sm" onclick="confirmDownloadAllZip()"><i class="fa-solid fa-file-zipper"></i> Download All (.zip)</button>
-          <button class="btn btn-secondary btn-sm" onclick="loadAdminFiles()"><i class="fa-solid fa-rotate"></i> Refresh List</button>
-        </div>
-      </div>
-
-      <!-- Filter Controls Toolbar -->
-      <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; background-color: var(--bg-secondary); padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius); align-items: center;">
-        <div style="flex: 1; min-width: 200px;">
-          <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;"><i class="fa-solid fa-filter"></i> Filter by Category / Folder</label>
-          <select id="admin-file-category-filter" onchange="loadAdminFiles()" style="width: 100%; padding: 0.55rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius); color: var(--text-primary); outline: none;">
+      <div class="toolbar" style="margin-bottom: 1rem;">
+        <div style="display: flex; gap: 0.75rem; flex: 1; flex-wrap: wrap;">
+          <div class="search-box" style="flex: 1; min-width: 200px;">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="admin-file-search-filter" placeholder="Search files by name..." oninput="filterAdminFilesTable()">
+          </div>
+          <select id="admin-file-category-filter" style="padding: 0.6rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); color: var(--text-primary);" onchange="loadAdminFiles()">
             <option value="">All Categories & Folders</option>
           </select>
         </div>
-        <div style="flex: 1.5; min-width: 250px;">
-          <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;"><i class="fa-solid fa-magnifying-glass"></i> Search Files</label>
-          <input type="text" id="admin-file-search-filter" placeholder="Search tool name or description..." oninput="filterAdminFilesTable()" style="width: 100%; padding: 0.55rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); outline: none;">
-        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadAdminFiles()"><i class="fa-solid fa-rotate"></i> Refresh</button>
       </div>
 
       <div class="table-responsive">
@@ -146,8 +169,8 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>Tool Name</th>
-              <th>Category</th>
+              <th>Filename</th>
+              <th>Category Folder</th>
               <th>Size</th>
               <th>Version</th>
               <th>Downloads</th>
@@ -249,31 +272,30 @@
                 <option value="PowerShell / CMD">PowerShell / CMD</option>
                 <option value="PowerShell">PowerShell</option>
                 <option value="CMD">CMD</option>
-                <option value="Bash / Linux">Bash / Linux</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="cmd-command">Command String *</label>
-              <textarea id="cmd-command" rows="3" placeholder="e.g. net stop spooler && net start spooler" style="width: 100%; padding: 0.6rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: monospace; font-size: 0.85rem;" required></textarea>
+              <label for="cmd-command">Command Script String *</label>
+              <textarea id="cmd-command" rows="4" placeholder="e.g. net stop spooler && net start spooler" style="width:100%; padding:0.6rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: monospace;" required></textarea>
             </div>
             <div class="form-group">
-              <label for="cmd-description">Description & Purpose</label>
-              <input type="text" id="cmd-description" placeholder="What this command fixes...">
+              <label for="cmd-description">Description / Instructions</label>
+              <input type="text" id="cmd-description" placeholder="What this script resolves...">
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;"><i class="fa-solid fa-plus"></i> Save Command</button>
+            <button type="submit" class="btn btn-primary" style="width: 100%;"><i class="fa-solid fa-plus"></i> Save Command Script</button>
           </form>
         </div>
 
         <div>
-          <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-list-check"></i> Manage Quick Troubleshooting Commands</h3>
+          <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-list-check"></i> Registered Troubleshooting Scripts</h3>
           <div class="table-responsive">
             <table>
               <thead>
                 <tr>
                   <th>Title</th>
-                  <th>Type</th>
-                  <th>Command String</th>
-                  <th>Action</th>
+                  <th>Environment</th>
+                  <th>Command Snippet</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="admin-commands-table-body">
@@ -285,22 +307,22 @@
       </div>
     </div>
 
-    <!-- TAB 5: Passcodes Manager -->
+    <!-- TAB 5: Guest Passcodes Generator -->
     <div id="admin-sec-passcodes" style="display: none;">
-      <div style="display: grid; grid-template-columns: 350px 1fr; gap: 1.5rem;">
+      <div style="display: grid; grid-template-columns: 360px 1fr; gap: 1.5rem;">
         <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem;">
-          <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-key"></i> Generate Temporary Passcode</h3>
+          <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-key"></i> Generate Guest Passcode</h3>
           <form id="guest-passcode-form" onsubmit="handleCreateGuestPasscode(event)">
             <div class="form-group">
-              <label for="passcode-label">Label / Technician Name</label>
-              <input type="text" id="passcode-label" placeholder="e.g. Field Tech John / Client Guest" required>
+              <label for="passcode-label">Technician Name / Label</label>
+              <input type="text" id="passcode-label" placeholder="e.g. Onsite Tech John" required>
             </div>
             <div class="form-group">
               <label for="passcode-max-uses">Max Allowed Downloads (0 = Unlimited)</label>
-              <input type="number" id="passcode-max-uses" value="1" min="0">
+              <input type="number" id="passcode-max-uses" value="5" min="0">
             </div>
             <div class="form-group">
-              <label for="passcode-valid-days">Valid Duration (Days)</label>
+              <label for="passcode-valid-days">Expiration (Days)</label>
               <input type="number" id="passcode-valid-days" value="7" min="1">
             </div>
             <button type="submit" class="btn btn-primary" style="width: 100%;"><i class="fa-solid fa-plus"></i> Generate Passcode</button>
@@ -308,22 +330,15 @@
         </div>
 
         <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-            <h3 style="margin: 0;"><i class="fa-solid fa-list"></i> Active Guest Passcodes</h3>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <span style="font-size: 0.78rem; color: var(--accent-color);"><i class="fa-solid fa-pulse fa-circle-dot"></i> Live Auto-Sync 3s</span>
-              <button class="btn btn-secondary btn-sm" onclick="loadAdminSettingsData()"><i class="fa-solid fa-rotate"></i> Refresh</button>
-            </div>
-          </div>
-
+          <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-users-gear"></i> Active Temporary Guest Passcodes</h3>
           <div class="table-responsive">
             <table>
               <thead>
                 <tr>
                   <th>Passcode</th>
                   <th>Label</th>
-                  <th>Uses</th>
-                  <th>Expires At</th>
+                  <th>Download Usage</th>
+                  <th>Expires</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -336,22 +351,21 @@
       </div>
     </div>
 
-    <!-- TAB 6: Audit Logs -->
+    <!-- TAB 6: Activity Audit Logs -->
     <div id="admin-sec-logs" style="display: none;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
-        <h3><i class="fa-solid fa-shield-halved"></i> Activity Audit Trail</h3>
-        
-        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Show Logs per page:</label>
-            <select id="logs-per-page-select" onchange="changeLogsPerPage(this.value)" style="padding: 0.4rem 0.6rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); outline: none;">
-              <option value="10" selected>10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
-          <button class="btn btn-danger btn-sm" onclick="clearAllAuditLogs()"><i class="fa-solid fa-trash-can"></i> Clear All Audit Logs</button>
+      <div class="toolbar" style="margin-bottom: 1rem;">
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+          <span style="font-weight: 600; font-size: 0.9rem;">Show per page:</span>
+          <select id="logs-per-page-select" onchange="changeLogsPerPage(this.value)" style="padding: 0.4rem 0.6rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); color: var(--text-primary);">
+            <option value="10">10 logs</option>
+            <option value="25">25 logs</option>
+            <option value="50">50 logs</option>
+            <option value="100">100 logs</option>
+          </select>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminSettingsData()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          <button class="btn btn-danger btn-sm" onclick="clearAllAuditLogs()"><i class="fa-solid fa-trash-can"></i> Clear All Logs</button>
         </div>
       </div>
 
@@ -405,9 +419,24 @@
             <input type="text" id="set-primary-passcode" required>
           </div>
 
-          <div class="form-group">
-            <label for="set-admin-password">Change Admin Password (Leave blank to keep current)</label>
-            <input type="password" id="set-admin-password" placeholder="New admin password...">
+          <!-- Password Security Management Box -->
+          <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem; margin-top: 1.25rem; margin-bottom: 1.25rem;">
+            <h4 style="margin-bottom: 0.85rem; font-size: 0.95rem; color: var(--accent-color);"><i class="fa-solid fa-shield-halved"></i> Change Admin Account Password</h4>
+            
+            <div class="form-group">
+              <label for="set-old-admin-password">Current Admin Password (Required to change password)</label>
+              <input type="password" id="set-old-admin-password" placeholder="Enter current admin password...">
+            </div>
+
+            <div class="form-group">
+              <label for="set-admin-password">New Admin Password</label>
+              <input type="password" id="set-admin-password" placeholder="Enter new admin password...">
+            </div>
+
+            <div class="form-group">
+              <label for="set-confirm-admin-password">Confirm New Admin Password</label>
+              <input type="password" id="set-confirm-admin-password" placeholder="Re-enter new admin password...">
+            </div>
           </div>
 
           <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
@@ -415,7 +444,7 @@
 
         <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
           <h3 style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-brands fa-google-drive" style="color: #34a853;"></i> Storage Migration Utility</h3>
-          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Move your existing 6 tools (172 MB) from Backblaze B2 into your 5 TB Google Drive folder automatically.</p>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Move your existing tools from Backblaze B2 into your 5 TB Google Drive folder automatically.</p>
           <button type="button" class="btn btn-secondary" onclick="migrateFilesToGDrive()"><i class="fa-solid fa-truck-ramp-box"></i> Migrate All Files to 5 TB Google Drive</button>
         </div>
       </div>
@@ -470,47 +499,15 @@
         </div>
 
         <div class="form-group">
-          <label for="edit-cat-description">Description & Purpose</label>
-          <textarea id="edit-cat-description" rows="3" style="width: 100%; padding: 0.65rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 0.9rem; outline: none;"></textarea>
+          <label for="edit-cat-description">Description</label>
+          <input type="text" id="edit-cat-description" placeholder="Brief folder description">
         </div>
 
-        <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
-          <button type="submit" class="btn btn-primary" style="flex: 1;"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
-          <button type="button" class="btn btn-secondary" onclick="closeEditCategoryModal()">Cancel</button>
-        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;"><i class="fa-solid fa-floppy-disk"></i> Update Folder</button>
       </form>
     </div>
   </div>
 
-  <!-- Admin Login Modal -->
-  <div class="modal-overlay active" id="admin-login-modal">
-    <div class="modal-card">
-      <div style="text-align: center; margin-bottom: 1.5rem;">
-        <div style="width: 60px; height: 60px; border-radius: 50%; background-color: rgba(56, 189, 248, 0.15); color: var(--accent-color); display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 1rem;">
-          <i class="fa-solid fa-user-shield"></i>
-        </div>
-        <h2>Admin Authentication</h2>
-        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">Log in to manage files, folders, and passcodes.</p>
-      </div>
-
-      <p class="error-msg" id="admin-login-error"></p>
-
-      <form onsubmit="submitAdminLogin(event)">
-        <div class="form-group">
-          <label for="admin-user-input">Username</label>
-          <input type="text" id="admin-user-input" value="admin" required>
-        </div>
-
-        <div class="form-group">
-          <label for="admin-pass-input">Password</label>
-          <input type="password" id="admin-pass-input" placeholder="Enter admin password..." required>
-        </div>
-
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;"><i class="fa-solid fa-right-to-bracket"></i> Admin Login</button>
-      </form>
-    </div>
-  </div>
-
-  <script src="/js/admin.js?v=4.5"></script>
+  <script src="js/admin.js?v=3.5"></script>
 </body>
 </html>
