@@ -505,8 +505,8 @@ function uploadFile(e) {
   return handleFileUpload(e);
 }
 
-function handleFileUpload(e) {
-  e.preventDefault();
+async function handleFileUpload(e) {
+  if (e) e.preventDefault();
   const fileInput = document.getElementById('file-input');
   const categorySelect = document.getElementById('upload-category');
   const description = document.getElementById('upload-description').value.trim();
@@ -522,12 +522,6 @@ function handleFileUpload(e) {
   }
 
   const file = fileInput.files[0];
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('category_id', categorySelect.value);
-  formData.append('description', description);
-  formData.append('version', version);
-
   const progressBar = document.getElementById('upload-progress-bar');
   const progressFill = document.getElementById('upload-progress-fill');
   const statusText = document.getElementById('upload-status-text');
@@ -536,23 +530,109 @@ function handleFileUpload(e) {
   progressBar.style.display = 'block';
   statusText.style.display = 'block';
   submitBtn.disabled = true;
+  statusText.innerText = 'Initiating 10 MB Chunked Resumable Session...';
 
-  const xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/files/upload', true);
+  try {
+    // Step 1: Init Resumable Upload Session
+    const initRes = await fetch('/api/files/upload/init-resumable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: file.name,
+        file_size: file.size,
+        category_id: categorySelect.value
+      })
+    });
+    const initData = await initRes.json();
 
-  xhr.upload.onprogress = (event) => {
-    if (event.lengthComputable) {
-      const percent = Math.round((event.loaded / event.total) * 100);
-      progressFill.style.width = `${percent}%`;
-      statusText.innerText = `Uploading: ${percent}% (${(event.loaded / (1024*1024)).toFixed(1)} MB / ${(event.total / (1024*1024)).toFixed(1)} MB)`;
+    if (!initRes.ok || !initData.resumable_url) {
+      alert(initData.error || 'Failed initiating resumable upload.');
+      submitBtn.disabled = false;
+      return;
     }
-  };
 
-  xhr.onload = () => {
+    const resumableUrl = initData.resumable_url;
+    const chunkSize = 10 * 1024 * 1024; // 10 MB per chunk
+    const totalChunks = Math.ceil(file.size / chunkSize);
+    let uploadedBytes = 0;
+    let finalGdriveId = null;
+
+    // Step 2: Upload Chunks Sequentially
+    for (let chunkIdx = 0; chunkIdx < totalChunks; chunkIdx++) {
+      const start = chunkIdx * chunkSize;
+      const end = Math.min(start + chunkSize, file.size);
+      const chunkBlob = file.slice(start, end);
+      const contentRange = `bytes ${start}-${end - 1}/${file.size}`;
+
+      let chunkSuccess = false;
+      let retries = 0;
+
+      while (!chunkSuccess && retries < 5) {
+        try {
+          const currentMB = (end / (1024 * 1024)).toFixed(1);
+          const totalMB = (file.size / (1024 * 1024)).toFixed(1);
+          statusText.innerText = `Uploading Chunk ${chunkIdx + 1}/${totalChunks} (${currentMB} MB / ${totalMB} MB)...`;
+
+          const chunkRes = await fetch('/api/files/upload/chunk-proxy', {
+            method: 'POST',
+            headers: {
+              'X-Resumable-Url': resumableUrl,
+              'Content-Range': contentRange,
+              'Content-Type': 'application/octet-stream'
+            },
+            body: chunkBlob
+          });
+
+          const chunkData = await chunkRes.json();
+
+          if (chunkRes.ok && chunkData.success) {
+            chunkSuccess = true;
+            uploadedBytes = end;
+            const percent = Math.round((uploadedBytes / file.size) * 100);
+            progressFill.style.width = `${percent}%`;
+
+            if (chunkData.completed && chunkData.file_id) {
+              finalGdriveId = chunkData.file_id;
+            }
+          } else {
+            retries++;
+            statusText.innerText = `Retrying Chunk ${chunkIdx + 1} (Attempt ${retries}/5)...`;
+            await new Promise(r => setTimeout(r, 2000));
+          }
+        } catch (err) {
+          retries++;
+          statusText.innerText = `Network retry Chunk ${chunkIdx + 1} (Attempt ${retries}/5)...`;
+          await new Promise(r => setTimeout(r, 2000));
+        }
+      }
+
+      if (!chunkSuccess) {
+        alert(`Upload paused at chunk ${chunkIdx + 1} due to network timeout after 5 retries. Please try again.`);
+        submitBtn.disabled = false;
+        return;
+      }
+    }
+
+    // Step 3: Finalize DB Registration
+    statusText.innerText = 'Finalizing file registration in vault...';
+    const finalRes = await fetch('/api/files/upload/finalize-resumable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        gdrive_id: finalGdriveId,
+        filename: file.name,
+        category_id: categorySelect.value,
+        file_size: file.size,
+        description: description,
+        version: version
+      })
+    });
+
+    const finalData = await finalRes.json();
     submitBtn.disabled = false;
-    if (xhr.status === 200) {
-      const data = JSON.parse(xhr.responseText);
-      alert(data.message || 'File uploaded successfully!');
+
+    if (finalRes.ok && finalData.success) {
+      alert(finalData.message || 'File uploaded successfully!');
       document.getElementById('upload-form').reset();
       document.getElementById('drop-zone-text').innerHTML = `Drag & drop installer/executable file here or click to browse`;
       progressBar.style.display = 'none';
@@ -560,19 +640,13 @@ function handleFileUpload(e) {
       progressFill.style.width = '0%';
       loadAdminDashboardData();
     } else {
-      let err = 'Upload failed.';
-      try { err = JSON.parse(xhr.responseText).error; } catch(e){}
-      alert(err);
-      statusText.innerText = `Upload failed: ${err}`;
+      alert(finalData.error || 'Failed finalizing file registration.');
     }
-  };
 
-  xhr.onerror = () => {
+  } catch (err) {
     submitBtn.disabled = false;
-    alert('Network error during file upload.');
-  };
-
-  xhr.send(formData);
+    alert(`Upload exception: ${err.message}`);
+  }
 }
 
 // Manage Files Table with Category & Search Filtering
