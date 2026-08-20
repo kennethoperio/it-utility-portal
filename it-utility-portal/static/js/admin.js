@@ -698,6 +698,7 @@ function renderAdminFilesTable(files) {
         <td>${dateStr}</td>
         <td>
           <a href="/api/files/download/${f.id}" class="btn btn-secondary btn-sm" title="Download"><i class="fa-solid fa-download"></i></a>
+          <button class="btn btn-secondary btn-sm" onclick="openMoveFileModal(${f.id}, '${escapeJs(f.original_name)}', ${f.category_id})" title="Move File to Another Folder"><i class="fa-solid fa-folder-arrow-right"></i> Move</button>
           <button class="btn btn-danger btn-sm" onclick="deleteFile(${f.id}, '${escapeJs(f.original_name)}')"><i class="fa-solid fa-trash"></i></button>
         </td>
       </tr>
@@ -705,6 +706,58 @@ function renderAdminFilesTable(files) {
   });
 
   tableBody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;">No files found matching criteria.</td></tr>';
+}
+
+function openMoveFileModal(fileId, fileName, currentCatId) {
+  document.getElementById('move-file-id').value = fileId;
+  document.getElementById('move-file-name').innerText = fileName;
+
+  const selectEl = document.getElementById('move-file-target-category');
+  if (selectEl) {
+    let optionsHtml = '';
+    flatCategoriesData.forEach(c => {
+      const prefix = '--'.repeat(c.depth || 0);
+      const isSelected = c.id === currentCatId ? 'selected' : '';
+      optionsHtml += `<option value="${c.id}" ${isSelected}>${prefix} ${escapeHtml(c.name)}</option>`;
+    });
+    selectEl.innerHTML = optionsHtml;
+  }
+
+  document.getElementById('move-file-modal').classList.add('active');
+}
+
+function closeMoveFileModal() {
+  document.getElementById('move-file-modal').classList.remove('active');
+}
+
+async function handleMoveFileSubmit(e) {
+  if (e) e.preventDefault();
+  const fileId = document.getElementById('move-file-id').value;
+  const targetCatId = document.getElementById('move-file-target-category').value;
+
+  if (!fileId || !targetCatId) {
+    alert('Please select a target folder.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/files/${fileId}/move`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category_id: targetCatId })
+    });
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      alert(data.message || 'File moved successfully!');
+      closeMoveFileModal();
+      loadAdminDashboardData();
+    } else {
+      alert(data.error || 'Failed moving file.');
+    }
+  } catch (err) {
+    alert('Server network error moving file.');
+  }
 }
 
 async function deleteFile(id, name) {
