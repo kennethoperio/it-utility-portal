@@ -220,20 +220,37 @@ async function loadCategories() {
   }
 }
 
+function getCategoryPathIds(nodes, targetId, currentPath = []) {
+  if (!targetId || !nodes) return [];
+  for (const node of nodes) {
+    const newPath = [...currentPath, node.id];
+    if (node.id === targetId) return newPath;
+    if (node.children && node.children.length > 0) {
+      const found = getCategoryPathIds(node.children, targetId, newPath);
+      if (found.length > 0) return found;
+    }
+  }
+  return [];
+}
+
 function toggleCategoryExpand(event, catId) {
   if (event) event.stopPropagation();
   if (expandedCategoryIds.has(catId)) {
     expandedCategoryIds.delete(catId);
   } else {
-    expandedCategoryIds.add(catId);
+    expandedCategoryIds.clear();
+    const pathIds = getCategoryPathIds(categoriesTreeData, catId);
+    pathIds.forEach(id => expandedCategoryIds.add(id));
   }
   loadCategories();
 }
 
 function selectCategory(catId) {
   currentCategoryId = catId;
+  expandedCategoryIds.clear();
   if (catId !== null) {
-    expandedCategoryIds.add(catId);
+    const pathIds = getCategoryPathIds(categoriesTreeData, catId);
+    pathIds.forEach(id => expandedCategoryIds.add(id));
   }
   loadCategories();
   loadFiles();
