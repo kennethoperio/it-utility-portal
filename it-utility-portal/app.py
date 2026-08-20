@@ -70,6 +70,9 @@ def apply_security_headers(response):
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     response.headers['Server'] = 'IT-Utility-Vault-Shield'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
     return response
 
 # Credentials Environment Settings
@@ -585,11 +588,19 @@ def compute_sha256(filepath):
 # --- Static Web Pages ---
 @app.route('/')
 def index_page():
-    return app.send_static_file('index.html')
+    res = make_response(app.send_static_file('index.html'))
+    res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    res.headers['Pragma'] = 'no-cache'
+    res.headers['Expires'] = '0'
+    return res
 
 @app.route('/admin')
 def admin_page():
-    return app.send_static_file('admin.html')
+    res = make_response(app.send_static_file('admin.html'))
+    res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    res.headers['Pragma'] = 'no-cache'
+    res.headers['Expires'] = '0'
+    return res
 
 # --- Tool Feedback / Comments API ---
 @app.route('/api/files/<int:file_id>/comments', methods=['GET'])
@@ -637,7 +648,7 @@ def add_file_comment(file_id):
         status = 'working'
 
     if not comment_text:
-        return jsonify({'error': 'Comment text is required.'}), 400
+        comment_text = 'Verified working.' if status == 'working' else 'Issue reported.'
 
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -741,19 +752,6 @@ def auto_link_gdrive_files():
         'already_valid': already_valid,
         'unlinked_remaining': not_found
     })
-
-@app.route('/api/admin/debug-gdrive-list', methods=['GET'])
-@admin_required
-def debug_gdrive_list():
-    service = get_gdrive_service()
-    if not service:
-        return jsonify({'error': 'No GDrive service'}), 400
-    try:
-        q = "trashed = false"
-        res = service.files().list(q=q, supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name, size)', pageSize=200).execute()
-        return jsonify({'files': res.get('files', [])})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/admin/organize-gdrive-folders', methods=['POST'])
 @admin_required
