@@ -101,7 +101,7 @@
       <button class="tab-btn" onclick="switchAdminTab('categories')"><i class="fa-solid fa-folder-tree"></i> Category Builder</button>
       <button class="tab-btn" onclick="switchAdminTab('commands')"><i class="fa-solid fa-terminal"></i> Quick Commands</button>
       <button class="tab-btn" onclick="switchAdminTab('passcodes')"><i class="fa-solid fa-key"></i> Guest Passcodes</button>
-      <button class="tab-btn" onclick="switchAdminTab('feedback')"><i class="fa-solid fa-comments"></i> Tool Feedback</button>
+      <button class="tab-btn" onclick="switchAdminTab('feedback')"><i class="fa-solid fa-comments"></i> Tool Feedback <span id="feedback-unread-badge" style="display:none; background:#ef4444; color:#fff; border-radius:12px; padding:0.15rem 0.55rem; font-size:0.75rem; font-weight:bold; margin-left:0.35rem;">0</span></button>
       <button class="tab-btn" onclick="switchAdminTab('logs')"><i class="fa-solid fa-clipboard-list"></i> Activity Audit Logs</button>
       <button class="tab-btn" onclick="switchAdminTab('settings')"><i class="fa-solid fa-sliders"></i> Settings</button>
     </div>
@@ -354,18 +354,27 @@
 
     <!-- TAB 6: Activity Audit Logs -->
     <div id="admin-sec-logs" style="display: none;">
-      <div class="toolbar" style="margin-bottom: 1rem;">
-        <div style="display: flex; gap: 0.75rem; align-items: center;">
-          <span style="font-weight: 600; font-size: 0.9rem;">Show per page:</span>
-          <select id="logs-per-page-select" onchange="changeLogsPerPage(this.value)" style="padding: 0.4rem 0.6rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); color: var(--text-primary);">
+      <div class="toolbar" style="margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <span style="font-weight: 600; font-size: 0.9rem;">Log View:</span>
+          <select id="audit-log-type-filter" onchange="loadAdminAuditLogs()" style="padding: 0.4rem 0.6rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); color: var(--text-primary); font-size: 0.85rem;">
+            <option value="client">👤 Client Activity Only (Downloads, Passcodes, Comments)</option>
+            <option value="all">🌐 All System Logs (Including Admin Actions)</option>
+          </select>
+
+          <span style="font-weight: 600; font-size: 0.9rem; margin-left: 0.5rem;">Show per page:</span>
+          <select id="logs-per-page-select" onchange="changeLogsPerPage(this.value)" style="padding: 0.4rem 0.6rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); color: var(--text-primary); font-size: 0.85rem;">
             <option value="10">10 logs</option>
             <option value="25">25 logs</option>
             <option value="50">50 logs</option>
-            <option value="100">100 logs</option>
+            <option value="100" selected>100 logs</option>
           </select>
+
+          <input type="text" id="audit-log-search-input" onkeyup="filterAuditLogsTable()" placeholder="🔍 Search IP address or action..." style="padding: 0.4rem 0.6rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); color: var(--text-primary); font-size: 0.85rem; width: 220px;">
         </div>
+
         <div style="display: flex; gap: 0.5rem;">
-          <button class="btn btn-secondary btn-sm" onclick="loadAdminSettingsData()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminAuditLogs()"><i class="fa-solid fa-rotate"></i> Refresh</button>
           <button class="btn btn-danger btn-sm" onclick="clearAllAuditLogs()"><i class="fa-solid fa-trash-can"></i> Clear All Logs</button>
         </div>
       </div>
@@ -378,7 +387,7 @@
               <th>Action</th>
               <th>Details</th>
               <th>IP Address</th>
-              <th>Timestamp</th>
+              <th>Timestamp (Manila Time)</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -457,9 +466,32 @@
     <!-- TAB 8: Tool Comments & Feedback Review -->
     <div id="admin-sec-feedback" style="display: none;">
       <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
           <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Client & Technician Tool Feedback</h2>
           <button class="btn btn-secondary btn-sm" onclick="loadAdminComments()"><i class="fa-solid fa-rotate"></i> Refresh Feedback</button>
+        </div>
+
+        <!-- Feedback Filters & Search Bar -->
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; background: var(--bg-primary); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--border-color);">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">📁 Folder Filter:</label>
+            <select id="admin-comment-folder-filter" onchange="filterAdminCommentsTable()" style="padding: 0.45rem 0.75rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem;">
+              <option value="">-- All Folders / Categories --</option>
+            </select>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Status:</label>
+            <select id="admin-comment-status-filter" onchange="filterAdminCommentsTable()" style="padding: 0.45rem 0.75rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem;">
+              <option value="">-- All Statuses --</option>
+              <option value="working">🟢 Working Great Only</option>
+              <option value="broken">🔴 Issue Found Only</option>
+            </select>
+          </div>
+
+          <div style="flex: 1; min-width: 220px;">
+            <input type="text" id="admin-comment-search-input" onkeyup="filterAdminCommentsTable()" placeholder="🔍 Search tool name, technician, or note..." style="width: 100%; padding: 0.45rem 0.75rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem;">
+          </div>
         </div>
 
         <div style="overflow-x: auto;">
@@ -467,11 +499,11 @@
             <thead>
               <tr>
                 <th>ID</th>
-                <th>TOOL NAME</th>
+                <th>TOOL NAME & FOLDER</th>
                 <th>TECHNICIAN</th>
                 <th>STATUS</th>
                 <th>COMMENT / NOTES</th>
-                <th>DATE</th>
+                <th>DATE (MANILA TIME)</th>
                 <th>ACTIONS</th>
               </tr>
             </thead>
@@ -569,6 +601,6 @@
     </div>
   </div>
 
-  <script src="js/admin.js?v=3.5"></script>
+  <script src="js/admin.js?v=4.0"></script>
 </body>
 </html>
