@@ -486,15 +486,23 @@ function setupDragAndDrop() {
   });
 }
 
-function onFileSelected(e) {
+function handleFileSelect(e) {
   const file = e.target.files[0];
   if (file) {
     updateDropZoneText(file.name);
   }
 }
 
+function onFileSelected(e) {
+  return handleFileSelect(e);
+}
+
 function updateDropZoneText(filename) {
   document.getElementById('drop-zone-text').innerHTML = `<i class="fa-solid fa-file-check" style="color: var(--success-color);"></i> Selected: <strong>${escapeHtml(filename)}</strong>`;
+}
+
+function uploadFile(e) {
+  return handleFileUpload(e);
 }
 
 function handleFileUpload(e) {
