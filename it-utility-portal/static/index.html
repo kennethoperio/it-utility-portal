@@ -3,55 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IT Troubleshooting Utility Hub</title>
+  <title>IT Troubleshooting Utility Vault</title>
   <link rel="stylesheet" href="css/style.css?v=3.5">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-  <!-- Top Announcement Banner -->
-  <div class="announcement-banner" id="banner-container" style="display: none;">
-    <i class="fa-solid fa-bullhorn"></i>
-    <span id="announcement-text">Authorized IT Technicians Portal - Fast 1-Click Utility Downloads</span>
-  </div>
-
-  <!-- Header / Navbar -->
+  <!-- Public Client Header -->
   <header class="header">
     <div class="header-container">
       <div class="logo">
-        <i class="fa-solid fa-toolbox"></i>
+        <i class="fa-solid fa-screwdriver-wrench"></i>
         <span id="site-title-display">IT Troubleshooting Utility Hub</span>
       </div>
       <div class="user-actions">
-        <button class="btn btn-secondary btn-sm" id="theme-toggle-btn" title="Toggle Theme">
+        <button class="btn btn-secondary btn-sm" id="theme-toggle-btn" title="Toggle Theme" onclick="toggleTheme()">
           <i class="fa-solid fa-moon"></i>
         </button>
-        <button class="btn btn-secondary btn-sm" onclick="logoutClient()" id="client-logout-btn" style="display: none;" title="Exit / Lock Session">
-          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        <button class="btn btn-secondary btn-sm" id="client-logout-btn" onclick="logoutClient()" style="display: none;" title="Lock Session / Logout">
+          <i class="fa-solid fa-right-from-bracket"></i> Lock Session
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <div class="container">
+  <!-- Announcement Banner -->
+  <div class="announcement-banner" id="announcement-banner" style="display: none;">
+    <i class="fa-solid fa-bullhorn"></i> <span id="announcement-text"></span>
+  </div>
 
-    <!-- Hero / Header Section -->
-    <div class="hero-section">
-      <h1 class="hero-title">IT Troubleshooting Utility Portal</h1>
-      <p class="hero-subtitle">Fast, centralized repository for printer drivers, resetters, Windows repair tools, and network diagnostics.</p>
-    </div>
+  <div class="container">
 
     <!-- Navigation Tabs -->
     <div class="tabs">
       <button class="tab-btn active" id="tab-files-btn" onclick="switchMainTab('files')">
-        <i class="fa-solid fa-boxes-stacked"></i> Utility Software Library
+        <i class="fa-solid fa-boxes-stacked"></i> Software & Utilities
+      </button>
+      <button class="tab-btn" id="tab-builder-btn" onclick="switchMainTab('builder')">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> 1-Click Script Studio
       </button>
       <button class="tab-btn" id="tab-cmd-btn" onclick="switchMainTab('cmd')">
         <i class="fa-solid fa-terminal"></i> Quick IT Commands
       </button>
       <button class="tab-btn" id="tab-net-btn" onclick="switchMainTab('net')">
         <i class="fa-solid fa-network-wired"></i> Network Diagnostics
+      </button>
+      <button class="tab-btn" id="tab-inspector-btn" onclick="switchMainTab('inspector')">
+        <i class="fa-solid fa-laptop-code"></i> Device Inspector
       </button>
     </div>
 
@@ -90,7 +88,71 @@
       </div>
     </div>
 
-    <!-- TAB 2: Command Cheat Sheet -->
+    <!-- TAB 2: Interactive 1-Click Script Studio -->
+    <div id="section-builder" style="display: none;">
+      <h2 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-color);"></i> Interactive Windows Maintenance & Repair Studio</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Select the maintenance actions you want to run, and download a custom 1-click batch script (`.bat`) ready to execute as Administrator.</p>
+
+      <div style="display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; align-items: start;">
+        <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem;">
+          <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-list-check"></i> Select Repair & Optimization Tasks</h3>
+          
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <label style="display: flex; gap: 0.75rem; align-items: flex-start; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; cursor: pointer;">
+              <input type="checkbox" id="task-temp" checked style="margin-top: 0.25rem; transform: scale(1.2);">
+              <div>
+                <strong style="color: var(--text-primary);">🧹 Clean Windows Temp & Prefetch Cache</strong>
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">Deletes temporary files in `%TEMP%`, `C:\Windows\Temp`, and `Prefetch` to free up gigabytes of disk space.</p>
+              </div>
+            </label>
+
+            <label style="display: flex; gap: 0.75rem; align-items: flex-start; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; cursor: pointer;">
+              <input type="checkbox" id="task-dns" checked style="margin-top: 0.25rem; transform: scale(1.2);">
+              <div>
+                <strong style="color: var(--text-primary);">🌐 Flush DNS Cache & Reset Winsock Stack</strong>
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">Flushes DNS resolver cache, re-registers DNS, and resets IP/Winsock catalog to fix website loading & Wi-Fi issues.</p>
+              </div>
+            </label>
+
+            <label style="display: flex; gap: 0.75rem; align-items: flex-start; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; cursor: pointer;">
+              <input type="checkbox" id="task-spooler" checked style="margin-top: 0.25rem; transform: scale(1.2);">
+              <div>
+                <strong style="color: var(--text-primary);">🖨️ Restart Printer Spooler & Clear Stuck Print Jobs</strong>
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">Stops spooler service, purges corrupt `.SHD` / `.SPL` print files, and restarts the spooler automatically.</p>
+              </div>
+            </label>
+
+            <label style="display: flex; gap: 0.75rem; align-items: flex-start; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; cursor: pointer;">
+              <input type="checkbox" id="task-sfc" style="margin-top: 0.25rem; transform: scale(1.2);">
+              <div>
+                <strong style="color: var(--text-primary);">🛠️ Windows System File Checker (SFC Scan)</strong>
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">Runs `sfc /scannow` to detect and repair corrupted Windows system files.</p>
+              </div>
+            </label>
+
+            <label style="display: flex; gap: 0.75rem; align-items: flex-start; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; cursor: pointer;">
+              <input type="checkbox" id="task-power" style="margin-top: 0.25rem; transform: scale(1.2);">
+              <div>
+                <strong style="color: var(--text-primary);">⚡ Enable Ultimate High Performance Power Plan</strong>
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">Unlocks and activates Windows Ultimate Performance power mode for maximum CPU speed.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem; text-align: center;">
+          <div style="width: 50px; height: 50px; border-radius: 50%; background-color: rgba(56, 189, 248, 0.15); color: var(--accent-color); display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem;">
+            <i class="fa-solid fa-file-code"></i>
+          </div>
+          <h3 style="margin-bottom: 0.5rem;">Generate Batch File</h3>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">Download your customized batch script ready to execute on any Windows PC.</p>
+
+          <button class="btn btn-primary" onclick="downloadCustomScript()" style="width: 100%; padding: 0.8rem;"><i class="fa-solid fa-download"></i> Download Script (.bat)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Command Cheat Sheet -->
     <div id="section-cmd" style="display: none;">
       <h2 style="margin-bottom: 1rem;"><i class="fa-solid fa-terminal"></i> Quick IT Troubleshooting Commands</h2>
       <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">1-Click copy standard PowerShell and CMD scripts for fixing Windows issues, printer spooler, network stack, and license status.</p>
@@ -99,7 +161,7 @@
       </div>
     </div>
 
-    <!-- TAB 3: Network Diagnostics -->
+    <!-- TAB 4: Network Diagnostics -->
     <div id="section-net" style="display: none;">
       <h2 style="margin-bottom: 1rem;"><i class="fa-solid fa-network-wired"></i> Network Information & Diagnostic Suite</h2>
       
@@ -167,6 +229,36 @@
         <pre id="net-terminal-output" style="color: #c9d1d9; font-size: 0.85rem; line-height: 1.4; margin: 0; min-height: 160px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">Console Ready. Select a test tool above to execute network diagnostics.</pre>
       </div>
 
+    </div>
+
+    <!-- TAB 5: Live Device Inspector -->
+    <div id="section-inspector" style="display: none;">
+      <h2 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-laptop-code" style="color: var(--accent-color);"></i> Live Device & System Inspector</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Inspect client hardware, browser capabilities, display specifications, and copy a 1-click PowerShell command to export full system specs.</p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+        <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem;">
+          <h3 style="margin-bottom: 1rem; color: var(--accent-color);"><i class="fa-solid fa-desktop"></i> Display & Browser Details</h3>
+          <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem;">
+            <li><strong>Operating System:</strong> <span id="insp-os">Detecting...</span></li>
+            <li><strong>Web Browser:</strong> <span id="insp-browser">Detecting...</span></li>
+            <li><strong>Screen Resolution:</strong> <span id="insp-screen">Detecting...</span></li>
+            <li><strong>CPU Logical Cores:</strong> <span id="insp-cores">Detecting...</span></li>
+            <li><strong>Estimated RAM:</strong> <span id="insp-ram">Detecting...</span></li>
+          </ul>
+        </div>
+
+        <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem;">
+          <h3 style="margin-bottom: 1rem; color: var(--accent-color);"><i class="fa-solid fa-microchip"></i> Full Hardware Export Command</h3>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Run this PowerShell command on any client PC to export detailed hardware, RAM model, motherboard, and BIOS specs to a text file on Desktop:</p>
+          
+          <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem; font-family: monospace; font-size: 0.8rem; color: #38bdf8; word-break: break-all; margin-bottom: 1rem;">
+            Get-ComputerInfo | Out-File -FilePath "$env:USERPROFILE\Desktop\SystemSpecs.txt"
+          </div>
+
+          <button class="btn btn-primary btn-sm" onclick="copyPowerShellSpecsCmd()"><i class="fa-solid fa-copy"></i> Copy PowerShell Command</button>
+        </div>
+      </div>
     </div>
 
   </div>
