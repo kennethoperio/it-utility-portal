@@ -585,10 +585,9 @@ def compute_sha256(filepath):
             hasher.update(chunk)
     return hasher.hexdigest()
 
-# --- Static Web Pages ---
 @app.route('/')
 def index_page():
-    res = make_response(app.send_static_file('index.html'))
+    res = app.send_static_file('index.html')
     res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
     res.headers['Pragma'] = 'no-cache'
     res.headers['Expires'] = '0'
@@ -596,7 +595,7 @@ def index_page():
 
 @app.route('/admin')
 def admin_page():
-    res = make_response(app.send_static_file('admin.html'))
+    res = app.send_static_file('admin.html')
     res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
     res.headers['Pragma'] = 'no-cache'
     res.headers['Expires'] = '0'
