@@ -876,6 +876,12 @@ async function migrateFilesToGDrive() {
       loadAdminDashboardData();
     } else {
       alert(data.error || 'Migration failed.');
+    }
+  } catch (err) {
+    alert('Server error executing migration.');
+  }
+}
+
 async function autoLinkGDriveFiles() {
   if (!confirm('Scan 5 TB Google Drive and auto-link all legacy tools in your database?')) return;
 
