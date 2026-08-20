@@ -568,7 +568,7 @@ def organize_gdrive_folders():
     })
 
 # --- Move File to Another Folder Endpoint (With GDrive Folder Sync) ---
-@app.route('/api/files/<int:file_id>/move', methods=['PUT'])
+@app.route('/api/files/<int:file_id>/move', methods=['POST', 'PUT'])
 @admin_required
 def move_file(file_id):
     data = request.get_json() or {}
