@@ -16,7 +16,7 @@ import time
 from datetime import datetime, timedelta
 from functools import wraps
 
-from flask import Flask, request, jsonify, send_file, render_template, session, redirect, url_for, Response, stream_with_context
+from flask import Flask, request, jsonify, send_file, render_template, session, redirect, url_for, Response, stream_with_context, make_response
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
