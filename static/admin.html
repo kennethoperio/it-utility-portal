@@ -444,9 +444,12 @@
         </form>
 
         <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
-          <h3 style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-brands fa-google-drive" style="color: #34a853;"></i> Storage Migration Utility</h3>
-          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Move your existing tools from Backblaze B2 into your 5 TB Google Drive folder automatically.</p>
-          <button type="button" class="btn btn-secondary" onclick="migrateFilesToGDrive()"><i class="fa-solid fa-truck-ramp-box"></i> Migrate All Files to 5 TB Google Drive</button>
+          <h3 style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-brands fa-google-drive" style="color: #34a853;"></i> Storage & File Linking Tools</h3>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">If any older files show "Physical file missing from server storage", click below to automatically scan 5 TB Google Drive and link all matching files instantly.</p>
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="autoLinkGDriveFiles()"><i class="fa-solid fa-link"></i> Auto-Link All Legacy Files to Google Drive</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="migrateFilesToGDrive()"><i class="fa-solid fa-truck-ramp-box"></i> Migrate All Files to 5 TB Google Drive</button>
+          </div>
         </div>
       </div>
     </div>
