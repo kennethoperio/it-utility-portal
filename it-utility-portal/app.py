@@ -84,6 +84,8 @@ GDRIVE_CLIENT_ID = os.environ.get('GDRIVE_CLIENT_ID')
 GDRIVE_CLIENT_SECRET = os.environ.get('GDRIVE_CLIENT_SECRET')
 GDRIVE_REFRESH_TOKEN = os.environ.get('GDRIVE_REFRESH_TOKEN')
 
+GDRIVE_ACCESS_TOKEN_CACHE = {'token': None, 'expires_at': 0}
+
 # --- Google Drive Storage Integration ---
 def get_gdrive_service():
     client_id = (os.environ.get('GDRIVE_CLIENT_ID') or '').strip()
@@ -123,6 +125,23 @@ def get_gdrive_service():
     except Exception as e:
         print(f"Google Drive Service Init Error: {e}")
         return None
+
+def get_cached_gdrive_token(service):
+    now = time.time()
+    if GDRIVE_ACCESS_TOKEN_CACHE['token'] and now < GDRIVE_ACCESS_TOKEN_CACHE['expires_at']:
+        return GDRIVE_ACCESS_TOKEN_CACHE['token']
+
+    if service and hasattr(service, '_http') and hasattr(service._http, 'credentials'):
+        c = service._http.credentials
+        import google.auth.transport.requests
+        req_trans = google.auth.transport.requests.Request()
+        if not c.valid or c.expired:
+            c.refresh(req_trans)
+        token = c.token
+        GDRIVE_ACCESS_TOKEN_CACHE['token'] = token
+        GDRIVE_ACCESS_TOKEN_CACHE['expires_at'] = now + 3000  # Cache for 50 minutes
+        return token
+    return None
 
 def get_or_create_gdrive_folder(service, folder_name, parent_id):
     if not service or not folder_name or not parent_id:
@@ -1414,43 +1433,30 @@ def download_file(file_id):
             gdrive_id = unique_key.replace('gdrive:', '')
             service = get_gdrive_service()
             if service:
-                conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
-                conn.commit()
-                conn.close()
-                async_upload_db_to_cloud()
+                token = get_cached_gdrive_token(service)
+                if token:
+                    import requests
+                    gdrive_url = f"https://www.googleapis.com/drive/v3/files/{gdrive_id}?alt=media"
+                    r = requests.get(gdrive_url, headers={'Authorization': f"Bearer {token}"}, stream=True)
 
-                import google.auth.transport.requests
-                import requests
-                
-                req = service.files().get_media(fileId=gdrive_id, supportsAllDrives=True)
-                creds = req.headers.get('Authorization')
-                
-                headers_req = {}
-                if creds:
-                    headers_req['Authorization'] = creds
-                elif hasattr(service, '_http') and hasattr(service._http, 'credentials'):
-                    c = service._http.credentials
-                    req_trans = google.auth.transport.requests.Request()
-                    if not c.valid:
-                        c.refresh(req_trans)
-                    headers_req['Authorization'] = f"Bearer {c.token}"
+                    if r.status_code == 200:
+                        conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
+                        conn.commit()
+                        conn.close()
+                        async_upload_db_to_cloud()
 
-                gdrive_url = f"https://www.googleapis.com/drive/v3/files/{gdrive_id}?alt=media"
-                r = requests.get(gdrive_url, headers=headers_req, stream=True)
+                        def generate_stream():
+                            for chunk in r.iter_content(chunk_size=1024*1024):
+                                if chunk:
+                                    yield chunk
 
-                if r.status_code == 200:
-                    def generate_stream():
-                        for chunk in r.iter_content(chunk_size=1024*1024):
-                            if chunk:
-                                yield chunk
-
-                    headers = {
-                        'Content-Disposition': f'attachment; filename="{file_record["original_name"]}"',
-                        'Content-Length': str(file_record['file_size'])
-                    }
-                    return Response(stream_with_context(generate_stream()), mimetype='application/octet-stream', headers=headers)
-                else:
-                    print(f"GDrive streaming HTTP error: {r.status_code} {r.text}")
+                        headers = {
+                            'Content-Disposition': f'attachment; filename="{file_record["original_name"]}"',
+                            'Content-Length': str(file_record['file_size'])
+                        }
+                        return Response(stream_with_context(generate_stream()), mimetype='application/octet-stream', headers=headers)
+                    else:
+                        print(f"GDrive streaming HTTP error: {r.status_code} {r.text}")
 
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_key)
 
