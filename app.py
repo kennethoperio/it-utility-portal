@@ -637,7 +637,7 @@ def add_file_comment(file_id):
         status = 'working'
 
     if not comment_text:
-        return jsonify({'error': 'Comment text is required.'}), 400
+        comment_text = 'Verified working.' if status == 'working' else 'Issue reported.'
 
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
