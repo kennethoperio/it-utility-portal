@@ -497,12 +497,16 @@ async function submitToolComment(e) {
   const fileId = document.getElementById('comment-file-id').value;
   const author_name = document.getElementById('comment-author').value.trim();
   const status = document.getElementById('comment-status').value;
-  const comment_text = document.getElementById('comment-text').value.trim();
+  let comment_text = document.getElementById('comment-text').value.trim();
   const submitBtn = document.getElementById('comment-submit-btn');
 
-  if (!fileId || !comment_text) {
-    alert('Please enter your comment notes.');
+  if (!fileId) {
+    alert('Invalid file.');
     return;
+  }
+
+  if (!comment_text) {
+    comment_text = status === 'working' ? 'Verified working.' : 'Issue reported.';
   }
 
   submitBtn.disabled = true;
