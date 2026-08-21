@@ -1884,11 +1884,13 @@ def download_all_zip():
     if not root_folder_id:
         root_folder_id = (os.environ.get('GDRIVE_FOLDER_ID') or '').strip()
 
-    if root_folder_id:
-        log_audit('DOWNLOAD_ALL_ZIP', 'Admin redirected to Google Drive IT_Utility_Vault folder for full zip download')
-        return redirect(f"https://drive.google.com/drive/folders/{root_folder_id}")
-    else:
-        return jsonify({'error': 'IT_Utility_Vault Google Drive folder ID could not be resolved.'}), 404
+    drive_url = f"https://drive.google.com/drive/folders/{root_folder_id}" if root_folder_id else "https://drive.google.com"
+    log_audit('DOWNLOAD_ALL_ZIP', 'Admin redirected to Google Drive IT_Utility_Vault folder')
+
+    if 'application/json' in request.headers.get('Accept', '') or request.args.get('format') == 'json':
+        return jsonify({'success': True, 'url': drive_url})
+
+    return redirect(drive_url)
                 curr = categories.get(cat_id)
                 while curr:
                     path_parts.insert(0, curr['name'])
