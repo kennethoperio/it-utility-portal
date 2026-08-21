@@ -735,10 +735,34 @@ def auto_link_gdrive_files():
     conn = get_db()
     cursor = conn.cursor()
 
-    # 1. Resolve root IT_Utility_Vault folder ID
-    root_folder_id = get_or_create_gdrive_folder(service, 'IT_Utility_Vault', None)
+    # 1. Explicitly resolve root IT_Utility_Vault folder ID across all drives
+    root_folder_id = None
+    try:
+        res = service.files().list(
+            q="name = 'IT_Utility_Vault' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+            fields="files(id, name)",
+            corpora='allDrives',
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True
+        ).execute()
+        vault_files = res.get('files', [])
+        if vault_files:
+            root_folder_id = vault_files[0]['id']
+            print(f"FOUND IT_Utility_Vault folder ID: {root_folder_id}")
+    except Exception as e:
+        print(f"Error querying IT_Utility_Vault folder ID: {e}")
 
-    # 2. Fetch all folders from Google Drive to map subfolder hierarchy
+    if not root_folder_id:
+        root_folder_id = (os.environ.get('GDRIVE_FOLDER_ID') or '').strip()
+
+    if not root_folder_id:
+        root_folder_id = get_or_create_gdrive_folder(service, 'IT_Utility_Vault', None)
+
+    if not root_folder_id:
+        conn.close()
+        return jsonify({'error': 'Could not locate IT_Utility_Vault folder in Google Drive. Please ensure a folder named IT_Utility_Vault exists in your Google Drive.'}), 400
+
+    # 2. Fetch all folders from Google Drive
     try:
         folder_items = []
         page_token = None
@@ -760,8 +784,8 @@ def auto_link_gdrive_files():
         print(f"Error fetching GDrive folders: {e}")
         folder_items = []
 
-    # Filter folders that belong to IT_Utility_Vault hierarchy
-    vault_folder_ids = {root_folder_id} if root_folder_id else set()
+    # Build exact set of descendant folder IDs belonging ONLY to IT_Utility_Vault
+    vault_folder_ids = {root_folder_id}
     added_new = True
     while added_new:
         added_new = False
@@ -772,9 +796,9 @@ def auto_link_gdrive_files():
                 vault_folder_ids.add(fg_id)
                 added_new = True
 
+    print(f"Resolved {len(vault_folder_ids)} vault subfolders belonging to IT_Utility_Vault!")
+
     folder_gdrive_to_db = {}
-    
-    # Load existing categories from DB
     cat_rows = cursor.execute("SELECT id, name, parent_id FROM categories").fetchall()
     cat_name_to_id = {c['name'].lower(): c['id'] for c in cat_rows}
 
@@ -782,7 +806,7 @@ def auto_link_gdrive_files():
     for fitem in folder_items:
         fg_id = fitem['id']
         fname = fitem['name']
-        if vault_folder_ids and fg_id not in vault_folder_ids:
+        if fg_id not in vault_folder_ids:
             continue
             
         if fname.lower() in cat_name_to_id:
@@ -835,26 +859,17 @@ def auto_link_gdrive_files():
     updated_categories = 0
     purged_outside_files = 0
 
-    # Create map of g_id -> parent_id from file_items
+    # Map g_id -> parent_id
     file_parent_map = {item['id']: (item.get('parents', [])[0] if item.get('parents') else None) for item in file_items}
 
-    # 4. Purge any non-software files (.png, .drawio, .pptx, .pdf, .docx) from database
-    cursor.execute("""
-        DELETE FROM files 
-        WHERE LOWER(original_name) LIKE '%.png'
-           OR LOWER(original_name) LIKE '%.jpg'
-           OR LOWER(original_name) LIKE '%.jpeg'
-           OR LOWER(original_name) LIKE '%.drawio%'
-           OR LOWER(original_name) LIKE '%.pptx'
-           OR LOWER(original_name) LIKE '%.ppt'
-           OR LOWER(original_name) LIKE '%.docx'
-           OR LOWER(original_name) LIKE '%.doc'
-           OR LOWER(original_name) LIKE '%.xlsx'
-           OR LOWER(original_name) LIKE '%.pdf'
-    """)
+    # 4. STRICT PURGE: Delete any file from DB whose parent is NOT inside IT_Utility_Vault
+    for g_id, existing_f in list(db_gdrive_keys.items()):
+        parent_id = file_parent_map.get(g_id)
+        if not parent_id or parent_id not in vault_folder_ids:
+            cursor.execute("DELETE FROM files WHERE id = ?", (existing_f['id'],))
+            purged_outside_files += 1
 
-    ALLOWED_SOFTWARE_EXTENSIONS = ('.exe', '.rar', '.zip', '.7z', '.msi', '.iso', '.dmg', '.pkg', '.bat', '.ps1', '.cmd', '.bin', '.img', '.apk', '.tar', '.gz', '.xz', '.bz2', '.cfg', '.ini')
-
+    # 5. STRICT IMPORT: Import ONLY files whose parent IS inside IT_Utility_Vault
     for item in file_items:
         g_id = item['id']
         item_name = item['name']
@@ -862,18 +877,16 @@ def auto_link_gdrive_files():
         file_size = int(item.get('size', 0))
         fparents = item.get('parents', [])
 
-        # Skip system files, database backups, non-software extensions, and files outside IT_Utility_Vault
+        # Skip system files and database backups
         if item_mime == 'application/vnd.google-apps.folder' or item_name.endswith('.db') or item_name.startswith('.'):
             continue
 
-        if not item_name.lower().endswith(ALLOWED_SOFTWARE_EXTENSIONS):
-            continue
-
-        if vault_folder_ids and fparents and fparents[0] not in vault_folder_ids:
+        # STRICT GUARANTEE: Must be inside IT_Utility_Vault or one of its subfolders
+        if not fparents or fparents[0] not in vault_folder_ids:
             continue
 
         assigned_cat_id = default_cat_id
-        if fparents and fparents[0] in folder_gdrive_to_db:
+        if fparents[0] in folder_gdrive_to_db:
             assigned_cat_id = folder_gdrive_to_db[fparents[0]]
 
         if g_id in db_gdrive_keys:
@@ -887,20 +900,21 @@ def auto_link_gdrive_files():
             cursor.execute('''
                 INSERT INTO files (original_name, file_key, category_id, file_size, sha256_hash, description, version)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (item_name, file_key, assigned_cat_id, file_size, sha256_hash, f"Imported from Google Drive: {item_name}", "1.0"))
+            ''', (item_name, file_key, assigned_cat_id, file_size, sha256_hash, f"Imported from IT_Utility_Vault: {item_name}", "1.0"))
             newly_imported += 1
 
     conn.commit()
     conn.close()
     async_upload_db_to_cloud()
 
-    log_audit('GDRIVE_AUTO_LINKED', f"Synchronized IT_Utility_Vault! Imported {newly_imported} software installers, purged non-software files.")
+    log_audit('GDRIVE_AUTO_LINKED', f"Synchronized IT_Utility_Vault! Imported {newly_imported} vault files, purged {purged_outside_files} non-vault files.")
 
-    msg = f"IT_Utility_Vault Cleaned & Synchronized! Imported {newly_imported} software installers, purged all non-software files (.png, .pptx, .drawio)."
+    msg = f"IT_Utility_Vault Synchronized! Imported {newly_imported} vault files, purged {purged_outside_files} non-vault files."
     return jsonify({
         'success': True,
         'message': msg,
         'newly_imported': newly_imported,
+        'purged_outside_files': purged_outside_files,
         'updated_categories': updated_categories
     })
 
