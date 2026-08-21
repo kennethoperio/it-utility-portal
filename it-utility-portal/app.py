@@ -734,116 +734,113 @@ def auto_link_gdrive_files():
 
     conn = get_db()
     cursor = conn.cursor()
-    all_files = cursor.execute("SELECT * FROM files").fetchall()
-    
-    relinked_count = 0
-    already_valid = 0
-    newly_imported = 0
-    not_found = []
 
-    # 1. Verify existing DB files
-    existing_keys = set()
-    existing_names = set()
-    for f in all_files:
-        current_key = f['file_key']
-        file_id = f['id']
-        orig_name = f['original_name']
-        existing_names.add(orig_name.lower())
-        
-        valid_g_id = None
-        if current_key.startswith('gdrive:'):
-            g_id = current_key.replace('gdrive:', '')
-            existing_keys.add(g_id)
-            try:
-                meta = service.files().get(fileId=g_id, supportsAllDrives=True, fields='id, name').execute()
-                if meta and meta.get('id'):
-                    valid_g_id = meta.get('id')
-                    already_valid += 1
-            except Exception:
-                valid_g_id = None
-
-        if not valid_g_id:
-            new_g_id = find_gdrive_file_id_by_name(service, orig_name)
-            if new_g_id:
-                cursor.execute("UPDATE files SET file_key = ? WHERE id = ?", (f"gdrive:{new_g_id}", file_id))
-                existing_keys.add(new_g_id)
-                relinked_count += 1
-            else:
-                not_found.append(f"{orig_name} (ID #{file_id})")
-
-    # 2. Scan Google Drive recursively for ALL files across all subfolders
+    # 1. Fetch all folders from Google Drive to map subfolder hierarchy
     try:
-        # Search for all non-folder files that are not trashed
-        query_str = "trashed = false and mimeType != 'application/vnd.google-apps.folder'"
+        folder_items = service.files().list(
+            q="mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+            fields="files(id, name, parents)",
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
+            pageSize=1000
+        ).execute().get('files', [])
+    except Exception as e:
+        print(f"Error fetching GDrive folders: {e}")
+        folder_items = []
+
+    folder_gdrive_to_db = {}
+    
+    # Load existing categories from DB
+    cat_rows = cursor.execute("SELECT id, name, parent_id FROM categories").fetchall()
+    cat_name_to_id = {c['name'].lower(): c['id'] for c in cat_rows}
+
+    # Auto-create categories in DB matching Google Drive folder hierarchy
+    for fitem in folder_items:
+        fname = fitem['name']
+        fg_id = fitem['id']
         
-        gdrive_items = service.files().list(
-            q=query_str,
+        if fname.lower() in cat_name_to_id:
+            folder_gdrive_to_db[fg_id] = cat_name_to_id[fname.lower()]
+        else:
+            parent_cat_id = None
+            fparents = fitem.get('parents', [])
+            if fparents and fparents[0] in folder_gdrive_to_db:
+                parent_cat_id = folder_gdrive_to_db[fparents[0]]
+
+            icon = 'folder'
+            if 'video' in fname.lower(): icon = 'desktop'
+            elif 'photo' in fname.lower() or 'graphic' in fname.lower(): icon = 'toolbox'
+            elif 'print' in fname.lower(): icon = 'print'
+            elif 'driver' in fname.lower(): icon = 'microchip'
+
+            cursor.execute("INSERT INTO categories (name, parent_id, icon, description, display_order) VALUES (?, ?, ?, ?, ?)",
+                           (fname, parent_cat_id, icon, f"Folder: {fname}", 10))
+            new_cid = cursor.lastrowid
+            cat_name_to_id[fname.lower()] = new_cid
+            folder_gdrive_to_db[fg_id] = new_cid
+
+    # 2. Fetch all files from Google Drive
+    try:
+        file_items = service.files().list(
+            q="mimeType != 'application/vnd.google-apps.folder' and trashed = false",
             fields="files(id, name, size, mimeType, parents, createdTime)",
             supportsAllDrives=True,
             includeItemsFromAllDrives=True,
             pageSize=1000
         ).execute().get('files', [])
+    except Exception as e:
+        print(f"Error fetching GDrive files: {e}")
+        file_items = []
 
-        default_cat_row = cursor.execute("SELECT id FROM categories ORDER BY id ASC LIMIT 1").fetchone()
-        default_cat_id = default_cat_row['id'] if default_cat_row else 1
+    existing_db_files = cursor.execute("SELECT id, original_name, file_key, category_id FROM files").fetchall()
+    db_gdrive_keys = {f['file_key'].replace('gdrive:', ''): dict(f) for f in existing_db_files if f['file_key'].startswith('gdrive:')}
 
-        # Fetch category folders map to automatically assign correct subfolder category
-        cat_rows = cursor.execute("SELECT id, name FROM categories").fetchall()
-        cat_name_map = {c['name'].lower(): c['id'] for c in cat_rows}
+    default_cat_id = list(cat_name_to_id.values())[0] if cat_name_to_id else 1
+    newly_imported = 0
+    updated_categories = 0
+    already_valid = len(db_gdrive_keys)
 
-        for item in gdrive_items:
-            g_id = item['id']
-            item_name = item['name']
-            item_mime = item.get('mimeType', '')
+    for item in file_items:
+        g_id = item['id']
+        item_name = item['name']
+        item_mime = item.get('mimeType', '')
+        file_size = int(item.get('size', 0))
 
-            # Skip system files and database backups
-            if item_mime == 'application/vnd.google-apps.folder' or item_name.endswith('.db') or item_name.startswith('.'):
-                continue
+        if item_mime == 'application/vnd.google-apps.folder' or item_name.endswith('.db') or item_name.startswith('.'):
+            continue
 
-            # Deduplicate strictly by Google Drive file ID (g_id)
-            if g_id not in existing_keys:
-                file_size = int(item.get('size', 0))
-                file_key = f"gdrive:{g_id}"
-                sha256_hash = f"gdrive_{g_id}"
-                
-                # Try to map category based on parent folder name
-                assigned_cat_id = default_cat_id
-                parents = item.get('parents', [])
-                if parents:
-                    try:
-                        parent_meta = service.files().get(fileId=parents[0], fields='name', supportsAllDrives=True).execute()
-                        parent_name = parent_meta.get('name', '').lower()
-                        for cname, cid in cat_name_map.items():
-                            if cname in parent_name or parent_name in cname:
-                                assigned_cat_id = cid
-                                break
-                    except Exception:
-                        pass
-                
-                cursor.execute('''
-                    INSERT INTO files (original_name, file_key, category_id, file_size, sha256_hash, description, version)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (item_name, file_key, assigned_cat_id, file_size, sha256_hash, f"Imported from Google Drive: {item_name}", "1.0"))
-                
-                existing_keys.add(g_id)
-                newly_imported += 1
+        assigned_cat_id = default_cat_id
+        fparents = item.get('parents', [])
+        if fparents and fparents[0] in folder_gdrive_to_db:
+            assigned_cat_id = folder_gdrive_to_db[fparents[0]]
 
-    except Exception as gdrive_scan_err:
-        print(f"Error scanning GDrive folder for new files: {gdrive_scan_err}")
+        if g_id in db_gdrive_keys:
+            existing_f = db_gdrive_keys[g_id]
+            if existing_f['category_id'] != assigned_cat_id:
+                cursor.execute("UPDATE files SET category_id = ? WHERE id = ?", (assigned_cat_id, existing_f['id']))
+                updated_categories += 1
+        else:
+            file_key = f"gdrive:{g_id}"
+            sha256_hash = f"gdrive_{g_id}"
+            cursor.execute('''
+                INSERT INTO files (original_name, file_key, category_id, file_size, sha256_hash, description, version)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (item_name, file_key, assigned_cat_id, file_size, sha256_hash, f"Imported from Google Drive: {item_name}", "1.0"))
+            newly_imported += 1
 
     conn.commit()
     conn.close()
     async_upload_db_to_cloud()
 
-    log_audit('GDRIVE_AUTO_LINKED', f"Verified {already_valid} files, imported {newly_imported} new files from Google Drive.")
+    log_audit('GDRIVE_AUTO_LINKED', f"Synchronized Google Drive! Imported {newly_imported} new files, updated {updated_categories} category assignments.")
 
-    msg = f"Scan complete! Verified {already_valid} files, imported {newly_imported} new files from Google Drive subfolders, re-linked {relinked_count} files."
+    msg = f"Google Drive Synchronized! Verified {already_valid} files, imported {newly_imported} new files, updated {updated_categories} category assignments across all subfolders."
     return jsonify({
         'success': True,
         'message': msg,
         'already_valid': already_valid,
         'newly_imported': newly_imported,
-        'relinked_count': relinked_count
+        'updated_categories': updated_categories
     })
 
 @app.route('/api/admin/organize-gdrive-folders', methods=['POST'])
