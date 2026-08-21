@@ -728,20 +728,27 @@ def auto_link_gdrive_files():
         return jsonify({'error': 'Google Drive service unavailable.'}), 400
 
     conn = get_db()
-    all_files = conn.execute("SELECT * FROM files").fetchall()
+    cursor = conn.cursor()
+    all_files = cursor.execute("SELECT * FROM files").fetchall()
     
     relinked_count = 0
     already_valid = 0
+    newly_imported = 0
     not_found = []
 
+    # 1. Verify existing DB files
+    existing_keys = set()
+    existing_names = set()
     for f in all_files:
         current_key = f['file_key']
         file_id = f['id']
         orig_name = f['original_name']
+        existing_names.add(orig_name.lower())
         
         valid_g_id = None
         if current_key.startswith('gdrive:'):
             g_id = current_key.replace('gdrive:', '')
+            existing_keys.add(g_id)
             try:
                 meta = service.files().get(fileId=g_id, supportsAllDrives=True, fields='id, name').execute()
                 if meta and meta.get('id'):
@@ -753,27 +760,67 @@ def auto_link_gdrive_files():
         if not valid_g_id:
             new_g_id = find_gdrive_file_id_by_name(service, orig_name)
             if new_g_id:
-                conn.execute("UPDATE files SET file_key = ? WHERE id = ?", (f"gdrive:{new_g_id}", file_id))
+                cursor.execute("UPDATE files SET file_key = ? WHERE id = ?", (f"gdrive:{new_g_id}", file_id))
+                existing_keys.add(new_g_id)
                 relinked_count += 1
             else:
                 not_found.append(f"{orig_name} (ID #{file_id})")
+
+    # 2. Scan Google Drive folder for any files uploaded directly on Google Drive
+    try:
+        root_folder_id = GDRIVE_ROOT_FOLDER_ID
+        query_str = f"'{root_folder_id}' in parents and trashed = false" if root_folder_id else "trashed = false and mimeType != 'application/vnd.google-apps.folder'"
+        
+        gdrive_items = service.files().list(
+            q=query_str,
+            fields="files(id, name, size, mimeType, parents, createdTime)",
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
+            pageSize=1000
+        ).execute().get('files', [])
+
+        default_cat_row = cursor.execute("SELECT id FROM categories ORDER BY id ASC LIMIT 1").fetchone()
+        default_cat_id = default_cat_row['id'] if default_cat_row else 1
+
+        for item in gdrive_items:
+            g_id = item['id']
+            item_name = item['name']
+            item_mime = item.get('mimeType', '')
+
+            # Skip folders and system files
+            if item_mime == 'application/vnd.google-apps.folder' or item_name.endswith('.db') or item_name.startswith('.'):
+                continue
+
+            if g_id not in existing_keys and item_name.lower() not in existing_names:
+                file_size = int(item.get('size', 0))
+                file_key = f"gdrive:{g_id}"
+                sha256_hash = f"gdrive_{g_id}"
+                
+                cursor.execute('''
+                    INSERT INTO files (original_name, file_key, category_id, file_size, sha256_hash, description, version)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (item_name, file_key, default_cat_id, file_size, sha256_hash, f"Imported from Google Drive: {item_name}", "1.0"))
+                
+                existing_keys.add(g_id)
+                existing_names.add(item_name.lower())
+                newly_imported += 1
+
+    except Exception as gdrive_scan_err:
+        print(f"Error scanning GDrive folder for new files: {gdrive_scan_err}")
 
     conn.commit()
     conn.close()
     async_upload_db_to_cloud()
 
-    log_audit('GDRIVE_AUTO_LINKED', f"Verified {already_valid} valid GDrive links, auto-relinked {relinked_count} broken/legacy files.")
+    log_audit('GDRIVE_AUTO_LINKED', f"Verified {already_valid} files, imported {newly_imported} new files from Google Drive.")
 
-    msg = f"Auto-link scan completed! Re-linked {relinked_count} files, verified {already_valid} existing files."
-    if not_found:
-        msg += f" Note: {len(not_found)} files were not found on Google Drive."
-
+    msg = f"Scan complete! Verified {already_valid} files, imported {newly_imported} new files from Google Drive, re-linked {relinked_count} files."
     return jsonify({
         'success': True,
         'message': msg,
-        'relinked_count': relinked_count,
         'already_valid': already_valid,
-        'unlinked_remaining': not_found
+        'newly_imported': newly_imported,
+        'relinked_count': relinked_count
     })
 
 @app.route('/api/admin/organize-gdrive-folders', methods=['POST'])
