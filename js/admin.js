@@ -6,6 +6,7 @@ let adminFilesList = [];
 let allAuditLogsList = [];
 let adminCmdScriptsList = [];
 let currentLogsPage = 1;
+let logsPerPage = 100;
 let autoRefreshTimer = null;
 
 document.addEventListener('DOMContentLoaded', () => {
