@@ -833,7 +833,18 @@ def auto_link_gdrive_files():
     default_cat_id = list(cat_name_to_id.values())[0] if cat_name_to_id else 1
     newly_imported = 0
     updated_categories = 0
-    already_valid = len(db_gdrive_keys)
+    purged_outside_files = 0
+
+    # Create map of g_id -> parent_id from file_items
+    file_parent_map = {item['id']: (item.get('parents', [])[0] if item.get('parents') else None) for item in file_items}
+
+    # Purge any old DB entries whose parent folder is OUTSIDE IT_Utility_Vault
+    if vault_folder_ids:
+        for g_id, existing_f in db_gdrive_keys.items():
+            parent_id = file_parent_map.get(g_id)
+            if parent_id and parent_id not in vault_folder_ids:
+                cursor.execute("DELETE FROM files WHERE id = ?", (existing_f['id'],))
+                purged_outside_files += 1
 
     for item in file_items:
         g_id = item['id']
@@ -871,14 +882,14 @@ def auto_link_gdrive_files():
     conn.close()
     async_upload_db_to_cloud()
 
-    log_audit('GDRIVE_AUTO_LINKED', f"Synchronized IT_Utility_Vault! Imported {newly_imported} new files, updated {updated_categories} category assignments.")
+    log_audit('GDRIVE_AUTO_LINKED', f"Synchronized IT_Utility_Vault! Imported {newly_imported} new files, purged {purged_outside_files} non-vault files.")
 
-    msg = f"IT_Utility_Vault Synchronized! Verified {already_valid} files, imported {newly_imported} new files, updated {updated_categories} category assignments."
+    msg = f"IT_Utility_Vault Synchronized! Imported {newly_imported} new files, purged {purged_outside_files} files from outside IT_Utility_Vault."
     return jsonify({
         'success': True,
         'message': msg,
-        'already_valid': already_valid,
         'newly_imported': newly_imported,
+        'purged_outside_files': purged_outside_files,
         'updated_categories': updated_categories
     })
 
