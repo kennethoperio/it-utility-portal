@@ -735,7 +735,10 @@ def auto_link_gdrive_files():
     conn = get_db()
     cursor = conn.cursor()
 
-    # 1. Fetch all folders from Google Drive to map subfolder hierarchy
+    # 1. Resolve root IT_Utility_Vault folder ID
+    root_folder_id = get_or_create_gdrive_folder(service, 'IT_Utility_Vault', None)
+
+    # 2. Fetch all folders from Google Drive to map subfolder hierarchy
     try:
         folder_items = []
         page_token = None
@@ -755,16 +758,19 @@ def auto_link_gdrive_files():
                 break
     except Exception as e:
         print(f"Error fetching GDrive folders: {e}")
-        try:
-            folder_items = service.files().list(
-                q="mimeType = 'application/vnd.google-apps.folder' and trashed = false",
-                fields="files(id, name, parents)",
-                supportsAllDrives=True,
-                includeItemsFromAllDrives=True,
-                pageSize=1000
-            ).execute().get('files', [])
-        except Exception:
-            folder_items = []
+        folder_items = []
+
+    # Filter folders that belong to IT_Utility_Vault hierarchy
+    vault_folder_ids = {root_folder_id} if root_folder_id else set()
+    added_new = True
+    while added_new:
+        added_new = False
+        for fitem in folder_items:
+            fg_id = fitem['id']
+            fparents = fitem.get('parents', [])
+            if fparents and fparents[0] in vault_folder_ids and fg_id not in vault_folder_ids:
+                vault_folder_ids.add(fg_id)
+                added_new = True
 
     folder_gdrive_to_db = {}
     
@@ -772,11 +778,13 @@ def auto_link_gdrive_files():
     cat_rows = cursor.execute("SELECT id, name, parent_id FROM categories").fetchall()
     cat_name_to_id = {c['name'].lower(): c['id'] for c in cat_rows}
 
-    # Auto-create categories in DB matching Google Drive folder hierarchy
+    # Auto-create categories in DB matching IT_Utility_Vault subfolders
     for fitem in folder_items:
-        fname = fitem['name']
         fg_id = fitem['id']
-        
+        fname = fitem['name']
+        if vault_folder_ids and fg_id not in vault_folder_ids:
+            continue
+            
         if fname.lower() in cat_name_to_id:
             folder_gdrive_to_db[fg_id] = cat_name_to_id[fname.lower()]
         else:
@@ -797,7 +805,7 @@ def auto_link_gdrive_files():
             cat_name_to_id[fname.lower()] = new_cid
             folder_gdrive_to_db[fg_id] = new_cid
 
-    # 2. Fetch all files from Google Drive
+    # 3. Fetch all files from Google Drive
     try:
         file_items = []
         page_token = None
@@ -817,16 +825,7 @@ def auto_link_gdrive_files():
                 break
     except Exception as e:
         print(f"Error fetching GDrive files: {e}")
-        try:
-            file_items = service.files().list(
-                q="mimeType != 'application/vnd.google-apps.folder' and trashed = false",
-                fields="files(id, name, size, mimeType, parents, createdTime)",
-                supportsAllDrives=True,
-                includeItemsFromAllDrives=True,
-                pageSize=1000
-            ).execute().get('files', [])
-        except Exception:
-            file_items = []
+        file_items = []
 
     existing_db_files = cursor.execute("SELECT id, original_name, file_key, category_id FROM files").fetchall()
     db_gdrive_keys = {f['file_key'].replace('gdrive:', ''): dict(f) for f in existing_db_files if f['file_key'].startswith('gdrive:')}
@@ -841,12 +840,16 @@ def auto_link_gdrive_files():
         item_name = item['name']
         item_mime = item.get('mimeType', '')
         file_size = int(item.get('size', 0))
+        fparents = item.get('parents', [])
 
+        # Skip system files, database backups, and files outside IT_Utility_Vault
         if item_mime == 'application/vnd.google-apps.folder' or item_name.endswith('.db') or item_name.startswith('.'):
             continue
 
+        if vault_folder_ids and fparents and fparents[0] not in vault_folder_ids:
+            continue
+
         assigned_cat_id = default_cat_id
-        fparents = item.get('parents', [])
         if fparents and fparents[0] in folder_gdrive_to_db:
             assigned_cat_id = folder_gdrive_to_db[fparents[0]]
 
@@ -868,9 +871,9 @@ def auto_link_gdrive_files():
     conn.close()
     async_upload_db_to_cloud()
 
-    log_audit('GDRIVE_AUTO_LINKED', f"Synchronized Google Drive! Imported {newly_imported} new files, updated {updated_categories} category assignments.")
+    log_audit('GDRIVE_AUTO_LINKED', f"Synchronized IT_Utility_Vault! Imported {newly_imported} new files, updated {updated_categories} category assignments.")
 
-    msg = f"Google Drive Synchronized! Verified {already_valid} files, imported {newly_imported} new files, updated {updated_categories} category assignments across all subfolders."
+    msg = f"IT_Utility_Vault Synchronized! Verified {already_valid} files, imported {newly_imported} new files, updated {updated_categories} category assignments."
     return jsonify({
         'success': True,
         'message': msg,
