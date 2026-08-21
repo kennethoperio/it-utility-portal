@@ -926,7 +926,7 @@ def init_resumable_upload():
         if target_folder_id:
             metadata['parents'] = [target_folder_id]
 
-        gdrive_init_url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable'
+        gdrive_init_url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true'
         init_res = requests.post(gdrive_init_url, headers=headers, json=metadata)
 
         if init_res.status_code == 200:
