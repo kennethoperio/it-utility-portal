@@ -368,12 +368,18 @@ def upload_db_to_cloud():
             print(f"Error syncing DB to S3: {e}")
 
 def async_upload_db_to_cloud():
-    def _worker():
+    if is_vercel:
         try:
             upload_db_to_cloud()
         except Exception as e:
-            print(f"Async DB upload exception: {e}")
-    threading.Thread(target=_worker, daemon=True).start()
+            print(f"Sync DB upload exception on Vercel: {e}")
+    else:
+        def _worker():
+            try:
+                upload_db_to_cloud()
+            except Exception as e:
+                print(f"Async DB upload exception: {e}")
+        threading.Thread(target=_worker, daemon=True).start()
 
 download_db_from_cloud()
 
@@ -1593,7 +1599,7 @@ def generate_custom_bat_script():
 @admin_required
 def get_audit_logs():
     conn = get_db()
-    logs = conn.execute('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 500').fetchall()
+    logs = conn.execute('SELECT * FROM audit_logs ORDER BY id DESC, created_at DESC LIMIT 500').fetchall()
     conn.close()
     return jsonify({'logs': [dict(l) for l in logs]})
 
