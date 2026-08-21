@@ -640,17 +640,19 @@ def admin_page():
 @app.route('/js/<path:filename>')
 @app.route('/static/js/<path:filename>')
 def serve_js_files(filename):
+    target_names = [filename, 'admin.js', 'admin_app.js', 'admin_v8.js']
     for possible_dir in ['static/js', 'js']:
-        filepath = os.path.join(app.root_path, possible_dir, filename)
-        if os.path.exists(filepath):
-            content = open(filepath, 'r', encoding='utf-8').read()
-            if 'let logsPerPage' not in content:
-                content = 'let logsPerPage = 100;\nlet currentLogsPage = 1;\n' + content
-            res = Response(content, mimetype='application/javascript')
-            res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
-            res.headers['Pragma'] = 'no-cache'
-            res.headers['Expires'] = '0'
-            return res
+        for tname in target_names:
+            filepath = os.path.join(app.root_path, possible_dir, tname)
+            if os.path.exists(filepath):
+                content = open(filepath, 'r', encoding='utf-8').read()
+                if 'let logsPerPage' not in content:
+                    content = 'let logsPerPage = 100;\nlet currentLogsPage = 1;\n' + content
+                res = Response(content, mimetype='application/javascript')
+                res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+                res.headers['Pragma'] = 'no-cache'
+                res.headers['Expires'] = '0'
+                return res
     return jsonify({'error': 'JS file not found.'}), 404
 
 # --- Tool Feedback / Comments API ---
