@@ -771,10 +771,10 @@ def auto_link_gdrive_files():
             else:
                 not_found.append(f"{orig_name} (ID #{file_id})")
 
-    # 2. Scan Google Drive folder for any files uploaded directly on Google Drive
+    # 2. Scan Google Drive recursively for ALL files across all subfolders
     try:
-        root_folder_id = GDRIVE_ROOT_FOLDER_ID
-        query_str = f"'{root_folder_id}' in parents and trashed = false" if root_folder_id else "trashed = false and mimeType != 'application/vnd.google-apps.folder'"
+        # Search for all non-folder files that are not trashed
+        query_str = "trashed = false and mimeType != 'application/vnd.google-apps.folder'"
         
         gdrive_items = service.files().list(
             q=query_str,
@@ -787,27 +787,45 @@ def auto_link_gdrive_files():
         default_cat_row = cursor.execute("SELECT id FROM categories ORDER BY id ASC LIMIT 1").fetchone()
         default_cat_id = default_cat_row['id'] if default_cat_row else 1
 
+        # Fetch category folders map to automatically assign correct subfolder category
+        cat_rows = cursor.execute("SELECT id, name FROM categories").fetchall()
+        cat_name_map = {c['name'].lower(): c['id'] for c in cat_rows}
+
         for item in gdrive_items:
             g_id = item['id']
             item_name = item['name']
             item_mime = item.get('mimeType', '')
 
-            # Skip folders and system files
+            # Skip system files and database backups
             if item_mime == 'application/vnd.google-apps.folder' or item_name.endswith('.db') or item_name.startswith('.'):
                 continue
 
-            if g_id not in existing_keys and item_name.lower() not in existing_names:
+            # Deduplicate strictly by Google Drive file ID (g_id)
+            if g_id not in existing_keys:
                 file_size = int(item.get('size', 0))
                 file_key = f"gdrive:{g_id}"
                 sha256_hash = f"gdrive_{g_id}"
                 
+                # Try to map category based on parent folder name
+                assigned_cat_id = default_cat_id
+                parents = item.get('parents', [])
+                if parents:
+                    try:
+                        parent_meta = service.files().get(fileId=parents[0], fields='name', supportsAllDrives=True).execute()
+                        parent_name = parent_meta.get('name', '').lower()
+                        for cname, cid in cat_name_map.items():
+                            if cname in parent_name or parent_name in cname:
+                                assigned_cat_id = cid
+                                break
+                    except Exception:
+                        pass
+                
                 cursor.execute('''
                     INSERT INTO files (original_name, file_key, category_id, file_size, sha256_hash, description, version)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (item_name, file_key, default_cat_id, file_size, sha256_hash, f"Imported from Google Drive: {item_name}", "1.0"))
+                ''', (item_name, file_key, assigned_cat_id, file_size, sha256_hash, f"Imported from Google Drive: {item_name}", "1.0"))
                 
                 existing_keys.add(g_id)
-                existing_names.add(item_name.lower())
                 newly_imported += 1
 
     except Exception as gdrive_scan_err:
@@ -819,7 +837,7 @@ def auto_link_gdrive_files():
 
     log_audit('GDRIVE_AUTO_LINKED', f"Verified {already_valid} files, imported {newly_imported} new files from Google Drive.")
 
-    msg = f"Scan complete! Verified {already_valid} files, imported {newly_imported} new files from Google Drive, re-linked {relinked_count} files."
+    msg = f"Scan complete! Verified {already_valid} files, imported {newly_imported} new files from Google Drive subfolders, re-linked {relinked_count} files."
     return jsonify({
         'success': True,
         'message': msg,
