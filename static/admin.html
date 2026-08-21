@@ -359,8 +359,8 @@
         <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
           <span style="font-weight: 600; font-size: 0.9rem;">Log View:</span>
           <select id="audit-log-type-filter" onchange="loadAdminAuditLogs()" style="padding: 0.4rem 0.6rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); color: var(--text-primary); font-size: 0.85rem;">
+            <option value="all" selected>🌐 All System Logs (Including Admin & GDrive Sync Actions)</option>
             <option value="client">👤 Client Activity Only (Downloads, Passcodes, Comments)</option>
-            <option value="all">🌐 All System Logs (Including Admin Actions)</option>
           </select>
 
           <span style="font-weight: 600; font-size: 0.9rem; margin-left: 0.5rem;">Show per page:</span>
