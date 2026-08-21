@@ -663,8 +663,38 @@ async function handleFileUpload(e) {
   }
 }
 
+function showToast(message, type = 'success') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  const bgColor = type === 'error' ? '#ef4444' : '#10b981';
+  toast.style.cssText = `background: ${bgColor}; color: white; padding: 12px 20px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; transform: translateY(-10px); transition: all 0.3s ease; pointer-events: auto; display: flex; align-items: center; gap: 8px;`;
+  toast.innerHTML = message;
+  container.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+  });
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(-10px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
 // Manage Files Table with Category & Search Filtering
 async function loadAdminFiles() {
+  const refreshBtns = document.querySelectorAll('button[onclick="loadAdminFiles()"] i');
+  refreshBtns.forEach(icon => icon.classList.add('fa-spin'));
+  
   try {
     const catFilter = document.getElementById('admin-file-category-filter')?.value || '';
     let url = `${API_BASE}/files?_t=${Date.now()}`;
@@ -676,6 +706,10 @@ async function loadAdminFiles() {
     renderAdminFilesTable(adminFilesList);
   } catch (err) {
     console.error('Error loading admin files:', err);
+  } finally {
+    setTimeout(() => {
+      refreshBtns.forEach(icon => icon.classList.remove('fa-spin'));
+    }, 400);
   }
 }
 
@@ -756,10 +790,19 @@ async function handleMoveFileSubmit(e) {
   if (e) e.preventDefault();
   const fileId = document.getElementById('move-file-id').value;
   const targetCatId = document.getElementById('move-file-target-category').value;
+  const submitBtn = document.querySelector('#move-file-form button[type="submit"]');
 
   if (!fileId || !targetCatId) {
-    alert('Please select a target folder.');
+    showToast('❌ Please select a destination folder.', 'error');
     return;
+  }
+
+  const targetSelect = document.getElementById('move-file-target-category');
+  const targetCatName = targetSelect ? targetSelect.options[targetSelect.selectedIndex].text.replace(/^[│└──\s]+/, '') : 'target folder';
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Moving File in Google Drive & DB...`;
   }
 
   try {
@@ -771,15 +814,27 @@ async function handleMoveFileSubmit(e) {
     const data = await res.json();
 
     if (res.ok && data.success) {
-      alert(data.message || 'File moved successfully!');
       closeMoveFileModal();
+      showToast(`🚚 ${data.message || 'File moved successfully!'}`, 'success');
+      
+      // Auto-update filter dropdown if a specific category was selected
+      const catFilterEl = document.getElementById('admin-file-category-filter');
+      if (catFilterEl && catFilterEl.value !== "") {
+        catFilterEl.value = targetCatId;
+      }
+
       loadAdminDashboardData();
-      if (typeof loadAdminFiles === 'function') loadAdminFiles();
+      await loadAdminFiles();
     } else {
-      alert(data.error || 'Failed moving file.');
+      showToast(`❌ ${data.error || 'Failed moving file.'}`, 'error');
     }
   } catch (err) {
-    alert('Server network error moving file.');
+    showToast('❌ Server network error moving file.', 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `<i class="fa-solid fa-truck-ramp-box"></i> Move File Now`;
+    }
   }
 }
 
