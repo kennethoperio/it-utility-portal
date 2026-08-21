@@ -774,6 +774,7 @@ async function handleMoveFileSubmit(e) {
       alert(data.message || 'File moved successfully!');
       closeMoveFileModal();
       loadAdminDashboardData();
+      if (typeof loadAdminFiles === 'function') loadAdminFiles();
     } else {
       alert(data.error || 'Failed moving file.');
     }
@@ -791,6 +792,7 @@ async function deleteFile(id, name) {
     if (data.success) {
       alert(data.message);
       loadAdminDashboardData();
+      if (typeof loadAdminFiles === 'function') loadAdminFiles();
     } else {
       alert(data.error || 'Failed to delete file.');
     }
