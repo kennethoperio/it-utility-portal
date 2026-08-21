@@ -251,10 +251,15 @@ def delete_file_from_gdrive(gdrive_file_id):
     service = get_gdrive_service()
     if service and gdrive_file_id:
         try:
-            service.files().delete(fileId=gdrive_file_id, supportsAllDrives=True).execute()
-            print(f"Deleted Google Drive file ID: {gdrive_file_id}")
+            service.files().update(fileId=gdrive_file_id, body={'trashed': True}, supportsAllDrives=True).execute()
+            print(f"Trashed Google Drive file ID: {gdrive_file_id}")
         except Exception as e:
-            print(f"Error deleting Google Drive file: {e}")
+            print(f"Trash failed, attempting permanent delete for {gdrive_file_id}: {e}")
+            try:
+                service.files().delete(fileId=gdrive_file_id, supportsAllDrives=True).execute()
+                print(f"Permanently deleted Google Drive file ID: {gdrive_file_id}")
+            except Exception as e2:
+                print(f"Error deleting Google Drive file: {e2}")
 
 # --- Backblaze B2 / S3 Integration ---
 def get_s3_client():
