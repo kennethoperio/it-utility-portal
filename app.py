@@ -737,16 +737,34 @@ def auto_link_gdrive_files():
 
     # 1. Fetch all folders from Google Drive to map subfolder hierarchy
     try:
-        folder_items = service.files().list(
-            q="mimeType = 'application/vnd.google-apps.folder' and trashed = false",
-            fields="files(id, name, parents)",
-            supportsAllDrives=True,
-            includeItemsFromAllDrives=True,
-            pageSize=1000
-        ).execute().get('files', [])
+        folder_items = []
+        page_token = None
+        while True:
+            res = service.files().list(
+                q="mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+                fields="nextPageToken, files(id, name, parents)",
+                corpora='allDrives',
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+                pageSize=1000,
+                pageToken=page_token
+            ).execute()
+            folder_items.extend(res.get('files', []))
+            page_token = res.get('nextPageToken')
+            if not page_token:
+                break
     except Exception as e:
         print(f"Error fetching GDrive folders: {e}")
-        folder_items = []
+        try:
+            folder_items = service.files().list(
+                q="mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+                fields="files(id, name, parents)",
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+                pageSize=1000
+            ).execute().get('files', [])
+        except Exception:
+            folder_items = []
 
     folder_gdrive_to_db = {}
     
@@ -781,16 +799,34 @@ def auto_link_gdrive_files():
 
     # 2. Fetch all files from Google Drive
     try:
-        file_items = service.files().list(
-            q="mimeType != 'application/vnd.google-apps.folder' and trashed = false",
-            fields="files(id, name, size, mimeType, parents, createdTime)",
-            supportsAllDrives=True,
-            includeItemsFromAllDrives=True,
-            pageSize=1000
-        ).execute().get('files', [])
+        file_items = []
+        page_token = None
+        while True:
+            res = service.files().list(
+                q="mimeType != 'application/vnd.google-apps.folder' and trashed = false",
+                fields="nextPageToken, files(id, name, size, mimeType, parents, createdTime)",
+                corpora='allDrives',
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+                pageSize=1000,
+                pageToken=page_token
+            ).execute()
+            file_items.extend(res.get('files', []))
+            page_token = res.get('nextPageToken')
+            if not page_token:
+                break
     except Exception as e:
         print(f"Error fetching GDrive files: {e}")
-        file_items = []
+        try:
+            file_items = service.files().list(
+                q="mimeType != 'application/vnd.google-apps.folder' and trashed = false",
+                fields="files(id, name, size, mimeType, parents, createdTime)",
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+                pageSize=1000
+            ).execute().get('files', [])
+        except Exception:
+            file_items = []
 
     existing_db_files = cursor.execute("SELECT id, original_name, file_key, category_id FROM files").fetchall()
     db_gdrive_keys = {f['file_key'].replace('gdrive:', ''): dict(f) for f in existing_db_files if f['file_key'].startswith('gdrive:')}
