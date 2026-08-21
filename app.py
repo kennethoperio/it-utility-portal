@@ -1916,25 +1916,6 @@ def download_all_zip():
         return jsonify({'success': True, 'url': drive_url})
 
     return redirect(drive_url)
-                curr = categories.get(cat_id)
-                while curr:
-                    path_parts.insert(0, curr['name'])
-                    curr = categories.get(curr['parent_id']) if curr.get('parent_id') else None
-                
-                folder_path = "/".join(path_parts) if path_parts else "General"
-                zip_path = f"{folder_path}/{f['original_name']}"
-                zf.write(filepath, arcname=zip_path)
-
-    memory_file.seek(0)
-    filename = f"IT_Utility_Vault_All_Tools_{datetime.now().strftime('%Y%m%d')}.zip"
-    
-    log_audit('DOWNLOAD_ALL_ZIP', 'Admin downloaded full tool vault ZIP archive')
-    return send_file(
-        memory_file,
-        mimetype='application/zip',
-        as_attachment=True,
-        download_name=filename
-    )
 
 @app.route('/api/files/<int:file_id>', methods=['DELETE'])
 @admin_required
