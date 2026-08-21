@@ -1850,10 +1850,38 @@ def download_file(file_id):
                     print(f"AUTO-REPAIRED file #{file_id} ({file_record['original_name']}) -> GDrive ID {gdrive_id}")
 
         if gdrive_id:
+            service = get_gdrive_service()
+            if service:
+                token = get_cached_gdrive_token(service)
+                if token:
+                    import requests
+                    gdrive_url = f"https://www.googleapis.com/drive/v3/files/{gdrive_id}?alt=media&supportsAllDrives=true&acknowledgeAbuse=true"
+                    r = requests.get(gdrive_url, headers={'Authorization': f"Bearer {token}"}, stream=True)
+
+                    if r.status_code == 200:
+                        conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
+                        conn.commit()
+                        conn.close()
+                        log_audit('FILE_DOWNLOAD', f"Downloaded '{file_record['original_name']}' via Service Account stream")
+                        async_upload_db_to_cloud()
+
+                        def generate_stream():
+                            for chunk in r.iter_content(chunk_size=1024*1024):
+                                if chunk:
+                                    yield chunk
+
+                        headers = {
+                            'Content-Disposition': f'attachment; filename="{file_record["original_name"]}"',
+                            'Content-Length': str(file_record['file_size'])
+                        }
+                        return Response(stream_with_context(generate_stream()), mimetype='application/octet-stream', headers=headers)
+                    else:
+                        print(f"Service Account Stream returned HTTP status {r.status_code}")
+
             conn.execute('UPDATE files SET download_count = download_count + 1 WHERE id = ?', (file_id,))
             conn.commit()
             conn.close()
-            log_audit('FILE_DOWNLOAD', f"Downloaded '{file_record['original_name']}' directly from Google Drive CDN")
+            log_audit('FILE_DOWNLOAD', f"Downloaded '{file_record['original_name']}' via Google Drive web link")
             async_upload_db_to_cloud()
             return redirect(f"https://drive.google.com/uc?export=download&id={gdrive_id}&confirm=t")
 
