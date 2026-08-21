@@ -665,10 +665,10 @@ async function handleFileUpload(e) {
 
 // Manage Files Table with Category & Search Filtering
 async function loadAdminFiles() {
-  const catFilter = document.getElementById('admin-file-category-filter')?.value;
   try {
-    let url = '/api/files';
-    if (catFilter) url += `?category_id=${catFilter}`;
+    const catFilter = document.getElementById('admin-file-category-filter')?.value || '';
+    let url = `${API_BASE}/files?_t=${Date.now()}`;
+    if (catFilter) url += `&category_id=${catFilter}`;
 
     const res = await fetch(url);
     const data = await res.json();
