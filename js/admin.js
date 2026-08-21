@@ -139,25 +139,28 @@ function switchAdminTab(tabName) {
   if (tabName === 'logs') loadAdminAuditLogs();
 }
 
-function confirmDownloadAllZip() {
+async function confirmDownloadAllZip() {
   const totalFilesStr = document.getElementById('stat-files')?.innerText || '0';
   const totalStorageStr = document.getElementById('stat-storage')?.innerText || '0 MB';
 
-  if (parseInt(totalFilesStr) === 0) {
-    alert('No utility tools have been uploaded to your vault yet.');
-    return;
-  }
-
   const confirmed = confirm(
     `📦 DOWNLOAD ALL IT TOOLS CONFIRMATION\n\n` +
-    `Are you sure you want to download a single ZIP package containing all ${totalFilesStr} tools?\n\n` +
-    `Total Package Size: ~${totalStorageStr}\n` +
-    `Folder Hierarchy: Saved in subfolders organized by category.\n\n` +
-    `Click OK to start downloading.`
+    `Are you sure you want to open your Google Drive IT_Utility_Vault folder containing all ${totalFilesStr} tools (~${totalStorageStr})?\n\n` +
+    `Click OK to open Google Drive.`
   );
 
   if (confirmed) {
-    window.location.href = '/api/admin/download-all-zip';
+    try {
+      const res = await fetch(`${API_BASE}/admin/download-all-zip?format=json`);
+      const data = await res.json();
+      if (data.url) {
+        window.open(data.url, '_blank');
+      } else {
+        window.open(`${API_BASE}/admin/download-all-zip`, '_blank');
+      }
+    } catch (err) {
+      window.open(`${API_BASE}/admin/download-all-zip`, '_blank');
+    }
   }
 }
 
