@@ -1048,7 +1048,7 @@ async function loadAdminAuditLogs() {
   const isClientOnly = (document.getElementById('audit-log-type-filter')?.value || 'client') === 'client';
 
   try {
-    const res = await fetch(`${API_BASE}/admin/audit-logs?client_only=${isClientOnly}`);
+    const res = await fetch(`${API_BASE}/admin/audit-logs?client_only=${isClientOnly}&_t=${Date.now()}`);
     const data = await res.json();
     allAuditLogsList = data.logs || [];
     // Sort latest timestamp first
