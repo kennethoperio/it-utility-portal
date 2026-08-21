@@ -28,14 +28,32 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
-DB_PATH = os.path.join(BASE_DIR, 'it_vault.db')
+is_vercel = os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV') or ('vercel' in os.environ.get('SERVER_SOFTWARE', '').lower())
+
+if is_vercel:
+    UPLOAD_FOLDER = '/tmp/uploads'
+    DB_PATH = '/tmp/it_vault.db'
+    source_db = os.path.join(BASE_DIR, 'it_vault.db')
+    if not os.path.exists(DB_PATH) and os.path.exists(source_db):
+        import shutil
+        try:
+            os.makedirs('/tmp', exist_ok=True)
+            shutil.copy2(source_db, DB_PATH)
+        except Exception as e:
+            print(f"Vercel DB copy note: {e}")
+else:
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+    DB_PATH = os.path.join(BASE_DIR, 'it_vault.db')
+
 MAX_CONTENT_LENGTH = 50 * 1024 * 1024 * 1024  # Support uploads up to 50 GB
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+try:
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+except Exception:
+    pass
 
 # --- Security & Brute Force Rate Limiting ---
 FAILED_ATTEMPTS = {}  # ip -> {'count': int, 'reset_at': float}
