@@ -122,7 +122,10 @@ function switchAdminTab(tabName) {
   const target = document.getElementById(`admin-sec-${tabName}`);
   if (target) target.style.display = 'block';
 
-  const activeBtn = Array.from(buttons).find(b => b.getAttribute('onclick').includes(tabName));
+  const activeBtn = Array.from(buttons).find(b => {
+    const clickAttr = b.getAttribute('onclick') || '';
+    return clickAttr.includes(tabName);
+  });
   if (activeBtn) activeBtn.classList.add('active');
 
   if (tabName === 'files') loadAdminFiles();
@@ -1107,17 +1110,24 @@ async function deleteComment(commentId) {
 
 // Audit Logs Pagination, Client-Only Filter & Live Search
 async function loadAdminAuditLogs() {
-  const isClientOnly = (document.getElementById('audit-log-type-filter')?.value || 'client') === 'client';
+  const refreshBtns = document.querySelectorAll('button[onclick="loadAdminAuditLogs()"] i');
+  refreshBtns.forEach(icon => icon.classList.add('fa-spin'));
+
+  const filterVal = document.getElementById('audit-log-type-filter')?.value || 'all';
+  const isClientOnly = filterVal === 'client';
 
   try {
     const res = await fetch(`${API_BASE}/admin/audit-logs?client_only=${isClientOnly}&_t=${Date.now()}`);
     const data = await res.json();
     allAuditLogsList = data.logs || [];
-    // Sort latest timestamp first
     allAuditLogsList.sort((a, b) => b.id - a.id);
     renderAuditLogsTable();
   } catch (err) {
     console.error('Error loading audit logs:', err);
+  } finally {
+    setTimeout(() => {
+      refreshBtns.forEach(icon => icon.classList.remove('fa-spin'));
+    }, 400);
   }
 }
 
