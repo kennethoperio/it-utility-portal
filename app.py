@@ -1864,60 +1864,31 @@ def download_file(file_id):
 @app.route('/api/admin/download-all-zip', methods=['GET'])
 @admin_required
 def download_all_zip():
-    conn = get_db()
-    files = conn.execute('''
-        SELECT f.*, c.name as category_name, c.parent_id 
-        FROM files f 
-        JOIN categories c ON f.category_id = c.id
-    ''').fetchall()
-    
-    if not files:
-        conn.close()
-        return jsonify({'error': 'No files uploaded to download.'}), 404
-        
-    categories = {c['id']: dict(c) for c in conn.execute('SELECT * FROM categories').fetchall()}
-    conn.close()
+    service = get_gdrive_service()
+    root_folder_id = None
+    if service:
+        try:
+            res = service.files().list(
+                q="name = 'IT_Utility_Vault' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+                fields="files(id, name)",
+                corpora='allDrives',
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True
+            ).execute()
+            vault_files = res.get('files', [])
+            if vault_files:
+                root_folder_id = vault_files[0]['id']
+        except Exception as e:
+            print(f"Error resolving vault folder for download-all: {e}")
 
-    memory_file = io.BytesIO()
-    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for f in files:
-            file_key = f['file_key']
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], file_key)
-            
-            if file_key.startswith('gdrive:'):
-                gdrive_id = file_key.replace('gdrive:', '')
-                greq = download_file_stream_from_gdrive(gdrive_id)
-                if greq:
-                    file_bytes = io.BytesIO()
-                    from googleapiclient.http import MediaIoBaseDownload
-                    downloader = MediaIoBaseDownload(file_bytes, greq)
-                    done = False
-                    while not done:
-                        status, done = downloader.next_chunk()
-                    file_bytes.seek(0)
-                    
-                    cat_id = f['category_id']
-                    path_parts = []
-                    curr = categories.get(cat_id)
-                    while curr:
-                        path_parts.insert(0, curr['name'])
-                        curr = categories.get(curr['parent_id']) if curr.get('parent_id') else None
-                    
-                    folder_path = "/".join(path_parts) if path_parts else "General"
-                    zip_path = f"{folder_path}/{f['original_name']}"
-                    zf.writestr(zip_path, file_bytes.getvalue())
-                    continue
+    if not root_folder_id:
+        root_folder_id = (os.environ.get('GDRIVE_FOLDER_ID') or '').strip()
 
-            s3_client = get_s3_client()
-            if not os.path.exists(filepath) and s3_client and S3_BUCKET:
-                try:
-                    s3_client.download_file(S3_BUCKET.strip(), file_key, filepath)
-                except Exception as e:
-                    print(f"S3 download error for zip: {e}")
-
-            if os.path.exists(filepath):
-                cat_id = f['category_id']
-                path_parts = []
+    if root_folder_id:
+        log_audit('DOWNLOAD_ALL_ZIP', 'Admin redirected to Google Drive IT_Utility_Vault folder for full zip download')
+        return redirect(f"https://drive.google.com/drive/folders/{root_folder_id}")
+    else:
+        return jsonify({'error': 'IT_Utility_Vault Google Drive folder ID could not be resolved.'}), 404
                 curr = categories.get(cat_id)
                 while curr:
                     path_parts.insert(0, curr['name'])
