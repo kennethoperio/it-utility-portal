@@ -838,13 +838,22 @@ def auto_link_gdrive_files():
     # Create map of g_id -> parent_id from file_items
     file_parent_map = {item['id']: (item.get('parents', [])[0] if item.get('parents') else None) for item in file_items}
 
-    # Purge any old DB entries whose parent folder is OUTSIDE IT_Utility_Vault
-    if vault_folder_ids:
-        for g_id, existing_f in db_gdrive_keys.items():
-            parent_id = file_parent_map.get(g_id)
-            if parent_id and parent_id not in vault_folder_ids:
-                cursor.execute("DELETE FROM files WHERE id = ?", (existing_f['id'],))
-                purged_outside_files += 1
+    # 4. Purge any non-software files (.png, .drawio, .pptx, .pdf, .docx) from database
+    cursor.execute("""
+        DELETE FROM files 
+        WHERE LOWER(original_name) LIKE '%.png'
+           OR LOWER(original_name) LIKE '%.jpg'
+           OR LOWER(original_name) LIKE '%.jpeg'
+           OR LOWER(original_name) LIKE '%.drawio%'
+           OR LOWER(original_name) LIKE '%.pptx'
+           OR LOWER(original_name) LIKE '%.ppt'
+           OR LOWER(original_name) LIKE '%.docx'
+           OR LOWER(original_name) LIKE '%.doc'
+           OR LOWER(original_name) LIKE '%.xlsx'
+           OR LOWER(original_name) LIKE '%.pdf'
+    """)
+
+    ALLOWED_SOFTWARE_EXTENSIONS = ('.exe', '.rar', '.zip', '.7z', '.msi', '.iso', '.dmg', '.pkg', '.bat', '.ps1', '.cmd', '.bin', '.img', '.apk', '.tar', '.gz', '.xz', '.bz2', '.cfg', '.ini')
 
     for item in file_items:
         g_id = item['id']
@@ -853,8 +862,11 @@ def auto_link_gdrive_files():
         file_size = int(item.get('size', 0))
         fparents = item.get('parents', [])
 
-        # Skip system files, database backups, and files outside IT_Utility_Vault
+        # Skip system files, database backups, non-software extensions, and files outside IT_Utility_Vault
         if item_mime == 'application/vnd.google-apps.folder' or item_name.endswith('.db') or item_name.startswith('.'):
+            continue
+
+        if not item_name.lower().endswith(ALLOWED_SOFTWARE_EXTENSIONS):
             continue
 
         if vault_folder_ids and fparents and fparents[0] not in vault_folder_ids:
@@ -882,14 +894,13 @@ def auto_link_gdrive_files():
     conn.close()
     async_upload_db_to_cloud()
 
-    log_audit('GDRIVE_AUTO_LINKED', f"Synchronized IT_Utility_Vault! Imported {newly_imported} new files, purged {purged_outside_files} non-vault files.")
+    log_audit('GDRIVE_AUTO_LINKED', f"Synchronized IT_Utility_Vault! Imported {newly_imported} software installers, purged non-software files.")
 
-    msg = f"IT_Utility_Vault Synchronized! Imported {newly_imported} new files, purged {purged_outside_files} files from outside IT_Utility_Vault."
+    msg = f"IT_Utility_Vault Cleaned & Synchronized! Imported {newly_imported} software installers, purged all non-software files (.png, .pptx, .drawio)."
     return jsonify({
         'success': True,
         'message': msg,
         'newly_imported': newly_imported,
-        'purged_outside_files': purged_outside_files,
         'updated_categories': updated_categories
     })
 
