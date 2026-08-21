@@ -637,6 +637,23 @@ def admin_page():
     res.headers['Expires'] = '0'
     return res
 
+@app.route('/js/admin.js')
+@app.route('/static/js/admin.js')
+def serve_admin_js():
+    js_path = os.path.join(app.root_path, 'static', 'js', 'admin.js')
+    if not os.path.exists(js_path):
+        js_path = os.path.join(app.root_path, 'js', 'admin.js')
+    content = ""
+    if os.path.exists(js_path):
+        content = open(js_path, 'r', encoding='utf-8').read()
+    if 'let logsPerPage' not in content:
+        content = 'let logsPerPage = 100;\nlet currentLogsPage = 1;\n' + content
+    res = Response(content, mimetype='application/javascript')
+    res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    res.headers['Pragma'] = 'no-cache'
+    res.headers['Expires'] = '0'
+    return res
+
 # --- Tool Feedback / Comments API ---
 @app.route('/api/files/<int:file_id>/comments', methods=['GET'])
 @passcode_required
