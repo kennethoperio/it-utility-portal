@@ -37,7 +37,7 @@ function updateThemeIcon(theme) {
 
 async function checkAuthStatus() {
   try {
-    const res = await fetch(`${API_BASE}/auth/status');
+    const res = await fetch(`${API_BASE}/auth/status`);
     const data = await res.json();
 
     if (data.site_title) {
@@ -79,7 +79,7 @@ async function submitPasscode(e) {
   errorEl.style.display = 'none';
 
   try {
-    const res = await fetch(`${API_BASE}/auth/verify-passcode', {
+    const res = await fetch(`${API_BASE}/auth/verify-passcode`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ passcode })
@@ -105,7 +105,7 @@ async function submitPasscode(e) {
 
 async function logoutClient() {
   try {
-    await fetch(`${API_BASE}/auth/logout', { method: 'POST' });
+    await fetch(`${API_BASE}/auth/logout`, { method: 'POST' });
     window.location.reload();
   } catch (err) {
     window.location.reload();
@@ -176,7 +176,7 @@ function getUniformCategoryIcon(categoryName, filename) {
 
 async function loadCategories() {
   try {
-    const res = await fetch(`${API_BASE}/categories');
+    const res = await fetch(`${API_BASE}/categories`);
     const data = await res.json();
     categoriesTreeData = data.categories || [];
 
@@ -671,7 +671,7 @@ async function downloadCustomScript() {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/tools/generate-script', {
+    const res = await fetch(`${API_BASE}/tools/generate-script`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tasks })
@@ -742,7 +742,7 @@ function copyPowerShellSpecsCmd() {
 
 async function loadCmdScripts() {
   try {
-    const res = await fetch(`${API_BASE}/tools/cmd-scripts');
+    const res = await fetch(`${API_BASE}/tools/cmd-scripts`);
     const data = await res.json();
     const listEl = document.getElementById('cmd-scripts-list');
 
@@ -776,7 +776,7 @@ function copyCommand(cmd) {
 
 async function loadNetworkInfo() {
   try {
-    const res = await fetch(`${API_BASE}/tools/network-info');
+    const res = await fetch(`${API_BASE}/tools/network-info`);
     const data = await res.json();
     document.getElementById('net-client-ip').innerText = data.client_ip || '127.0.0.1';
     document.getElementById('net-server-host').innerText = data.server_hostname || 'localhost';
@@ -790,7 +790,7 @@ async function runPingTest() {
   const host = document.getElementById('ping-target').value.trim() || '8.8.8.8';
   appendTerminalOutput(`\n[+] Executing Ping test to target '${host}'...`);
   try {
-    const res = await fetch(`${API_BASE}/tools/ping', {
+    const res = await fetch(`${API_BASE}/tools/ping`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ host })
@@ -806,7 +806,7 @@ async function runTracertTest() {
   const host = document.getElementById('tracert-target').value.trim() || '1.1.1.1';
   appendTerminalOutput(`\n[+] Executing Traceroute (tracert) to '${host}' (Max 10 hops)... Please wait...`);
   try {
-    const res = await fetch(`${API_BASE}/tools/tracert', {
+    const res = await fetch(`${API_BASE}/tools/tracert`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ host })
@@ -822,7 +822,7 @@ async function runDnsLookupTest() {
   const host = document.getElementById('dns-target').value.trim() || 'google.com';
   appendTerminalOutput(`\n[+] Executing DNS nslookup for domain '${host}'...`);
   try {
-    const res = await fetch(`${API_BASE}/tools/dns-lookup', {
+    const res = await fetch(`${API_BASE}/tools/dns-lookup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ host })
