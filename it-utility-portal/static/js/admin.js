@@ -896,7 +896,7 @@ async function migrateFilesToGDrive() {
 }
 
 async function autoLinkGDriveFiles() {
-  if (!confirm('Scan 5 TB Google Drive and auto-link all legacy tools in your database?')) return;
+  if (!confirm('Scan 5 TB Google Drive folder and auto-import all software files?')) return;
 
   try {
     const res = await fetch(`${API_BASE}/admin/auto-link-gdrive-files`, { method: 'POST' });
@@ -904,12 +904,17 @@ async function autoLinkGDriveFiles() {
     if (res.ok && data.success) {
       alert(data.message || 'Auto-linked files to Google Drive!');
       loadAdminDashboardData();
+      if (typeof loadAdminFiles === 'function') loadAdminFiles();
     } else {
       alert(data.error || 'Failed auto-linking files.');
     }
   } catch (err) {
     alert('Server error executing auto-link routine.');
   }
+}
+
+async function runGDriveAutoLink() {
+  await autoLinkGDriveFiles();
 }
 
 // Client Tool Comments & Feedback Moderation
