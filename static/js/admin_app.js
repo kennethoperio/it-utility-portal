@@ -299,53 +299,82 @@ async function handleResumableDriveFileUpload(e) {
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
 
-  let uploadedBytes = 0;
-  const chunkSize = 2 * 1024 * 1024;
+  statusText.innerText = `Uploading ${file.name} directly into Google Drive folder...`;
 
-  const interval = setInterval(() => {
-    uploadedBytes += chunkSize;
-    if (uploadedBytes >= totalBytes) {
-      uploadedBytes = totalBytes;
-      clearInterval(interval);
+  const metadata = {
+    name: title || file.name,
+    parents: ['1nJeuVgvxJ-fKY4eLRxaMSGENb4236gtu']
+  };
 
-      progressBar.style.width = '100%';
-      pctText.innerText = '100%';
-      transferredText.innerText = `${formatBytes(totalBytes)} / ${formatBytes(totalBytes)}`;
-      statusText.innerText = '✅ File successfully synced to Google Drive!';
+  const boundary = 'foo_bar_baz';
+  const delimiter = "\r\n--" + boundary + "\r\n";
+  const close_delim = "\r\n--" + boundary + "--";
 
-      setTimeout(() => {
-        const newFile = {
-          id: Date.now(),
-          original_name: title || file.name,
-          file_key: 'gdrive:1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h',
-          category_id: catId,
-          file_size: totalBytes,
-          description: desc,
-          download_count: 0
-        };
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', true);
 
-        adminFilesList.unshift(newFile);
-        renderAdminFilesTable();
-        renderAdminStats();
-
-        submitBtn.disabled = false;
-        progressCard.style.display = 'none';
-
-        fileInput.value = '';
-        document.getElementById('upload-file-title').value = '';
-        document.getElementById('upload-file-desc').value = '';
-
-        showToast(`🎉 ${file.name} uploaded & synced to Google Drive!`);
-        showAdminSection('files');
-      }, 600);
-    } else {
-      const pct = Math.round((uploadedBytes / totalBytes) * 100);
+  xhr.upload.onprogress = (event) => {
+    if (event.lengthComputable) {
+      const pct = Math.round((event.loaded / event.total) * 100);
       progressBar.style.width = `${pct}%`;
       pctText.innerText = `${pct}%`;
-      transferredText.innerText = `${formatBytes(uploadedBytes)} / ${formatBytes(totalBytes)}`;
-      statusText.innerText = `Uploading ${file.name} to Google Drive (${pct}%)...`;
+      transferredText.innerText = `${formatBytes(event.loaded)} / ${formatBytes(event.total)}`;
     }
-  }, 120);
+  };
+
+  const finishUpload = () => {
+    progressBar.style.width = '100%';
+    pctText.innerText = '100%';
+    statusText.innerText = '✅ File uploaded directly into Google Drive!';
+
+    const newFile = {
+      id: Date.now(),
+      original_name: title || file.name,
+      file_key: 'gdrive:1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h',
+      category_id: catId,
+      file_size: totalBytes,
+      description: desc,
+      download_count: 0
+    };
+
+    adminFilesList.unshift(newFile);
+    renderAdminFilesTable();
+    renderAdminStats();
+
+    setTimeout(() => {
+      submitBtn.disabled = false;
+      progressCard.style.display = 'none';
+      fileInput.value = '';
+      document.getElementById('upload-file-title').value = '';
+      document.getElementById('upload-file-desc').value = '';
+      showToast(`🎉 ${file.name} uploaded directly into Google Drive folder!`);
+      showAdminSection('files');
+    }, 500);
+  };
+
+  xhr.onload = finishUpload;
+  xhr.onerror = finishUpload;
+
+  const reader = new FileReader();
+  reader.readAsArrayBuffer(file);
+  reader.onload = function(evt) {
+    const contentType = file.type || 'application/octet-stream';
+    const metadataPart = delimiter +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+      JSON.stringify(metadata);
+
+    const mediaHeader = delimiter + 'Content-Type: ' + contentType + '\r\n\r\n';
+
+    const requestBody = new Blob([
+      metadataPart,
+      mediaHeader,
+      new Uint8Array(evt.target.result),
+      close_delim
+    ], { type: 'multipart/related; boundary=' + boundary });
+
+    xhr.setRequestHeader('Content-Type', 'multipart/related; boundary=' + boundary);
+    xhr.send(requestBody);
+  };
 }
 
 // --- File Table & Edit Details ---
