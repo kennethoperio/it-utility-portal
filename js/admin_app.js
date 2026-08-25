@@ -126,10 +126,14 @@ async function loadAdminDashboardData() {
 function renderAdminStats() {
   document.getElementById('stat-files').innerText = adminFilesList.length;
   document.getElementById('stat-categories').innerText = categoriesList.length;
-  document.getElementById('stat-passcodes').innerText = passcodesList.length + 1; // +1 master
+  document.getElementById('stat-passcodes').innerText = passcodesList.length + 1;
   
   const totalSize = adminFilesList.reduce((acc, f) => acc + (f.file_size || 0), 0);
   document.getElementById('stat-storage').innerText = formatBytes(totalSize);
+
+  let totalComments = 0;
+  Object.values(fileCommentsMap).forEach(arr => totalComments += arr.length);
+  document.getElementById('stat-comments').innerText = totalComments;
 }
 
 // --- File Table & Edit Details ---
@@ -162,7 +166,7 @@ function renderAdminFilesTable() {
         </td>
         <td style="padding: 0.8rem;"><span class="tag cyan"><i class="fa-solid fa-folder"></i> ${escapeHtml(mainCatName)} ➔ ${escapeHtml(catName)}</span></td>
         <td style="padding: 0.8rem; color: var(--text-muted);">${formatBytes(f.file_size || 0)}</td>
-        <td style="padding: 0.8rem; color: var(--text-muted);">${f.download_count || 0}</td>
+        <td style="padding: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-download" style="color: var(--primary);"></i> ${f.download_count || 0}</td>
         <td style="padding: 0.8rem; text-align: right;">
           <button onclick="openEditFileModal(${f.id})" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.78rem; margin-right: 0.3rem;">
             <i class="fa-solid fa-pen"></i> Edit
@@ -174,6 +178,78 @@ function renderAdminFilesTable() {
       </tr>
     `;
   }).join('');
+}
+
+// --- Client Feedback Inspector (FILTER, DELETE, MARK SOLVED) ---
+function renderAdminFeedback() {
+  const container = document.getElementById('admin-feedback-list');
+  if (!container) return;
+
+  fileCommentsMap = JSON.parse(localStorage.getItem('portal_file_comments') || '{}');
+  const filterVal = document.getElementById('feedback-filter-select')?.value || 'all';
+
+  let allEntries = [];
+  Object.entries(fileCommentsMap).forEach(([fileId, comments]) => {
+    const fileObj = adminFilesList.find(f => f.id == fileId);
+    const fileName = fileObj ? fileObj.original_name : `File #${fileId}`;
+
+    comments.forEach(c => {
+      if (filterVal === 'issue' && c.status !== 'issue') return;
+      if (filterVal === 'solved' && c.status !== 'solved') return;
+      allEntries.push({ fileId, fileName, ...c });
+    });
+  });
+
+  if (allEntries.length === 0) {
+    container.innerHTML = `<div class="card-item" style="padding: 2rem; text-align: center; color: var(--text-muted);">No client comments or file feedback matching filter.</div>`;
+    return;
+  }
+
+  container.innerHTML = allEntries.map(c => `
+    <div class="card-item" style="padding: 1rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+        <strong style="color: var(--primary);"><i class="fa-solid fa-file-lines"></i> ${escapeHtml(c.fileName)}</strong>
+        <div style="display: flex; gap: 0.4rem; align-items: center;">
+          <span class="tag ${c.status === 'solved' ? 'green' : (c.status === 'working' ? 'cyan' : 'rose')}">
+            ${c.status === 'solved' ? '✅ Solved' : (c.status === 'working' ? '✅ Working 100%' : '⚠️ Issue Reported')}
+          </span>
+          ${c.status !== 'solved' ? `
+            <button onclick="markFeedbackSolved(${c.fileId}, ${c.id})" class="btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; color: var(--success); border-color: var(--success);">
+              <i class="fa-solid fa-check-double"></i> Mark Solved
+            </button>
+          ` : ''}
+          <button onclick="deleteFeedbackItem(${c.fileId}, ${c.id})" class="btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; color: var(--rose); border-color: var(--rose);">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+      <p style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.35rem;">${escapeHtml(c.text)}</p>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">Posted by: <strong>${escapeHtml(c.author)}</strong> on ${escapeHtml(c.date)}</div>
+    </div>
+  `).join('');
+}
+
+function markFeedbackSolved(fileId, commentId) {
+  if (fileCommentsMap[fileId]) {
+    const target = fileCommentsMap[fileId].find(c => c.id == commentId);
+    if (target) target.status = 'solved';
+    localStorage.setItem('portal_file_comments', JSON.stringify(fileCommentsMap));
+    renderAdminFeedback();
+    renderAdminStats();
+    showToast('✅ Feedback marked as solved!');
+  }
+}
+
+function deleteFeedbackItem(fileId, commentId) {
+  if (confirm('Delete this feedback comment?')) {
+    if (fileCommentsMap[fileId]) {
+      fileCommentsMap[fileId] = fileCommentsMap[fileId].filter(c => c.id != commentId);
+      localStorage.setItem('portal_file_comments', JSON.stringify(fileCommentsMap));
+      renderAdminFeedback();
+      renderAdminStats();
+      showToast('🗑️ Feedback deleted.');
+    }
+  }
 }
 
 // --- Edit Tool Description Modal ---
@@ -208,7 +284,7 @@ function handleEditFileSubmit(e) {
   closeEditFileModal();
 }
 
-// --- Move File Modal (WITH CLOSE / CANCEL BUTTONS) ---
+// --- Move File Modal ---
 function openMoveFileModal(fileId, fileName, currentCatId) {
   activeMovingFileId = fileId;
   document.getElementById('move-file-id').value = fileId;
@@ -268,7 +344,7 @@ function handleAdminFileUpload(e) {
     original_name: title,
     file_key: cleanGKey,
     category_id: catId,
-    file_size: 52428800, // 50MB estimate
+    file_size: 52428800,
     description: desc,
     download_count: 0
   };
@@ -284,7 +360,7 @@ function handleAdminFileUpload(e) {
   showAdminSection('files');
 }
 
-// --- Advanced Passcode Access Control & Limits Manager ---
+// --- Passcode Manager ---
 function toggleAddPasscodeForm() {
   const form = document.getElementById('add-passcode-form-container');
   if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
@@ -360,7 +436,7 @@ function deletePasscode(id) {
   }
 }
 
-// --- Categories & Folders Manager ---
+// --- Categories Manager ---
 function toggleAddCategoryForm() {
   const form = document.getElementById('add-category-form-container');
   if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
@@ -397,40 +473,6 @@ function renderAdminCategories() {
       <span class="tag">${adminFilesList.filter(f => f.category_id === c.id).length} files</span>
     </div>
   `).join('');
-}
-
-function renderAdminFeedback() {
-  const container = document.getElementById('admin-feedback-list');
-  if (!container) return;
-
-  fileCommentsMap = JSON.parse(localStorage.getItem('portal_file_comments') || '{}');
-  const entries = Object.entries(fileCommentsMap);
-
-  if (entries.length === 0) {
-    container.innerHTML = `<div class="card-item" style="padding: 2rem; text-align: center; color: var(--text-muted);">No client comments or file feedback posted yet.</div>`;
-    return;
-  }
-
-  let html = '';
-  entries.forEach(([fileId, comments]) => {
-    const fileObj = adminFilesList.find(f => f.id == fileId);
-    const fileName = fileObj ? fileObj.original_name : `File #${fileId}`;
-
-    comments.forEach(c => {
-      html += `
-        <div class="card-item" style="padding: 1rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-            <strong style="color: var(--primary);"><i class="fa-solid fa-file-lines"></i> ${escapeHtml(fileName)}</strong>
-            <span class="tag ${c.status === 'working' ? 'green' : 'cyan'}">${c.status === 'working' ? '✅ Working 100%' : '⚠️ Issue Reported'}</span>
-          </div>
-          <p style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.35rem;">${escapeHtml(c.text)}</p>
-          <div style="font-size: 0.75rem; color: var(--text-muted);">Posted by: <strong>${escapeHtml(c.author)}</strong> on ${escapeHtml(c.date)}</div>
-        </div>
-      `;
-    });
-  });
-
-  container.innerHTML = html;
 }
 
 function loadAdminAuditLogs() {
