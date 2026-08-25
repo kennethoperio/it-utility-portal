@@ -1,221 +1,213 @@
 {
-  "version": "10.0",
-  "generated_at": "2026-08-25T14:13:05.744705",
+  "version": "11.0",
+  "generated_at": "2026-08-25T14:18:51.529613",
   "categories": [
     {
       "id": 46,
-      "name": "General Utilities",
-      "parent_id": null,
-      "icon": "folder",
-      "description": null,
-      "display_order": 1
-    },
-    {
-      "id": 47,
+      "main_category": "Printers",
+      "subcategory": "Epson L8050",
       "name": "Epson L8050",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 2
     },
     {
-      "id": 48,
+      "id": 47,
+      "main_category": "Tools & Installers",
+      "subcategory": "Tools & Installers",
       "name": "Tools & Installers",
-      "parent_id": null,
       "icon": "folder",
-      "description": null,
       "display_order": 3
     },
     {
-      "id": 49,
+      "id": 48,
+      "main_category": "Hardware Diagnostics",
+      "subcategory": "Hardware Diagnostics",
       "name": "Hardware Diagnostics",
-      "parent_id": null,
       "icon": "microchip",
-      "description": null,
       "display_order": 4
     },
     {
-      "id": 50,
+      "id": 49,
+      "main_category": "Windows ISO Image",
+      "subcategory": "Windows ISO Image",
       "name": "Windows ISO Image",
-      "parent_id": null,
       "icon": "compact-disc",
-      "description": null,
       "display_order": 5
     },
     {
-      "id": 51,
+      "id": 50,
+      "main_category": "Network & Connectivity",
+      "subcategory": "Network & Connectivity",
       "name": "Network & Connectivity",
-      "parent_id": null,
       "icon": "network-wired",
-      "description": null,
       "display_order": 6
     },
     {
-      "id": 52,
+      "id": 51,
+      "main_category": "Activators & License Tools",
+      "subcategory": "Activators & License Tools",
       "name": "Activators & License Tools",
-      "parent_id": null,
       "icon": "key",
-      "description": null,
       "display_order": 7
     },
     {
-      "id": 53,
+      "id": 52,
+      "main_category": "Recovery Tools",
+      "subcategory": "Recovery Tools",
       "name": "Recovery Tools",
-      "parent_id": null,
       "icon": "folder",
-      "description": null,
       "display_order": 8
     },
     {
-      "id": 54,
+      "id": 53,
+      "main_category": "Printers",
+      "subcategory": "SATO Printer",
       "name": "SATO Printer",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 9
     },
     {
-      "id": 55,
+      "id": 54,
+      "main_category": "Printers",
+      "subcategory": "HP LaserJet Pro P1100, P1560, P1600 Series",
       "name": "HP LaserJet Pro P1100, P1560, P1600 Series",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 10
     },
     {
-      "id": 56,
+      "id": 55,
+      "main_category": "Printers",
+      "subcategory": "Epson LX310",
       "name": "Epson LX310",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 11
     },
     {
-      "id": 57,
+      "id": 56,
+      "main_category": "Printers",
+      "subcategory": "Epson LX300",
       "name": "Epson LX300",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 12
     },
     {
-      "id": 58,
+      "id": 57,
+      "main_category": "Printers",
+      "subcategory": "Epson L405",
       "name": "Epson L405",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 13
     },
     {
-      "id": 59,
+      "id": 58,
+      "main_category": "Printers",
+      "subcategory": "Epson L360",
       "name": "Epson L360",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 14
     },
     {
-      "id": 60,
+      "id": 59,
+      "main_category": "Printers",
+      "subcategory": "Epson L3110",
       "name": "Epson L3110",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 15
     },
     {
-      "id": 61,
+      "id": 60,
+      "main_category": "Printers",
+      "subcategory": "Epson L220",
       "name": "Epson L220",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 16
     },
     {
-      "id": 62,
+      "id": 61,
+      "main_category": "Printers",
+      "subcategory": "Epson L210",
       "name": "Epson L210",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 17
     },
     {
-      "id": 63,
+      "id": 62,
+      "main_category": "Printers",
+      "subcategory": "Epson L120",
       "name": "Epson L120",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 18
     },
     {
-      "id": 64,
+      "id": 63,
+      "main_category": "Printers",
+      "subcategory": "Canon LBP6000",
       "name": "Canon LBP6000",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 19
     },
     {
-      "id": 65,
+      "id": 64,
+      "main_category": "Printers",
+      "subcategory": "Canon LBP2900",
       "name": "Canon LBP2900",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 20
     },
     {
-      "id": 66,
+      "id": 65,
+      "main_category": "Printers",
+      "subcategory": "Brother MF240 Series",
       "name": "Brother MF240 Series",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 21
     },
     {
-      "id": 67,
+      "id": 66,
+      "main_category": "Printers",
+      "subcategory": "Brother L2550DW",
       "name": "Brother L2550DW",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 22
     },
     {
-      "id": 68,
+      "id": 67,
+      "main_category": "Microsoft Office",
+      "subcategory": "Microsoft Office",
       "name": "Microsoft Office",
-      "parent_id": null,
       "icon": "file-word",
-      "description": null,
       "display_order": 23
     },
     {
-      "id": 69,
+      "id": 68,
+      "main_category": "Printers",
+      "subcategory": "Resetters",
       "name": "Resetters",
-      "parent_id": null,
-      "icon": "key",
-      "description": null,
+      "icon": "print",
       "display_order": 24
     },
     {
-      "id": 70,
+      "id": 69,
+      "main_category": "Windows Repair",
+      "subcategory": "Windows Repair",
       "name": "Windows Repair",
-      "parent_id": null,
       "icon": "compact-disc",
-      "description": null,
       "display_order": 25
     },
     {
-      "id": 71,
+      "id": 70,
+      "main_category": "Antivirus & Malware Removal",
+      "subcategory": "Antivirus & Malware Removal",
       "name": "Antivirus & Malware Removal",
-      "parent_id": null,
       "icon": "folder",
-      "description": null,
       "display_order": 26
     },
     {
-      "id": 72,
+      "id": 71,
+      "main_category": "Printers",
+      "subcategory": "Epson L3210",
       "name": "Epson L3210",
-      "parent_id": null,
       "icon": "print",
-      "description": null,
       "display_order": 27
     }
   ],
@@ -224,697 +216,697 @@
       "id": 142,
       "original_name": "winrar-x64-720.exe",
       "file_key": "gdrive:1nJeuVgvxJ-fKY4eLRxaMSGEnb4236gtu",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 3820168,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 141,
       "original_name": "AnyDesk.exe",
       "file_key": "gdrive:1HAHE_1RBIYt97hCaRyNf0fZ0Tg_Vrkgp",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 8044472,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 140,
       "original_name": "L3210_64bit_v38000_2.exe",
       "file_key": "gdrive:1MYYeMjNkK0nRlUhh-cx02J245NBCfQfN",
-      "category_id": 72,
+      "category_id": 71,
       "file_size": 70498432,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 139,
       "original_name": "EpsonScan2_L3210_67810_41_Signed.exe",
       "file_key": "gdrive:1nbbe-GVGI9hrcA4xF-KKlPTYejYYc0z-",
-      "category_id": 72,
+      "category_id": 71,
       "file_size": 69616192,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 138,
       "original_name": "rcsetup154.exe",
       "file_key": "gdrive:1qb5dXS05vxpEI6qZgPEaWMGnx6SnOZ3P",
-      "category_id": 53,
+      "category_id": 52,
       "file_size": 26480456,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 137,
       "original_name": "MBSetup-7.7.exe",
       "file_key": "gdrive:16fbLOhYPFdO-yPGO0dvk95bseiltdjip",
-      "category_id": 71,
+      "category_id": 70,
       "file_size": 2886560,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 136,
       "original_name": "vlc-3.0.23-win64.exe",
       "file_key": "gdrive:18FxTydyvCYTWJ8Fue1Dgkb_niXCT82NB",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 45948080,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 135,
       "original_name": "ChromeSetup.exe",
       "file_key": "gdrive:1eP_0XV7O-3mwJqJ4Lj5HJEJctcFbrcu_",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 10752440,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 134,
       "original_name": "dotnetfx35.exe",
       "file_key": "gdrive:1V0MimeoJaEbeMnyVLdRV2CjjteQ0Z_AC",
-      "category_id": 70,
+      "category_id": 69,
       "file_size": 242885528,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 133,
       "original_name": "driver_booster_setup.exe",
       "file_key": "gdrive:1TVBG14nDc84XMRK4xq8qGV2Di_KGWBfl",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 33350664,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 132,
       "original_name": "dxwebsetup.exe",
       "file_key": "gdrive:1mJUKN1ZwCZEfNhOS1fhKlDnmprNXKOOd",
-      "category_id": 70,
+      "category_id": 69,
       "file_size": 295320,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 131,
       "original_name": "rufus-4.12.exe",
       "file_key": "gdrive:1pMGPWbeq8REXjAki1zhUuvG_pmcRVDFv",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 1944424,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 130,
       "original_name": "EPSON_Resetter_V2_2019.04.15.rar",
       "file_key": "gdrive:1szUqXvd12QRzKsay-xMoY6v8ysZoTaC9",
-      "category_id": 69,
+      "category_id": 68,
       "file_size": 55399196,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (EPSON_Resetter_V2_2019.04.15.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 129,
       "original_name": "Epson-L3110-Resetter.zip",
       "file_key": "gdrive:1vWktHWlYJDO9zUCdJLmRjsFJ0l76RWNR",
-      "category_id": 69,
+      "category_id": 68,
       "file_size": 1323492,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (Epson-L3110-Resetter.zip)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 128,
       "original_name": "Epson_L1210-L3210-L3250-L3251-L3260-L5290.rar",
       "file_key": "gdrive:16DxrzEFDCBQrVFBMa1SXrWEMr9wI7meG",
-      "category_id": 69,
+      "category_id": 68,
       "file_size": 2623581,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (Epson_L1210-L3210-L3250-L3251-L3260-L5290.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 127,
       "original_name": "Epson_L110-L210-L300-L350-L355.rar",
       "file_key": "gdrive:163ZuSIwY-UCNM5B50__9K0pGD6IFzvO9",
-      "category_id": 69,
+      "category_id": 68,
       "file_size": 813874,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (Epson_L110-L210-L300-L350-L355.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 126,
       "original_name": "Epson_L120.rar",
       "file_key": "gdrive:1kj5Y61E01j99Ewty_iTxg_5jwu3Ruy7T",
-      "category_id": 69,
+      "category_id": 68,
       "file_size": 1084270,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (Epson_L120.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 125,
       "original_name": "Epson_L130-220-310-360-365.rar",
       "file_key": "gdrive:1MjB0LYuaJUJBHT1sYMoJsEgvTRFbhlzM",
-      "category_id": 69,
+      "category_id": 68,
       "file_size": 2268350,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (Epson_L130-220-310-360-365.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 124,
       "original_name": "Internet_Download_Manager_6.42_Build_3_Patch.7z",
       "file_key": "gdrive:1NbochkuOlL8YGcvODoWzLn2WqBQh3doo",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 12049662,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (Internet_Download_Manager_6.42_Build_3_Patch.7z)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 123,
       "original_name": "Acrobat_Reader_DC_-_Win10.exe",
       "file_key": "gdrive:1pSRy-ZH9s0RRds5pGtnC7Ggp8FCOYkje",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 178675760,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 122,
       "original_name": "Office_2010.rar",
       "file_key": "gdrive:1yx0UeTwDthGju-_GYQVvGPSfgWjwTJM0",
-      "category_id": 68,
+      "category_id": 67,
       "file_size": 1351226507,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (Office_2010.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 121,
       "original_name": "Brother_L2550DW_installer.EXE",
       "file_key": "gdrive:1FandRDKqiTmtiMFVY62lVGQ3WNaT8ws6",
-      "category_id": 67,
+      "category_id": 66,
       "file_size": 481083344,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 120,
       "original_name": "MF240SeriesMFDriverV520WPEN_1.rar",
       "file_key": "gdrive:1HcPRe2LVR0Xd6Veo-KfVc_Vdl_xrlQaO",
-      "category_id": 66,
+      "category_id": 65,
       "file_size": 227496122,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 119,
       "original_name": "CANON_LBP_2900.rar",
       "file_key": "gdrive:1bkUfL0hry_OjKhZElryBrJDQAC17QNOa",
-      "category_id": 65,
+      "category_id": 64,
       "file_size": 10005813,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (CANON_LBP_2900.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 118,
       "original_name": "Canon_LBP_6000.rar",
       "file_key": "gdrive:1gHXuabnMbFN4uaUk4EEppPEdRr267u8N",
-      "category_id": 64,
+      "category_id": 63,
       "file_size": 36822797,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (Canon_LBP_6000.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 117,
       "original_name": "L120_x64_212UsHomeExportAsiaML.exe",
       "file_key": "gdrive:1kw-VRRNI1yKfeCFFFX9bQS6UIkMqpusp",
-      "category_id": 63,
+      "category_id": 62,
       "file_size": 32233808,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 116,
       "original_name": "Epson_L210.rar",
       "file_key": "gdrive:1uqBif4UbCyqgoxNSoZ2Ee1UxAd3ed3Je",
-      "category_id": 62,
+      "category_id": 61,
       "file_size": 208518184,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (Epson_L210.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 115,
       "original_name": "Epson_L220.rar",
       "file_key": "gdrive:1J4MdbHHFRr-oRolepwzeC0aG4sS0K2x4",
-      "category_id": 61,
+      "category_id": 60,
       "file_size": 54434581,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (Epson_L220.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 114,
       "original_name": "EPSON_L3110.rar",
       "file_key": "gdrive:14THZDUNUJv2YuPcR9JID8YX6eu6DR6aF",
-      "category_id": 60,
+      "category_id": 59,
       "file_size": 96099381,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (EPSON_L3110.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 113,
       "original_name": "Epson_L360.rar",
       "file_key": "gdrive:1nta-uVwd0vxGNTDjppsRh9CfsAhqelID",
-      "category_id": 59,
+      "category_id": 58,
       "file_size": 53237347,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (Epson_L360.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 112,
       "original_name": "Epson_L405.rar",
       "file_key": "gdrive:1Fz_4zdDEHh6V2vqjt1o8sKerJdgxfWQM",
-      "category_id": 58,
+      "category_id": 57,
       "file_size": 99814348,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (Epson_L405.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 111,
       "original_name": "LX_300.rar",
       "file_key": "gdrive:1w2M_RwNz5Z1QmKFRgDe2Wwfvb1_it6Ba",
-      "category_id": 57,
+      "category_id": 56,
       "file_size": 255380720,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (LX_300.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 110,
       "original_name": "EPSON_LX310.rar",
       "file_key": "gdrive:1UdnPW8q7neIW_-VBcJVZVrnfWF7TYrxA",
-      "category_id": 56,
+      "category_id": 55,
       "file_size": 4773720,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (EPSON_LX310.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 109,
       "original_name": "HP_LaserJet_Pro_P1100_P1560_P1600_Series_Full_Feature_Software_and_Driver.rar",
       "file_key": "gdrive:1B8Vsvsm5D-3I9rVFOYgksPVlC36eFP9c",
-      "category_id": 55,
+      "category_id": 54,
       "file_size": 179265980,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 108,
       "original_name": "SATO.rar",
       "file_key": "gdrive:1PJuzXXgfj71kpjVNVxexPTV7BJuD_cZf",
-      "category_id": 54,
+      "category_id": 53,
       "file_size": 21580059,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (SATO.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 107,
       "original_name": "AOMEI_Backupper_4.1.0.rar",
       "file_key": "gdrive:1ax05A0e2diZiFa8LuBl4-GdzrOJuxicK",
-      "category_id": 53,
+      "category_id": 52,
       "file_size": 316096239,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (AOMEI_Backupper_4.1.0.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 106,
       "original_name": "AOMEI_Partition_Assistant_9.2.rar",
       "file_key": "gdrive:1dAzw1dCk1HeNhA4tQYCcaGALgOi-tEVV",
-      "category_id": 53,
+      "category_id": 52,
       "file_size": 27282284,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (AOMEI_Partition_Assistant_9.2.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 105,
       "original_name": "ChromeStandaloneSetup64.exe",
       "file_key": "gdrive:1RwUvY2VpbQFyEq3RYfqRiOAGc3yPvhn9",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 116137008,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 104,
       "original_name": "KMS_Tools_by_Ratiborus_v2021.10.08_LaCe12_PASSWORD_lace12.7z",
       "file_key": "gdrive:1knyG53iVhr5ls6PO3c3riFou73ZEpUL0",
-      "category_id": 52,
+      "category_id": 51,
       "file_size": 57018262,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (KMS_Tools_by_Ratiborus_v2021.10.08_LaCe12_PASSWORD_lace12.7z)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 103,
       "original_name": "netlimiter-5.3.24.0.exe",
       "file_key": "gdrive:1QHgy874ofoSWvS5gRuoMLQdod_Op15Ri",
-      "category_id": 51,
+      "category_id": 50,
       "file_size": 10859792,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 102,
       "original_name": "Firefox_Installer.exe",
       "file_key": "gdrive:1GZ2PDrEYCcLmlF-7OvXZqH2t6FFOnBD9",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 504208,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 101,
       "original_name": "BraveBrowserSetup-BRV090.exe",
       "file_key": "gdrive:1iABtsCbiUUTaYdOcYbjVRWGh4-uEvb-X",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 1277280,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 100,
       "original_name": "TeamViewer_Setup_x64.exe",
       "file_key": "gdrive:1YypJ63ZeK2Oixv81rI_4x8VjgMwKuMMa",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 83284592,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 99,
       "original_name": "ZoomInstallerFull.exe",
       "file_key": "gdrive:1rB4Fu19hzJYIcJRnzC16B5b6w5zR9Yfi",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 176005576,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 98,
       "original_name": "W10_Ultralight_Gamer_19045_3633_Phrankie.iso",
       "file_key": "gdrive:1nd5b7tkKtYDGz_A-S-TnqtOCWpO1jgVr",
-      "category_id": 50,
+      "category_id": 49,
       "file_size": 1255473152,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Windows Operating System Installation ISO Image",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 97,
       "original_name": "utorrent_installer.exe",
       "file_key": "gdrive:1832ThZZ8BtcuUnqbupcfZCEHRScmtPpx",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 1777248,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 96,
       "original_name": "CareUEyes_Lite.exe",
       "file_key": "gdrive:13JZHB3Szv8K2-5NvJlA2WZiYBHUALHuQ",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 643759,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 95,
       "original_name": "npp.8.9.6.2.Installer.x64.exe",
       "file_key": "gdrive:1Aje0XoyYKycFZx24sHJfJamF878-7Rhm",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 6898288,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 94,
       "original_name": "Windows_10.iso",
       "file_key": "gdrive:1rfYDBDSfpuIJ1ei79uwvHAcH0LAgRTwY",
-      "category_id": 50,
+      "category_id": 49,
       "file_size": 4893900800,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Windows Operating System Installation ISO Image",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 93,
       "original_name": "cpu-z_2.21-en.exe",
       "file_key": "gdrive:1fVBjnUxTmIICGquLcFKsTHdNTYbWTHKC",
-      "category_id": 49,
+      "category_id": 48,
       "file_size": 4847776,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 92,
       "original_name": "hwmonitor_1.67.exe",
       "file_key": "gdrive:1HsNkAE96sPIXd0DXRrv6tjiR6S8lPAgo",
-      "category_id": 49,
+      "category_id": 48,
       "file_size": 3631600,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 91,
       "original_name": "MemTest64.exe",
       "file_key": "gdrive:1ARzPgvGwnyus1ja6yZDIRfJ9Rmd80KH1",
-      "category_id": 49,
+      "category_id": 48,
       "file_size": 3253544,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 90,
       "original_name": "CrystalDiskInfo9_9_2.exe",
       "file_key": "gdrive:10SMu1eJ5pnvANrjEWZya5bSAg1Qa_nrd",
-      "category_id": 49,
+      "category_id": 48,
       "file_size": 6203224,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 89,
       "original_name": "CrystalDiskMark9_0_3.exe",
       "file_key": "gdrive:1ozweRzhdIk0BkKCcqoqC579iaj_omWEa",
-      "category_id": 49,
+      "category_id": 48,
       "file_size": 4523144,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 88,
       "original_name": "Victoria537.zip",
       "file_key": "gdrive:1Fi_kytm0EM0fI0d_xxZiMmQigzTQq5U5",
-      "category_id": 49,
+      "category_id": 48,
       "file_size": 1577599,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (Victoria537.zip)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 87,
       "original_name": "hdsentinel_pro_setup.zip",
       "file_key": "gdrive:1ndmqUci5z7qG85-_-E0OnZCIdn4jMnIp",
-      "category_id": 49,
+      "category_id": 48,
       "file_size": 42872636,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 86,
       "original_name": "Classroom_Spy_Professional_4.8.19.rar",
       "file_key": "gdrive:1YlmvTp6clyBOJKVpXNer78QISDXsu7Th",
-      "category_id": 48,
+      "category_id": 47,
       "file_size": 97982792,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Compressed Utility Archive Package",
+      "description": "Direct download from Google Drive (Classroom_Spy_Professional_4.8.19.rar)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     },
     {
       "id": 85,
       "original_name": "Epson_L8050_Series_EM_50_Web.exe",
       "file_key": "gdrive:1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h",
-      "category_id": 47,
+      "category_id": 46,
       "file_size": 2536512,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "description": "Software Driver / Utility Installer",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 06:13:05"
+      "created_at": "2026-08-25 06:18:51"
     }
   ],
   "cmd_scripts": [
