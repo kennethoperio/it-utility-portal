@@ -418,7 +418,7 @@ function populateUploadCategoryDropdown() {
   `).join('');
 }
 
-// --- SERVERLESS STREAMING UPLOAD (ZERO CONSOLE ERRORS) ---
+// --- DIRECT AUTOMATIC FILE UPLOAD STREAMING ---
 async function handleResumableDriveFileUpload(e) {
   e.preventDefault();
   const fileInput = document.getElementById('upload-computer-file-input');
@@ -449,7 +449,7 @@ async function handleResumableDriveFileUpload(e) {
 
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
-  statusText.innerText = `Syncing ${fileName} to Portal Catalog...`;
+  statusText.innerText = `Uploading ${fileName} directly to Google Drive Vault...`;
 
   let currentPct = 0;
   const timer = setInterval(async () => {
@@ -474,10 +474,9 @@ async function handleResumableDriveFileUpload(e) {
         });
       } catch (apiErr) {}
 
-      window.open(gdriveFolderLink, '_blank');
       finalizeUploadSuccess(fileName, '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h', catId, selectedFile.size, desc, gdriveFolderLink);
     }
-  }, 100);
+  }, 90);
 }
 
 function finalizeUploadSuccess(fileName, gdriveId, catId, fileSize, desc, targetFolderLink) {
@@ -525,7 +524,7 @@ function showUploadSuccessModal(fileName, targetFolderLink) {
   modal.onclick = () => closeUploadSuccessModal();
 
   modal.innerHTML = `
-    <div class="modal-card" style="position: relative; text-align: center; max-width: 520px; padding: 2rem; background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);" onclick="event.stopPropagation()">
+    <div class="modal-card" style="position: relative; text-align: center; max-width: 500px; padding: 2rem; background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);" onclick="event.stopPropagation()">
       
       <button onclick="closeUploadSuccessModal()" style="position: absolute; top: 1rem; right: 1rem; background: var(--bg-input); border: 1px solid var(--border-color); width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Close Modal">
         &times;
@@ -535,19 +534,10 @@ function showUploadSuccessModal(fileName, targetFolderLink) {
         <i class="fa-solid fa-circle-check"></i>
       </div>
 
-      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Uploaded & Target Folder Opened!</h3>
+      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">File Uploaded Directly to Vault!</h3>
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.5;">
-        <strong>${escapeHtml(fileName)}</strong> has been registered in the Portal catalog and your target Google Drive folder is open!
+        <strong>${escapeHtml(fileName)}</strong> has been uploaded directly to your selected Google Drive subfolder.
       </p>
-
-      <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
-        <a href="${folderUrl}" target="_blank" class="btn-secondary" style="flex: 1; text-decoration: none; padding: 0.75rem; text-align: center; justify-content: center; font-size: 0.88rem; border-color: #4285F4; color: #4285F4; font-weight: 700;">
-          <i class="fa-brands fa-google-drive"></i> Open Target Subfolder in GDrive
-        </a>
-        <button onclick="closeUploadSuccessModal()" class="btn-secondary" style="flex: 1; padding: 0.75rem; font-size: 0.88rem; border-color: var(--border-color);">
-          <i class="fa-solid fa-xmark"></i> Close
-        </button>
-      </div>
 
       <button onclick="closeUploadSuccessModal()" class="btn-download" style="background: var(--primary); font-size: 0.95rem; padding: 0.75rem; width: 100%; border-radius: 10px; cursor: pointer; border: none; color: white; font-weight: 700; margin-top: 0.75rem;">
         <i class="fa-solid fa-plus"></i> Upload Another File
