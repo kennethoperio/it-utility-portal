@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Utility Vault</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/nextgen_style.css?v=27.0">
+  <link rel="stylesheet" href="css/nextgen_style.css?v=28.0">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.8.6/jsrsasign-all-min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -158,8 +158,8 @@
     <!-- Section 3: DIRECT FILE UPLOAD TO GOOGLE DRIVE VAULT -->
     <section id="admin-sec-upload" class="card-item" style="padding: 1.5rem; display: none;">
       
-      <h3 style="margin-bottom: 0.4rem;"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Automatic File Catalog Registration & Drive Placement</h3>
-      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Select any file from your computer (.exe, .zip, .iso, .msi, .rar) to register in the catalog and open the exact target Google Drive subfolder.</p>
+      <h3 style="margin-bottom: 0.4rem;"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Upload File Directly to Google Drive Vault</h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Choose a file from your computer and select the Google Drive folder/subfolder to upload it into.</p>
 
       <form id="admin-upload-form" onsubmit="handleResumableDriveFileUpload(event)">
         
@@ -189,7 +189,7 @@
         <!-- RESUMABLE PROGRESS BAR CONTAINER -->
         <div id="upload-progress-card" style="display: none; background: var(--bg-input); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1.25rem;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem; font-size: 0.88rem;">
-            <span id="upload-status-text" style="color: var(--primary); font-weight: 600;">Registering Tool & Opening Target Subfolder...</span>
+            <span id="upload-status-text" style="color: var(--primary); font-weight: 600;">Uploading file directly to Google Drive...</span>
             <span id="upload-percentage-text" style="font-weight: 700; color: var(--success);">0%</span>
           </div>
           <div style="background: var(--bg-card); height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 0.4rem;">
@@ -197,12 +197,12 @@
           </div>
           <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between;">
             <span id="upload-transferred-text">0 MB / 0 MB</span>
-            <span id="upload-speed-text">Google Drive Target Active</span>
+            <span id="upload-speed-text">Google Drive API Streaming</span>
           </div>
         </div>
 
         <button type="submit" id="upload-submit-btn" class="btn-download" style="background: var(--primary); padding: 0.85rem; font-size: 1rem;">
-          <i class="fa-solid fa-cloud-arrow-up"></i> Register Tool & Open Target Google Drive Subfolder
+          <i class="fa-solid fa-cloud-arrow-up"></i> Upload File Directly to Google Drive Vault
         </button>
       </form>
     </section>
@@ -417,6 +417,6 @@
 
   <div id="toast-box" class="toast-box"></div>
 
-  <script src="js/admin_app.js?v=27.0"></script>
+  <script src="js/admin_app.js?v=28.0"></script>
 </body>
 </html>
