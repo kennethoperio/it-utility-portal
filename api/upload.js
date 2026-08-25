@@ -31,8 +31,7 @@ function getGoogleAccessToken() {
     const unsignedToken = `${header}.${claimSet}`;
     const signer = crypto.createSign('RSA-SHA256');
     signer.update(unsignedToken);
-    const formattedKey = GDRIVE_CREDENTIALS.private_key.replace(/\\n/g, '\n');
-    const signature = signer.sign(formattedKey, 'base64')
+    const signature = signer.sign(GDRIVE_CREDENTIALS.private_key, 'base64')
       .replace(/=/g, '')
       .replace(/\+/g, '-')
       .replace(/\//g, '_');
@@ -84,7 +83,6 @@ async function initResumableSession(token, fileName, parentId, fileSize, mimeTyp
 
   let locationUrl = response.headers.get('location');
   if (!locationUrl && parentId !== DEFAULT_PARENT_FOLDER_ID) {
-    // Fail-proof fallback to default root vault folder if target subfolder is inaccessible
     metadata.parents = [DEFAULT_PARENT_FOLDER_ID];
     response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
       method: 'POST',
