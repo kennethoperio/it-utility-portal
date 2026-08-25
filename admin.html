@@ -59,11 +59,11 @@
     <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1.75rem;">
       <div class="card-item" style="padding: 1.15rem;">
         <div style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-solid fa-box-archive"></i> Total Vault Files</div>
-        <div style="font-size: 1.75rem; font-weight: 800; color: var(--cyan); margin-top: 0.25rem;" id="stat-files">58</div>
+        <div style="font-size: 1.75rem; font-weight: 800; color: var(--cyan); margin-top: 0.25rem;" id="stat-files">54</div>
       </div>
       <div class="card-item" style="padding: 1.15rem;">
         <div style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-solid fa-hard-drive"></i> Total Storage</div>
-        <div style="font-size: 1.75rem; font-weight: 800; color: var(--success); margin-top: 0.25rem;" id="stat-storage">10.2 GB</div>
+        <div style="font-size: 1.75rem; font-weight: 800; color: var(--success); margin-top: 0.25rem;" id="stat-storage">10.3 GB</div>
       </div>
       <div class="card-item" style="padding: 1.15rem;">
         <div style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-solid fa-folder-tree"></i> Total Categories</div>
@@ -81,6 +81,7 @@
         <button class="tab-link active" onclick="showAdminSection('files')"><i class="fa-solid fa-file-lines"></i> File Management</button>
         <button class="tab-link" onclick="showAdminSection('categories')"><i class="fa-solid fa-folder-plus"></i> Folders & Subfolders</button>
         <button class="tab-link" onclick="showAdminSection('upload')"><i class="fa-solid fa-cloud-arrow-up"></i> Direct File Upload</button>
+        <button class="tab-link" onclick="showAdminSection('cmd-checklist')"><i class="fa-solid fa-list-check"></i> CMD & Checklist Manager</button>
         <button class="tab-link" onclick="showAdminSection('passcodes')"><i class="fa-solid fa-key"></i> Passcode Manager</button>
         <button class="tab-link" onclick="showAdminSection('security')"><i class="fa-solid fa-user-shield"></i> Security & Passwords</button>
         <button class="tab-link" onclick="showAdminSection('feedback')"><i class="fa-solid fa-comments"></i> Client Feedback</button>
@@ -88,8 +89,8 @@
       </div>
 
       <div style="display: flex; gap: 0.75rem;">
-        <button onclick="triggerGDriveAutoLink()" class="btn-secondary">
-          <i class="fa-solid fa-arrows-rotate"></i> Sync GDrive Vault
+        <button onclick="loadAdminDashboardData()" class="btn-secondary">
+          <i class="fa-solid fa-arrows-rotate"></i> Re-Sync All Vault Files
         </button>
         <a href="https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3" target="_blank" class="btn-download" style="width: auto; padding: 0.55rem 1.15rem; background: var(--primary); text-decoration: none;">
           <i class="fa-brands fa-google-drive"></i> Open IT_Utility_Vault Folder
@@ -156,23 +157,7 @@
       <h3 style="margin-bottom: 0.4rem;"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Upload File Directly to Google Drive Vault</h3>
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Choose a file from your computer and select the Google Drive folder/subfolder to upload it into.</p>
 
-      <!-- Google User OAuth Status Banner -->
-      <div id="gdrive-oauth-connect-card" style="background: rgba(66, 133, 244, 0.08); border: 1px dashed #4285F4; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-        <div>
-          <div style="font-weight: 700; color: #4285F4; font-size: 0.95rem;">
-            <i class="fa-brands fa-google"></i> Google Drive Account Status: <span id="gdrive-user-auth-status" style="color: #10b981; font-weight: 800;">Authorized & Ready</span>
-          </div>
-          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
-            Your account is connected for 100% direct file uploads into your personal Google Drive folders.
-          </div>
-        </div>
-        <button type="button" onclick="requestGoogleUserAuthToken()" id="gdrive-auth-btn" class="btn-download" style="background: #4285F4; padding: 0.55rem 1.15rem; width: auto; font-size: 0.88rem; font-weight: 700;">
-          <i class="fa-brands fa-google"></i> Re-Connect Google Account
-        </button>
-      </div>
-
       <form id="admin-upload-form" onsubmit="handleResumableDriveFileUpload(event)">
-        
         <div style="border: 2px dashed var(--border-color); border-radius: 12px; padding: 2.25rem; text-align: center; background: var(--bg-input); margin-bottom: 1.5rem;">
           <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.75rem; color: var(--primary); margin-bottom: 0.85rem;"></i>
           <h4 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Choose File from Your Computer</h4>
@@ -218,6 +203,56 @@
           <i class="fa-solid fa-cloud-arrow-up"></i> Upload File Directly to Google Drive Vault
         </button>
       </form>
+    </section>
+
+    <!-- NEW Section: CMD Commands & Checklist Manager -->
+    <section id="admin-sec-cmd-checklist" class="card-item" style="padding: 1.75rem; display: none;">
+      <h3 style="margin-bottom: 0.4rem;"><i class="fa-solid fa-list-check" style="color: var(--primary);"></i> Manage CMD Scripts & Client Repair Checklist</h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Add, edit, or delete CMD terminal scripts and repair checklist items shown on the client page.</p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem;">
+        
+        <!-- Panel 1: CMD Commands Manager -->
+        <div style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 1.25rem; border-radius: 12px;">
+          <h4 style="font-size: 1.05rem; color: var(--primary); margin-bottom: 0.5rem;"><i class="fa-solid fa-terminal"></i> CMD Terminal Commands</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">Commands listed under the 'CMD Scripts' tab on the client page.</p>
+          
+          <form onsubmit="handleCreateCmdScriptSubmit(event)" style="margin-bottom: 1.25rem;">
+            <div style="margin-bottom: 0.65rem;">
+              <input type="text" id="admin-cmd-title" placeholder="Script Title (e.g. Flush DNS & Winsock)" required style="width: 100%; padding: 0.55rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem;">
+            </div>
+            <div style="margin-bottom: 0.65rem;">
+              <input type="text" id="admin-cmd-code" placeholder="Command (e.g. ipconfig /flushdns)" required style="width: 100%; padding: 0.55rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem; font-family: monospace;">
+            </div>
+            <div style="margin-bottom: 0.75rem;">
+              <input type="text" id="admin-cmd-desc" placeholder="Brief Description..." style="width: 100%; padding: 0.55rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem;">
+            </div>
+            <button type="submit" class="btn-download" style="background: var(--primary); font-size: 0.85rem; padding: 0.55rem;"><i class="fa-solid fa-plus"></i> Add CMD Command</button>
+          </form>
+
+          <div id="admin-cmd-list" style="display: flex; flex-direction: column; gap: 0.65rem;">
+            <!-- CMD items -->
+          </div>
+        </div>
+
+        <!-- Panel 2: Technician Repair Checklist Manager -->
+        <div style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 1.25rem; border-radius: 12px;">
+          <h4 style="font-size: 1.05rem; color: var(--primary); margin-bottom: 0.5rem;"><i class="fa-solid fa-square-check"></i> Repair Checklist Steps</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">Checklist items under the 'Repair Checklist' tab on the client page.</p>
+
+          <form onsubmit="handleCreateChecklistItemSubmit(event)" style="margin-bottom: 1.25rem;">
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" id="admin-checklist-text" placeholder="New Step (e.g. Verify Power Options...)" required style="flex: 1; padding: 0.55rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem;">
+              <button type="submit" class="btn-download" style="width: auto; background: var(--primary); font-size: 0.85rem; padding: 0.55rem 0.85rem;"><i class="fa-solid fa-plus"></i> Add Step</button>
+            </div>
+          </form>
+
+          <div id="admin-checklist-list" style="display: flex; flex-direction: column; gap: 0.65rem;">
+            <!-- Checklist items -->
+          </div>
+        </div>
+
+      </div>
     </section>
 
     <!-- Section 4: Passcode Manager -->
