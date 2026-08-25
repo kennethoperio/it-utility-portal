@@ -337,7 +337,7 @@ async function handleResumableDriveFileUpload(e) {
       progressBar.style.width = '100%';
       pctText.innerText = '100%';
       transferredText.innerText = `${formatBytes(totalBytes)} / ${formatBytes(totalBytes)}`;
-      statusText.innerText = '✅ File Uploaded to Google Drive Vault!';
+      statusText.innerText = '✅ Catalog Synced & Linked to Google Drive Vault!';
 
       // Post metadata sync to Vercel API
       fetch('https://it-utility-portal.vercel.app/api/upload', {
@@ -370,18 +370,18 @@ async function handleResumableDriveFileUpload(e) {
       progressBar.style.width = '0%';
       pctText.innerText = '0%';
 
-      // Show high z-index success popup modal
+      // Show high z-index success popup modal WITH CLOSE BUTTONS
       showUploadSuccessModal(fileName);
     } else {
       progressBar.style.width = `${currentPct}%`;
       pctText.innerText = `${currentPct}%`;
       transferredText.innerText = `${formatBytes(Math.round(totalBytes * (currentPct / 100)))} / ${formatBytes(totalBytes)}`;
-      statusText.innerText = `Uploading ${fileName} to Google Drive Vault (${currentPct}%)...`;
+      statusText.innerText = `Uploading ${fileName} (${currentPct}%)...`;
     }
   }, 80);
 }
 
-// Upload Success Modal Popup (high z-index & fixed position)
+// Upload Success Modal Popup (high z-index, fixed position & EXPLICIT CLOSE BUTTONS)
 function showUploadSuccessModal(fileName) {
   let modal = document.getElementById('upload-success-modal');
   if (!modal) {
@@ -391,22 +391,38 @@ function showUploadSuccessModal(fileName) {
     document.body.appendChild(modal);
   }
 
+  modal.onclick = () => closeUploadSuccessModal();
+
   modal.innerHTML = `
-    <div class="modal-card" style="text-align: center; max-width: 480px; padding: 2rem; background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);" onclick="event.stopPropagation()">
+    <div class="modal-card" style="position: relative; text-align: center; max-width: 500px; padding: 2rem; background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);" onclick="event.stopPropagation()">
+      
+      <!-- Top Right X Close Button -->
+      <button onclick="closeUploadSuccessModal()" style="position: absolute; top: 1rem; right: 1rem; background: var(--bg-input); border: 1px solid var(--border-color); width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Close Modal">
+        &times;
+      </button>
+
       <div class="card-icon" style="margin: 0 auto 1.25rem; width: 64px; height: 64px; font-size: 2rem; color: #10b981; background: rgba(16, 185, 129, 0.12); display: flex; align-items: center; justify-content: center; border-radius: 50%;">
         <i class="fa-solid fa-circle-check"></i>
       </div>
 
-      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Uploaded Successfully!</h3>
-      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
-        <strong>${escapeHtml(fileName)}</strong> has been uploaded to your Google Drive Vault and listed in the Portal.
+      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Uploaded & Catalog Synced!</h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.5;">
+        <strong>${escapeHtml(fileName)}</strong> has been registered in the Portal Catalog.<br>
+        <span style="font-size: 0.82rem; color: var(--primary);">To complete Google Drive cloud file sync, click below to open Google Drive and drop your file inside.</span>
       </p>
 
-      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <button onclick="closeUploadSuccessModal()" class="btn-download" style="background: var(--primary); font-size: 1rem; padding: 0.75rem; width: 100%; border-radius: 10px; cursor: pointer; border: none; color: white; font-weight: 700;">
-          <i class="fa-solid fa-plus"></i> Upload Another File
+      <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+        <a href="https://drive.google.com" target="_blank" class="btn-secondary" style="flex: 1; text-decoration: none; padding: 0.75rem; text-align: center; justify-content: center; font-size: 0.88rem; border-color: #4285F4; color: #4285F4;">
+          <i class="fa-brands fa-google-drive"></i> Open Google Drive
+        </a>
+        <button onclick="closeUploadSuccessModal()" class="btn-secondary" style="flex: 1; padding: 0.75rem; font-size: 0.88rem; border-color: var(--border-color);">
+          <i class="fa-solid fa-xmark"></i> Close
         </button>
       </div>
+
+      <button onclick="closeUploadSuccessModal()" class="btn-download" style="background: var(--primary); font-size: 0.95rem; padding: 0.75rem; width: 100%; border-radius: 10px; cursor: pointer; border: none; color: white; font-weight: 700; margin-top: 0.75rem;">
+        <i class="fa-solid fa-plus"></i> Upload Another File
+      </button>
     </div>
   `;
 
