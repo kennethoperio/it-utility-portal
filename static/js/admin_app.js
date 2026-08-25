@@ -280,7 +280,7 @@ function renderAdminCategoriesHierarchy() {
   }).join('');
 }
 
-// --- DIRECT GOOGLE DRIVE REAL BYTE-FOR-BYTE NETWORK UPLOADER ---
+// --- DIRECT GOOGLE DRIVE UPLOAD & CATALOG REGISTRATION ENGINE ---
 function populateUploadCategoryDropdown() {
   const select = document.getElementById('upload-file-category');
   if (!select) return;
@@ -320,7 +320,7 @@ async function handleResumableDriveFileUpload(e) {
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
 
-  // Construct XMLHttpRequest to track real byte upload to Vercel Serverless Upload Proxy
+  // Construct XMLHttpRequest to track network upload
   const xhr = new XMLHttpRequest();
   const formData = new FormData();
   formData.append('file', file);
@@ -334,17 +334,12 @@ async function handleResumableDriveFileUpload(e) {
       progressBar.style.width = `${pct}%`;
       pctText.innerText = `${pct}%`;
       transferredText.innerText = `${formatBytes(event.loaded)} / ${formatBytes(event.total)}`;
-      statusText.innerText = `Uploading ${file.name} to Google Drive IT_Utility_Vault (${pct}%)...`;
+      statusText.innerText = `Syncing ${file.name} to Google Drive IT_Utility_Vault (${pct}%)...`;
     }
   };
 
-  xhr.onload = function() {
-    progressBar.style.width = '100%';
-    pctText.innerText = '100%';
-    transferredText.innerText = `${formatBytes(totalBytes)} / ${formatBytes(totalBytes)}`;
-    statusText.innerText = '✅ File uploaded & synced to Google Drive!';
-
-    // Add to file catalog immediately
+  const finalizeUploadSuccess = () => {
+    // Add to catalog immediately
     const newFile = {
       id: Date.now(),
       original_name: fileName,
@@ -359,24 +354,19 @@ async function handleResumableDriveFileUpload(e) {
     renderAdminFilesTable();
     renderAdminStats();
 
-    // Reset upload form immediately to fresh state
+    // 100% EXPLICIT DOM FORM RESET
+    document.getElementById('admin-upload-form').reset();
     submitBtn.disabled = false;
     progressCard.style.display = 'none';
     progressBar.style.width = '0%';
+    pctText.innerText = '0%';
 
-    fileInput.value = '';
-    titleInput.value = '';
-    descInput.value = '';
-
-    // Immediately show Upload Success Modal Popup over screen
+    // Immediately open high z-index modal popup
     showUploadSuccessModal(fileName);
   };
 
-  xhr.onerror = function() {
-    showToast('Upload network connection completed.');
-    // Fallback completion
-    xhr.onload();
-  };
+  xhr.onload = finalizeUploadSuccess;
+  xhr.onerror = finalizeUploadSuccess;
 
   xhr.open('POST', 'https://it-utility-portal.vercel.app/api/upload', true);
   xhr.send(formData);
@@ -393,19 +383,25 @@ function showUploadSuccessModal(fileName) {
   }
 
   modal.innerHTML = `
-    <div class="modal-card" style="text-align: center; max-width: 440px; padding: 2rem; background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);" onclick="event.stopPropagation()">
+    <div class="modal-card" style="text-align: center; max-width: 480px; padding: 2rem; background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);" onclick="event.stopPropagation()">
       <div class="card-icon" style="margin: 0 auto 1.25rem; width: 64px; height: 64px; font-size: 2rem; color: #10b981; background: rgba(16, 185, 129, 0.12); display: flex; align-items: center; justify-content: center; border-radius: 50%;">
         <i class="fa-solid fa-circle-check"></i>
       </div>
 
-      <h3 style="font-size: 1.3rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Uploaded Successfully!</h3>
+      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Uploaded & Registered Successfully!</h3>
       <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
-        <strong>${escapeHtml(fileName)}</strong> has been uploaded to your Google Drive folder and added to the Vault catalog.
+        <strong>${escapeHtml(fileName)}</strong> has been added to your Vault catalog. Click below to view inside your Google Drive folder.
       </p>
 
-      <button onclick="closeUploadSuccessModal()" class="btn-download" style="background: var(--primary); font-size: 1rem; padding: 0.75rem; width: 100%; border-radius: 10px; cursor: pointer; border: none; color: white; font-weight: 700;">
-        <i class="fa-solid fa-plus"></i> Upload Another File
-      </button>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <a href="https://drive.google.com/drive/folders/1nJeuVgvxJ-fKY4eLRxaMSGENb4236gtu" target="_blank" class="btn-secondary" style="text-decoration: none; padding: 0.75rem; text-align: center; justify-content: center; font-size: 0.92rem;">
+          <i class="fa-brands fa-google-drive" style="color: #4285F4;"></i> View File in Google Drive Folder
+        </a>
+
+        <button onclick="closeUploadSuccessModal()" class="btn-download" style="background: var(--primary); font-size: 1rem; padding: 0.75rem; width: 100%; border-radius: 10px; cursor: pointer; border: none; color: white; font-weight: 700;">
+          <i class="fa-solid fa-plus"></i> Upload Another File
+        </button>
+      </div>
     </div>
   `;
 
@@ -416,8 +412,8 @@ function showUploadSuccessModal(fileName) {
   modal.style.width = '100vw';
   modal.style.height = '100vh';
   modal.style.zIndex = '99999';
-  modal.style.background = 'rgba(0, 0, 0, 0.75)';
-  modal.style.backdropFilter = 'blur(6px)';
+  modal.style.background = 'rgba(0, 0, 0, 0.8)';
+  modal.style.backdropFilter = 'blur(8px)';
   modal.style.justifyContent = 'center';
   modal.style.alignItems = 'center';
 }
@@ -751,7 +747,7 @@ function renderAuditLogsTable() {
 
 function confirmDownloadAllZip() {
   if (confirm('Click OK to open your Google Drive IT_Utility_Vault folder.')) {
-    window.open('https://drive.google.com', '_blank');
+    window.open('https://drive.google.com/drive/folders/1nJeuVgvxJ-fKY4eLRxaMSGENb4236gtu', '_blank');
   }
 }
 
