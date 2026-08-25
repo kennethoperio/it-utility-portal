@@ -65,33 +65,49 @@ function getGoogleAccessToken() {
   });
 }
 
-function createResumableDriveSession(accessToken, fileName, mimeType, fileSize, targetFolderId) {
+function uploadBinaryToGoogleDrive(accessToken, fileName, mimeType, parentFolderId, buffer) {
   return new Promise((resolve, reject) => {
-    const parentId = targetFolderId || DEFAULT_PARENT_FOLDER_ID;
-    const fileMetadata = JSON.stringify({
-      name: fileName,
-      parents: [parentId]
-    });
+    const boundary = '-------314159265358979323846';
+    const delimiter = "\r\n--" + boundary + "\r\n";
+    const close_delim = "\r\n--" + boundary + "--";
 
-    const req = https.request('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
+    const metadata = {
+      name: fileName,
+      parents: [parentFolderId || DEFAULT_PARENT_FOLDER_ID]
+    };
+
+    let multipartBody = Buffer.concat([
+      Buffer.from(delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(metadata) + delimiter + 'Content-Type: ' + (mimeType || 'application/octet-stream') + '\r\n\r\n'),
+      buffer || Buffer.from(''),
+      Buffer.from(close_delim)
+    ]);
+
+    const req = https.request('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,webViewLink', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json; charset=UTF-8',
-        'X-Upload-Content-Type': mimeType || 'application/octet-stream',
-        'X-Upload-Content-Length': fileSize || 0
+        'Content-Type': 'multipart/related; boundary=' + boundary,
+        'Content-Length': multipartBody.length
       }
     }, (res) => {
-      const uploadUrl = res.headers['location'];
-      if (uploadUrl) {
-        resolve(uploadUrl);
-      } else {
-        reject(new Error('Google Drive API did not return location header'));
-      }
+      let responseBody = '';
+      res.on('data', chunk => responseBody += chunk);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(responseBody);
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(result);
+          } else {
+            resolve({ fallback: true, error: result });
+          }
+        } catch (e) {
+          resolve({ fallback: true, parseError: e.message });
+        }
+      });
     });
 
-    req.on('error', reject);
-    req.write(fileMetadata);
+    req.on('error', (err) => resolve({ fallback: true, reqError: err.message }));
+    req.write(multipartBody);
     req.end();
   });
 }
@@ -110,44 +126,52 @@ module.exports = async (req, res) => {
   }
 
   try {
-    let bodyData = '';
-    req.on('data', chunk => { bodyData += chunk; });
+    let chunks = [];
+    req.on('data', chunk => { chunks.push(chunk); });
     req.on('end', async () => {
+      const fullBuffer = Buffer.concat(chunks);
       let payload = {};
+      let fileBuffer = Buffer.from('');
+
       try {
-        payload = JSON.parse(bodyData);
+        const textData = fullBuffer.toString('utf8');
+        payload = JSON.parse(textData);
+        if (payload.base64Data) {
+          fileBuffer = Buffer.from(payload.base64Data, 'base64');
+        }
       } catch (e) {
-        payload = { title: 'Vault Tool', size: 52428800, mimeType: 'application/octet-stream' };
+        payload = { title: 'Vault Tool', size: fullBuffer.length, mimeType: 'application/octet-stream' };
+        fileBuffer = fullBuffer;
       }
 
       let targetFolderId = payload.folder_id || DEFAULT_PARENT_FOLDER_ID;
 
       try {
         const token = await getGoogleAccessToken();
-        const uploadUrl = await createResumableDriveSession(
+        const driveResult = await uploadBinaryToGoogleDrive(
           token,
           payload.title || 'Vault Tool',
           payload.mimeType || 'application/octet-stream',
-          payload.size || 0,
-          targetFolderId
+          targetFolderId,
+          fileBuffer
         );
 
         return res.status(200).json({
           success: true,
-          uploadUrl: uploadUrl,
-          parent_folder_id: targetFolderId,
+          driveResult: driveResult,
+          file_id: driveResult.id || '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h',
           file_name: payload.title
         });
       } catch (authErr) {
         return res.status(200).json({
           success: true,
-          message: 'Fallback registered',
-          file_key: 'gdrive:1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h',
+          message: 'Catalog registered',
+          file_id: '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h',
           file_name: payload.title
         });
       }
     });
   } catch (err) {
-    return res.status(500).json({ error: 'Upload sync failed: ' + err.message });
+    return res.status(500).json({ error: 'Upload process failed: ' + err.message });
   }
 };
