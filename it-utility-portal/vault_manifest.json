@@ -921,6 +921,28 @@
       "version": "1.0",
       "download_count": 0,
       "created_at": "2026-08-25 14:26:39"
+    },
+    {
+      "id": 9901,
+      "original_name": "Epson_L3210_L3250_Resetter_Adjustment_Program.rar",
+      "file_key": "gdrive:1_Epson_L3210_Resetter_Key",
+      "category_id": 48,
+      "file_size": 8388608,
+      "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "description": "Epson L3210 / L3250 Waste Ink Pad Counter Resetter Utility",
+      "version": "1.0",
+      "download_count": 0
+    },
+    {
+      "id": 9902,
+      "original_name": "Epson_L360_L365_L310_L220_L120_Resetter.rar",
+      "file_key": "gdrive:1_Epson_L360_Resetter_Key",
+      "category_id": 48,
+      "file_size": 5242880,
+      "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "description": "Epson L360 / L365 / L310 Multi-Model Resetter Package",
+      "version": "1.0",
+      "download_count": 0
     }
   ],
   "cmd_scripts": [
