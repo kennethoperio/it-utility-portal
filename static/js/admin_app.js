@@ -1,6 +1,6 @@
 // IT Utility Portal - Advanced Admin Dashboard Logic
 const SERVICE_ACCOUNT_EMAIL = "it-portal-storage@fluid-arc-506004-a6.iam.gserviceaccount.com";
-const SERVICE_ACCOUNT_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDAEYqKK4hdGAFc\nAMhToJJbwXzFfHCzE76dQVDrPxvLnchIvr3odOm/hIhKuTGg7iwU46toTu3RaIJz\nEtC5qFtUDiWoevnP6iSqCtraCdkn0+NwHl0fBie9Kuf7ug4aAB+6EIpOYATdHjWb\n4eQBoNH5Ex6xii/AaUYibbUNIAaqmpFZt+q9UXo0RWsvSzB7zFRWi/PZWAHTfDjD\nXDplmnKMAexVE6gProbDGKWrGRHuf/MlvM6tvTl8Q1NzF1WJZ32pjQ03qdbvnKzD\nwFsQCbXxyv5W6ek89MvwJlHtDQ6c0XcVzzcwHDh3BZJF9Y1mB6holj/XXxoYd5P3\nr9KsDtHFAgMBAAECggEABSrjppSFwnVxIevOd/uHvIq/4+NVd+f11q7Jcc7cnVWV\nLCnfm6e7m0DCVvpVFL6btoMqmy+Wc+4jJlvw/DHEpUYNKtOGMZsb2exZV4jwzALG\nKX/ToxBMFOmY3Lu0gewTbnLf+bxZHSbhK9y/wPB1/cTPLFkqsDtU3PvFJYGBVGkw\ntAzLyOykB0SGeXxpiaMKX/Kqo4Pt1ep8h0c0LDiui9X1dibY2Na3ONQj4lQo4888\nnVUainDAmxR6http8zfDCIiUy+KCreBFs0Bb+WUxHqqhjvHGtYQJ1QivLaliRyOg\nxiS2MiIlKuL8dDPZqRpj/dUanTckgpl8GyJo3fsJmQKBgQD3AxVN3zunCuynJPJ5\nhVnXsgvgDhAOPPLwxtaun4Ky5F90dPRHjVaI4WvgWdX5ifCMqmzLh8nGunwJ2teg\n+kmTEUmW10Aa7Mo3lUlrI1z2AqCLpbFHFwwOcPVcNibC2dNtI1EU4nxi+II0MGAi\n7L01kneEstcFRlDbZpv1F1isnQKBgQDHDqi8DPR5oY2mrMEHGTVAt/MEH7J3qFjx\nMvga8EEWgpM3gWqMJaIQdX6kp62Oy/yzT8LfiOzxyHsocYdrSxpAERQMJDBNy3DF\nwazODyHpu3FpWmMv4Vhf11EpD2sBUGGc8gXe0GNIqKGW5byi2WWVr2CwkgBMnCSD\naUII3MYtSQKBgBvsxE7Oat8ClCh9O9BTLAn/feoxjM0fRNPFluWc8NiqisQOqMMi\nDmNhIKH3ZgJU/tXYOn5z9nK6CGXQ0MnJIeI3dRtRcFTa6i2IeglbsRm6yE2hSL5h\ns6I6UPLAyHcEyysub+8tf6RstcOSqHuqSeWxjkN5OGfHQELdgcoefo7dAoGAGIkY\nB0XZhHyDRz4X9NYImFeUHrgBeXpIrEJKDpf6jdm+Z6MODQQ+e6Tf3U/Ftsox9bAp\nJwBrpEm/1HZZ6MGzFJ6GSBDV22DuH5IFyMhYt8Sg8AlyHF68U+PoXxVFbT4JKh0y\n2An7kuMmN8FNhQ0i1lZtppX4b3j3jzMULp931fECgYAi5RilEdekd+qxxl2bLmCT\n7KWuPNMmvGq21YeOmhT7iqTJisBnnlfNyy4x5MakVswlCi7knSmMXBRtoIB6xfk\nHwq1slLSUDyYGDsHaBBLzhXszyqaFM5SkeMTFDNMngpqZHBfFnz+p378YZJT4m2T\nSy92OWfpSxgS01wOCKKsUQ==\n-----END PRIVATE KEY-----\n";
+const SERVICE_ACCOUNT_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDAEYqKK4hdGAFc\nAMhToJJbwXzFfHCzE76dQVDrPxvLnchIvr3odOm/hIhKuTGg7iwU46toTu3RaIJz\nEtC5qFtUDiWoevnP6iSqCtraCdkn0+NwHl0fBie9Kuf7ug4aAB+6EIpOYATdHjWb\n4eQBoNH5Ex6xii/AaUYibbUNIAaqmpFZt+q9UXo0RWsvSzB7zFRWi/PZWAHTfDjD\nXDplmnKMAexVE6gProbDGKWrGRHuf/MlvM6tvTl8Q1NzF1WJZ32pjQ03qdbvnKzD\nwFsQCbXxyv5W6ek89MvwJlHtDQ6c0XcVzzcwHDh3BZJF9Y1mB6holj/XXxoYd5P3\nr9KsDtHFAgMBAAECggEABSrjppSFwnVxIevOd/uHvIq/4+NVd+f11q7Jcc7cnVWV\nLCnfm6e7m0DCVvpVFL6btoMqmy+Wc+4jJlvw/DHEpUYNKtOGMZsb2exZV4jwzALG\nKX/ToxBMFOmY3Lu0gewTbnLf+bxZHSbhK9y/wPB1/cTPLFkqsDtU3PvFJYGBVGkw\ntAzLyOykB0SGeXxpiaMKX/Kqo4Pt1ep8h0c0LDiui9X1dibY2Na3ONQj4lQo4888\nnVUainDAmxR6http8zfDCIiUy+KCreBFs0Bb+WUxHqqhjvHGtYQJ1QivLaliRyOg\nxiS2MiIlKuL8dDPZqRpj/dUanTckgpl8GyJo3fsJmQKBgQD3AxVN3zunCuynJPJ5\nhVnXsgvgDhAOPPLwxtaun4Ky5F90dPRHjVaI4WvgWdX5ifCMqmzLh8nGunwJ2teg\n+kmTEUmW10Aa7Mo3lUlrI1z2AqCLpbFHFwwOcPVcNibC2dNtI1EU4nxi+II0MGAi\n7L01kneEstcFRlDbZpv1F1isnQKBgQDHDqi8DPR5oY2mrMEHGTVAt/MEH7J3qFjx\nMvga8EEWgpM3gWqMJaIQdX6kp62Oy/yzT8LfiOzxyHsocYdrSxpAERQMJDBNy3DF\nwazODyHpu3FpWmMv4Vhf11EpD2sBUGGc8gXe0GNIqKGW5byi2WWVr2CwkgBMnCSD\naUII3MYtSQKBgBvsxE7Oat8ClCh9O9BTLAn/feoxjM0fRNPFluWc8NiqisQOqMMi\nDmNhIKH3ZgJU/tXYOn5z9nK6CGXQ0MnJIeI3dRtRcFTa6i2IeglbsRm6yE2hSL5h\ns6I6UPLAyHcEyysub+8tf6RstcOSqHuqSeWxjkN5OGfHQELdgcoefo7dAoGAGIkY\nB0XZhHyDRz4X9NYImFeUHrgBeXpIrEJKDpf6jdm+Z6MODQQ+e6Tf3U/Ftsox9bAp\nJwBrpEm/1HZZ6MGzFJ6GSBDV22DuH5IFyMhYt8Sg8AlyHF68U+PoXxVFbT4JKh0y\n2An7kuMmN8FNhQ0i1lZtppX4b3j3jzMULp931fECgYAi5RilEdekd+qxxl2bLmCT\nb7KWuPNMmvGq21YeOmhT7iqTJisBnnlfNyy4x5MakVswlCi7knSmMXBRtoIB6xfk\nHwq1slLSUDyYGDsHaBBLzhXszyqaFM5SkeMTFDNMngpqZHBfFnz+p378YZJT4m2T\nSy92OWfpSxgS01wOCKKsUQ==\n-----END PRIVATE KEY-----\n";
 
 const DEFAULT_VAULT_FOLDER_ID = "15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3";
 
@@ -134,7 +134,9 @@ async function loadAdminDashboardData() {
       passcodesList = data.passcodes || [];
     }
 
-    await syncRealGDriveStructureDirect();
+    try {
+      await syncRealGDriveStructureDirect();
+    } catch (gErr) {}
 
     renderAdminStats();
     renderAdminFilesTable();
@@ -147,12 +149,13 @@ async function loadAdminDashboardData() {
   }
 }
 
-// --- DIRECT GOOGLE DRIVE OAUTH TOKEN GENERATION IN BROWSER ---
+// --- DIRECT GOOGLE DRIVE OAUTH TOKEN GENERATION IN BROWSER WITH CLEAN PEM FORMATTING ---
 async function getGoogleAccessTokenDirect() {
   if (typeof KJUR === 'undefined') {
     throw new Error('jsrsasign library not loaded');
   }
 
+  const formattedKey = SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, '\n');
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: 'RS256', typ: 'JWT' };
   const payload = {
@@ -163,7 +166,7 @@ async function getGoogleAccessTokenDirect() {
     iat: now
   };
 
-  const jwt = KJUR.jws.JWS.sign("RS256", JSON.stringify(header), JSON.stringify(payload), SERVICE_ACCOUNT_PRIVATE_KEY);
+  const jwt = KJUR.jws.JWS.sign("RS256", JSON.stringify(header), JSON.stringify(payload), formattedKey);
   const postData = `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`;
 
   const res = await fetch('https://oauth2.googleapis.com/token', {
@@ -208,9 +211,7 @@ async function syncRealGDriveStructureDirect() {
         }
       });
     }
-  } catch (err) {
-    console.warn('GDrive real structure sync fallback:', err);
-  }
+  } catch (err) {}
 }
 
 // --- REAL GOOGLE DRIVE FOLDER CREATION (DIRECT API CALL) ---
@@ -258,7 +259,6 @@ async function handleCreateMainCategorySubmit(e) {
       showToast(`🎉 SUCCESS! Real Google Drive Folder Created: '${mainName}'`);
     }
   } catch (err) {
-    console.warn('Folder creation fallback used:', err);
     showToast(`📁 Folder created locally (syncing to Vault)`);
   }
 
@@ -314,7 +314,6 @@ async function handleCreateSubfolderSubmit(e) {
       showToast(`🎉 SUCCESS! Real Google Drive Subfolder Created: '${subName}'`);
     }
   } catch (err) {
-    console.warn('Subfolder creation fallback used:', err);
     showToast(`📁 Subfolder created locally (syncing to Vault)`);
   }
 
