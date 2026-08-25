@@ -1,4 +1,4 @@
-// IT Utility Portal - Client Application Logic
+// IT Utility Portal - Client Application Logic with Real-Time Google Drive Live Sync
 const API_BASE = (window.location.pathname.includes('it-utility-portal') || window.location.hostname.includes('github.io')) ? 'static/api' : 'api';
 const DEFAULT_VAULT_FOLDER_ID = "15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3";
 const VERCEL_API_BASE = "https://it-utility-portal.vercel.app";
@@ -34,6 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
   renderChecklist();
 
   document.getElementById('passcode-form')?.addEventListener('submit', handlePasscodeSubmit);
+
+  // Auto-sync Google Drive live every 30 seconds
+  setInterval(() => {
+    syncRealGDriveStructureClient();
+  }, 30000);
 });
 
 // --- Theme Toggle ---
@@ -197,7 +202,7 @@ async function validateAndLoadVault(passcode) {
   return false;
 }
 
-// --- Data Loader (LOADS PERFECT GOOGLE DRIVE HIERARCHY FROM MANIFEST & SYNC) ---
+// --- Data Loader (LOADS MANIFEST & INITIATES LIVE REAL-TIME SYNC) ---
 async function loadVaultDataStaleWhileRevalidate() {
   try {
     const res = await fetch(`vault_manifest.json?_t=${Date.now()}`);
@@ -222,7 +227,7 @@ async function loadVaultDataStaleWhileRevalidate() {
   } catch (gErr) {}
 }
 
-// --- REAL-TIME LIVE GOOGLE DRIVE CLIENT SCANNER (PRESERVES PERFECT HIERARCHY) ---
+// --- 100% REAL-TIME LIVE GOOGLE DRIVE CLIENT SCANNER ---
 async function syncRealGDriveStructureClient() {
   try {
     const tokenRes = await fetch(`${VERCEL_API_BASE}/api/create-folder`, {
@@ -235,24 +240,40 @@ async function syncRealGDriveStructureClient() {
     const token = tokenData.access_token;
     if (!token) return;
 
-    // Fetch Folders
+    // Fetch Folders live from Google Drive
     const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,parents,webViewLink)&pageSize=1000`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
     const gFolders = data.files || [];
 
+    const folderIdMap = {};
     if (gFolders.length > 0) {
       gFolders.forEach(gf => {
-        const existing = categoriesList.find(c => (c.name || '').toLowerCase() === gf.name.toLowerCase() || (c.subcategory || '').toLowerCase() === gf.name.toLowerCase());
+        folderIdMap[gf.id] = gf.name;
+
+        let existing = categoriesList.find(c => (c.gdrive_folder_id === gf.id) || (c.name || '').toLowerCase() === gf.name.toLowerCase() || (c.subcategory || '').toLowerCase() === gf.name.toLowerCase());
         if (existing) {
           existing.gdrive_folder_id = gf.id;
           existing.gdrive_link = gf.webViewLink || `https://drive.google.com/drive/folders/${gf.id}`;
+        } else {
+          // Dynamically auto-create category for newly created Google Drive folders!
+          const newCat = {
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            main_category: gf.name,
+            subcategory: gf.name,
+            name: gf.name,
+            icon: 'folder',
+            display_order: categoriesList.length + 1,
+            gdrive_folder_id: gf.id,
+            gdrive_link: gf.webViewLink || `https://drive.google.com/drive/folders/${gf.id}`
+          };
+          categoriesList.push(newCat);
         }
       });
     }
 
-    // Fetch Files
+    // Fetch Files live from Google Drive with pagination
     let gFiles = [];
     let pageToken = null;
 
@@ -270,33 +291,41 @@ async function syncRealGDriveStructureClient() {
       if (!pageToken) break;
     }
 
-    let newlyAdded = 0;
+    let modifiedCount = 0;
     gFiles.forEach(gf => {
       if (gf.name.endsWith('.db') || gf.name.endsWith('.json')) return;
-
-      // Check if file is ALREADY registered in allFilesList with perfect category_id
-      const existing = allFilesList.find(f => (f.file_key || '').includes(gf.id) || f.original_name === gf.name);
-      if (existing) {
-        return; // PRESERVE PERFECT HIERARCHICAL CATEGORY_ID FROM MANIFEST
-      }
 
       const parentId = (gf.parents && gf.parents[0]) ? gf.parents[0] : DEFAULT_VAULT_FOLDER_ID;
       const matchingCat = categoriesList.find(c => c.gdrive_folder_id === parentId);
       const catId = matchingCat ? matchingCat.id : 1;
 
-      allFilesList.unshift({
-        id: Date.now() + Math.floor(Math.random() * 1000),
-        original_name: gf.name,
-        file_key: `gdrive:${gf.id}`,
-        category_id: catId,
-        file_size: gf.size ? parseInt(gf.size) : 180 * 1024 * 1024,
-        description: `Google Drive Vault File (${gf.name})`,
-        download_count: 0
-      });
-      newlyAdded++;
+      const existing = allFilesList.find(f => (f.file_key || '').includes(gf.id) || f.original_name === gf.name);
+      if (existing) {
+        if (matchingCat && existing.category_id !== matchingCat.id) {
+          existing.category_id = matchingCat.id; // Dynamically update file category if moved in GDrive!
+          modifiedCount++;
+        }
+      } else {
+        // Dynamically auto-register newly added files!
+        let desc = `Google Drive Vault File (${gf.name})`;
+        const nl = gf.name.toLowerCase();
+        if (nl.endsWith('.rar') || nl.endsWith('.zip') || nl.endsWith('.7z')) desc = 'Compressed Archive Utility / Resetter Package';
+        else if (nl.endsWith('.iso')) desc = 'Windows Installation ISO Image';
+
+        allFilesList.unshift({
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          original_name: gf.name,
+          file_key: `gdrive:${gf.id}`,
+          category_id: catId,
+          file_size: gf.size ? parseInt(gf.size) : 180 * 1024 * 1024,
+          description: desc,
+          download_count: 0
+        });
+        modifiedCount++;
+      }
     });
 
-    if (newlyAdded > 0) {
+    if (modifiedCount > 0) {
       renderLeftSidebar();
       renderToolsGrid();
       updateCategoryBannerLabel(activeMainCategory === 'all' ? 'All Vault Tools' : activeMainCategory, getActiveCategoryFilesCount());
