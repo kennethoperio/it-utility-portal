@@ -520,7 +520,6 @@ async function handleResumableDriveFileUpload(e) {
         } catch (e) {}
         showToast(`🎉 Direct Google Drive Upload Complete!`);
       } else {
-        // Automatically open target folder window if personal GDrive storage quota restriction occurs
         window.open(gdriveFolderLink, '_blank');
       }
 
