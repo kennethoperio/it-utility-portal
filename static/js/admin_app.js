@@ -468,7 +468,10 @@ async function handleResumableDriveFileUpload(e) {
 
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
-  statusText.innerText = 'Requesting Google Drive Upload Session...';
+  statusText.innerText = 'Syncing Tool to Catalog & Target Google Drive Subfolder...';
+
+  // Open Google Drive Target Subfolder directly!
+  window.open(gdriveFolderLink, '_blank');
 
   simulateDirectUploadFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
 }
@@ -555,14 +558,14 @@ function showUploadSuccessModal(fileName, targetFolderLink) {
         <i class="fa-solid fa-circle-check"></i>
       </div>
 
-      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Uploaded & Catalog Synced!</h3>
+      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Target Folder Opened in Google Drive!</h3>
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.5;">
-        <strong>${escapeHtml(fileName)}</strong> has been registered in the Portal catalog and targets your Google Drive Vault folder.
+        Your target Google Drive subfolder is open in your browser tab. Drop <strong>${escapeHtml(fileName)}</strong> directly into Google Drive so it is 100% saved under your personal account.
       </p>
 
       <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
         <a href="${folderUrl}" target="_blank" class="btn-secondary" style="flex: 1; text-decoration: none; padding: 0.75rem; text-align: center; justify-content: center; font-size: 0.88rem; border-color: #4285F4; color: #4285F4;">
-          <i class="fa-brands fa-google-drive"></i> Open Target Folder in GDrive
+          <i class="fa-brands fa-google-drive"></i> Open Target Subfolder in GDrive
         </a>
         <button onclick="closeUploadSuccessModal()" class="btn-secondary" style="flex: 1; padding: 0.75rem; font-size: 0.88rem; border-color: var(--border-color);">
           <i class="fa-solid fa-xmark"></i> Close
@@ -911,15 +914,6 @@ function renderAuditLogsTable() {
       <td style="padding: 0.65rem; color: var(--text-muted);">${new Date().toLocaleString()}</td>
     </tr>
   `;
-}
-
-async function triggerGDriveAutoLink() {
-  showToast('🔄 Syncing Google Drive Subfolders live via API...');
-  await syncRealGDriveStructureDirect();
-  renderAdminCategoriesHierarchy();
-  populateUploadCategoryDropdown();
-  renderAdminStats();
-  showToast('🎉 Google Drive Vault Subfolders & Files Synced!');
 }
 
 function formatBytes(bytes) {
