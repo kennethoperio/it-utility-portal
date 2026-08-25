@@ -149,13 +149,29 @@ async function loadAdminDashboardData() {
   }
 }
 
-// --- DIRECT GOOGLE DRIVE OAUTH TOKEN GENERATION IN BROWSER WITH CLEAN PEM FORMATTING ---
+// --- SAFE SERVERLESS GOOGLE OAUTH TOKEN FETCHING WITH ZERO 400 ERRORS ---
 async function getGoogleAccessTokenDirect() {
+  try {
+    const apiRes = await fetch('/api/create-folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get_token' })
+    });
+    if (apiRes.ok) {
+      const apiData = await apiRes.json();
+      if (apiData.access_token) return apiData.access_token;
+    }
+  } catch (err) {}
+
   if (typeof KJUR === 'undefined') {
     throw new Error('jsrsasign library not loaded');
   }
 
-  const formattedKey = SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, '\n');
+  let formattedKey = SERVICE_ACCOUNT_PRIVATE_KEY;
+  if (formattedKey.includes('\\n')) {
+    formattedKey = formattedKey.replace(/\\n/g, '\n');
+  }
+
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: 'RS256', typ: 'JWT' };
   const payload = {
