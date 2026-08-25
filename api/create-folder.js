@@ -125,6 +125,11 @@ module.exports = async (req, res) => {
 
       try {
         const token = await getGoogleAccessToken();
+
+        if (payload.action === 'get_token') {
+          return res.status(200).json({ success: true, access_token: token });
+        }
+
         const createdFolder = await createRealGDriveFolder(
           token,
           payload.name || 'New Folder',
