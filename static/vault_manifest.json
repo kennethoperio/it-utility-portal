@@ -1,0 +1,120 @@
+{
+  "version": "10.0",
+  "generated_at": "2026-08-25T13:45:44.724618",
+  "categories": [
+    {
+      "id": 7,
+      "name": "Resetters",
+      "parent_id": 2,
+      "icon": "rotate-left",
+      "description": "Printer waste ink resetters & EEPROM clearers",
+      "display_order": 1
+    },
+    {
+      "id": 1,
+      "name": "Windows Repair",
+      "parent_id": null,
+      "icon": "screwdriver-wrench",
+      "description": "System repair tools, SFC, DISM, and Registry scripts",
+      "display_order": 1
+    },
+    {
+      "id": 8,
+      "name": "Drivers",
+      "parent_id": 2,
+      "icon": "microchip",
+      "description": "Universal and specific printer drivers & setup packs",
+      "display_order": 2
+    },
+    {
+      "id": 2,
+      "name": "Printers",
+      "parent_id": null,
+      "icon": "print",
+      "description": "Printer management tools, drivers, and spooler resetters",
+      "display_order": 2
+    },
+    {
+      "id": 3,
+      "name": "Activators & License Tools",
+      "parent_id": null,
+      "icon": "key",
+      "description": "Product keys, activation scripts, and license management",
+      "display_order": 3
+    },
+    {
+      "id": 4,
+      "name": "Network & Connectivity",
+      "parent_id": null,
+      "icon": "network-wired",
+      "description": "IP tools, Wi-Fi analyzers, reset scripts, and ping helpers",
+      "display_order": 4
+    },
+    {
+      "id": 5,
+      "name": "Antivirus & Malware Removal",
+      "parent_id": null,
+      "icon": "shield-virus",
+      "description": "Virus scanners, removal tools, and security utilities",
+      "display_order": 5
+    },
+    {
+      "id": 6,
+      "name": "Hardware Diagnostics",
+      "parent_id": null,
+      "icon": "microchip",
+      "description": "RAM, HDD/SSD, CPU test tools, and spec gatherers",
+      "display_order": 6
+    }
+  ],
+  "files": [],
+  "cmd_scripts": [
+    {
+      "id": 5,
+      "title": "Export Detailed System Specs to Desktop",
+      "type": "PowerShell",
+      "command": "Get-ComputerInfo | Out-File -FilePath \"$env:USERPROFILE\\Desktop\\SystemSpecs.txt\"",
+      "description": "Exports full hardware, OS, BIOS, and memory specifications into a text file.",
+      "created_at": "2026-08-19 05:20:03"
+    },
+    {
+      "id": 4,
+      "title": "Windows Activation & License Status Check",
+      "type": "CMD",
+      "command": "slmgr.vbs /dli && slmgr.vbs /xpr",
+      "description": "Displays detailed Windows activation license status and expiration info.",
+      "created_at": "2026-08-19 05:20:03"
+    },
+    {
+      "id": 3,
+      "title": "Complete Network Stack & DNS Reset",
+      "type": "PowerShell / CMD",
+      "command": "ipconfig /flushdns && ipconfig /release && ipconfig /renew && netsh winsock reset && netsh int ip reset",
+      "description": "Flushes DNS resolver cache, releases/renews DHCP IP lease, and resets Winsock catalog.",
+      "created_at": "2026-08-19 05:20:03"
+    },
+    {
+      "id": 2,
+      "title": "Restart Printer Spooler & Clear Queue",
+      "type": "PowerShell / CMD",
+      "command": "net stop spooler && del /Q /F /S \"%systemroot%\\System32\\Spool\\Printers\\*.*\" && net start spooler",
+      "description": "Stops printer spooler, deletes stuck print jobs in queue, and restarts service.",
+      "created_at": "2026-08-19 05:20:03"
+    },
+    {
+      "id": 1,
+      "title": "Windows System File Checker & Repair",
+      "type": "PowerShell / CMD",
+      "command": "sfc /scannow && DISM /Online /Cleanup-Image /RestoreHealth",
+      "description": "Scans and repairs corrupted Windows system files and system image.",
+      "created_at": "2026-08-19 05:20:03"
+    }
+  ],
+  "passcodes": [],
+  "settings": {
+    "access_passcode": "tech2026",
+    "site_title": "IT Troubleshooting Utility Hub",
+    "announcement": "Authorized IT Technicians Portal - Fast 1-Click Utility Downloads",
+    "theme": "dark"
+  }
+}
