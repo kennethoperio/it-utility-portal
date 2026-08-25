@@ -31,7 +31,8 @@ function getGoogleAccessToken() {
     const unsignedToken = `${header}.${claimSet}`;
     const signer = crypto.createSign('RSA-SHA256');
     signer.update(unsignedToken);
-    const signature = signer.sign(GDRIVE_CREDENTIALS.private_key, 'base64')
+    const formattedKey = GDRIVE_CREDENTIALS.private_key.replace(/\\n/g, '\n');
+    const signature = signer.sign(formattedKey, 'base64')
       .replace(/=/g, '')
       .replace(/\+/g, '-')
       .replace(/\//g, '_');
