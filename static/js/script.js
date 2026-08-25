@@ -73,7 +73,7 @@ function clientLogout() {
   showToast('Vault Locked. Logged out successfully.');
 }
 
-// --- EXACT DOWNLOAD MODAL FLOW (SCREENSHOT 1 & 2 BEHAVIOR) ---
+// --- EXACT DOWNLOAD MODAL FLOW ---
 function triggerDirectDownload(fileId, fileName) {
   // Increment Download Counter
   const fileObj = allFilesList.find(f => (f.file_key || '').includes(fileId) || f.id == fileId);
@@ -82,7 +82,7 @@ function triggerDirectDownload(fileId, fileName) {
     renderToolsGrid();
   }
 
-  // Always open the exact Direct Download Modal requested in Screenshot 2
+  // Open Direct Download Modal Popup
   openDownloadBypassModal(fileId, fileName);
 }
 
@@ -95,7 +95,6 @@ function openDownloadBypassModal(fileId, fileName) {
     document.body.appendChild(modal);
   }
 
-  const directUcUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
   const mirrorUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&authuser=0`;
 
   modal.innerHTML = `
@@ -115,12 +114,12 @@ function openDownloadBypassModal(fileId, fileName) {
       <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.35rem;">Download should start automatically in your browser.</p>
 
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <!-- Option 1: Save Immediately on PC -->
-        <button onclick="saveFileImmediately('${directUcUrl}', '${escapeHtml(fileName)}')" class="btn-download" style="background: var(--primary); text-align: center; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">
+        <!-- Option 1: Direct Local Save without going to usercontent tab -->
+        <button onclick="saveFileImmediately('${fileId}', '${escapeHtml(fileName)}')" class="btn-download" style="background: var(--primary); text-align: center; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">
           <i class="fa-solid fa-download"></i> Click Here to Save File Immediately
         </button>
 
-        <!-- Option 2: Alternative Google Mirror Link (Opens Screenshot 1) -->
+        <!-- Option 2: Alternative Google Mirror Link (Opens usercontent page) -->
         <a href="${mirrorUrl}" target="_blank" class="btn-secondary" style="text-decoration: none; text-align: center; justify-content: center; font-size: 0.85rem; padding: 0.65rem; color: var(--text-muted);">
           <i class="fa-solid fa-shield-virus"></i> Alternative Google Mirror Link
         </a>
@@ -136,10 +135,13 @@ function closeDownloadBypassModal() {
   if (modal) modal.style.display = 'none';
 }
 
-// Save file immediately to PC without opening new tab
-function saveFileImmediately(directUrl, fileName) {
+// Option 1: Save file directly to PC without opening drive.usercontent page
+async function saveFileImmediately(fileId, fileName) {
   showToast(`🚚 Direct downloading ${fileName}...`);
 
+  const gdriveDirectUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
+
+  // Use hidden iframe to trigger direct file save stream
   let frame = document.getElementById('hidden-download-iframe');
   if (!frame) {
     frame = document.createElement('iframe');
@@ -147,15 +149,7 @@ function saveFileImmediately(directUrl, fileName) {
     frame.style.display = 'none';
     document.body.appendChild(frame);
   }
-  frame.src = directUrl;
-
-  const a = document.createElement('a');
-  a.href = directUrl;
-  a.download = fileName;
-  a.target = '_self';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => a.remove(), 400);
+  frame.src = gdriveDirectUrl;
 
   closeDownloadBypassModal();
 }
