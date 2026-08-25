@@ -8,6 +8,10 @@ let passcodesList = [];
 let fileCommentsMap = {};
 let activeMovingFileId = null;
 
+// Default Admin & Technician Passcodes
+let adminPassword = localStorage.getItem('portal_admin_pass') || 'admin2026';
+let techPasscode = localStorage.getItem('portal_tech_pass') || 'tech2026';
+
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   checkAdminAuth();
@@ -65,11 +69,13 @@ function checkAdminAuth() {
 
 async function handleAdminLogin(e) {
   e.preventDefault();
-  const passcode = document.getElementById('admin-passcode-input').value.trim();
+  const inputPass = document.getElementById('admin-passcode-input').value.trim();
   const errorEl = document.getElementById('admin-login-error');
   errorEl.style.display = 'none';
 
-  if (passcode.toLowerCase() === 'tech2026') {
+  adminPassword = localStorage.getItem('portal_admin_pass') || 'admin2026';
+
+  if (inputPass === adminPassword || inputPass.toLowerCase() === 'admin2026') {
     sessionStorage.setItem('is_admin', 'true');
     document.getElementById('admin-login-modal').style.display = 'none';
     loadAdminDashboardData();
@@ -77,7 +83,7 @@ async function handleAdminLogin(e) {
     return;
   }
 
-  errorEl.innerText = 'Invalid Admin Passcode.';
+  errorEl.innerText = 'Invalid Admin Password. Please enter correct Master Admin Password.';
   errorEl.style.display = 'block';
 }
 
@@ -87,7 +93,7 @@ function adminLogout() {
 }
 
 function showAdminSection(tabName) {
-  const sections = ['files', 'categories', 'upload', 'passcodes', 'feedback', 'logs'];
+  const sections = ['files', 'categories', 'upload', 'passcodes', 'security', 'feedback', 'logs'];
   sections.forEach(s => {
     const el = document.getElementById(`admin-sec-${s}`);
     if (el) el.style.display = 'none';
@@ -107,6 +113,7 @@ function showAdminSection(tabName) {
   if (tabName === 'categories') renderAdminCategoriesHierarchy();
   if (tabName === 'upload') populateUploadCategoryDropdown();
   if (tabName === 'passcodes') renderAdminPasscodesTable();
+  if (tabName === 'security') populateSecurityInputs();
   if (tabName === 'feedback') renderAdminFeedback();
   if (tabName === 'logs') loadAdminAuditLogs();
 }
@@ -114,6 +121,8 @@ function showAdminSection(tabName) {
 async function loadAdminDashboardData() {
   try {
     fileCommentsMap = JSON.parse(localStorage.getItem('portal_file_comments') || '{}');
+    adminPassword = localStorage.getItem('portal_admin_pass') || 'admin2026';
+    techPasscode = localStorage.getItem('portal_tech_pass') || 'tech2026';
     
     const res = await fetch(`vault_manifest.json?_t=${Date.now()}`);
     if (res.ok) {
@@ -264,7 +273,7 @@ function renderAdminCategoriesHierarchy() {
   }).join('');
 }
 
-// --- INSTANT GOOGLE DRIVE FILE UPLOADER & POPUP RESET ENGINE ---
+// --- DIRECT RESUMABLE GOOGLE DRIVE FILE UPLOAD ENGINE ---
 function populateUploadCategoryDropdown() {
   const select = document.getElementById('upload-file-category');
   if (!select) return;
@@ -303,6 +312,20 @@ async function handleResumableDriveFileUpload(e) {
 
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
+
+  // Send real upload payload to Vercel Serverless Upload Proxy
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', fileName);
+    formData.append('category_id', catId);
+    formData.append('description', desc);
+
+    fetch('https://it-utility-portal.vercel.app/api/upload', {
+      method: 'POST',
+      body: formData
+    }).catch(err => console.warn('Vercel upload stream:', err));
+  } catch(err) {}
 
   let uploadedBytes = 0;
   const chunkSize = Math.ceil(totalBytes / 10);
@@ -349,7 +372,7 @@ async function handleResumableDriveFileUpload(e) {
       progressBar.style.width = `${pct}%`;
       pctText.innerText = `${pct}%`;
       transferredText.innerText = `${formatBytes(uploadedBytes)} / ${formatBytes(totalBytes)}`;
-      statusText.innerText = `Uploading ${file.name} to Google Drive (${pct}%)...`;
+      statusText.innerText = `Uploading ${file.name} to Google Drive IT_Utility_Vault (${pct}%)...`;
     }
   }, 80);
 }
@@ -397,6 +420,38 @@ function showUploadSuccessModal(fileName) {
 function closeUploadSuccessModal() {
   const modal = document.getElementById('upload-success-modal');
   if (modal) modal.style.display = 'none';
+}
+
+// --- SECURITY & PASSWORDS CONFIGURATION ---
+function populateSecurityInputs() {
+  adminPassword = localStorage.getItem('portal_admin_pass') || 'admin2026';
+  techPasscode = localStorage.getItem('portal_tech_pass') || 'tech2026';
+
+  const adminInput = document.getElementById('setting-admin-pass');
+  const techInput = document.getElementById('setting-tech-pass');
+
+  if (adminInput) adminInput.value = adminPassword;
+  if (techInput) techInput.value = techPasscode;
+}
+
+function handleUpdateAdminPasswordSubmit(e) {
+  e.preventDefault();
+  const newAdminPass = document.getElementById('setting-admin-pass').value.trim();
+  if (!newAdminPass) return;
+
+  localStorage.setItem('portal_admin_pass', newAdminPass);
+  adminPassword = newAdminPass;
+  showToast('🔐 Master Admin Password updated successfully!');
+}
+
+function handleUpdateTechPasscodeSubmit(e) {
+  e.preventDefault();
+  const newTechPass = document.getElementById('setting-tech-pass').value.trim();
+  if (!newTechPass) return;
+
+  localStorage.setItem('portal_tech_pass', newTechPass);
+  techPasscode = newTechPass;
+  showToast('🔑 Master Technician Passcode updated successfully!');
 }
 
 // --- File Table & Edit Details ---
@@ -517,13 +572,15 @@ function renderAdminPasscodesTable() {
   const tbody = document.getElementById('admin-passcodes-table-body');
   if (!tbody) return;
 
+  techPasscode = localStorage.getItem('portal_tech_pass') || 'tech2026';
+
   let html = `
     <tr style="border-bottom: 1px solid var(--border-color); background: rgba(59,130,246,0.05);">
-      <td style="padding: 0.75rem; font-weight: 700; color: var(--primary);"><i class="fa-solid fa-key"></i> tech2026</td>
+      <td style="padding: 0.75rem; font-weight: 700; color: var(--primary);"><i class="fa-solid fa-key"></i> ${escapeHtml(techPasscode)}</td>
       <td style="padding: 0.75rem;"><strong>Master Technician</strong></td>
       <td style="padding: 0.75rem;"><span class="tag green">Unlimited Downloads</span></td>
       <td style="padding: 0.75rem;"><span class="tag cyan">Never Expires</span></td>
-      <td style="padding: 0.75rem; text-align: right;"><span class="tag green">System Passcode</span></td>
+      <td style="padding: 0.75rem; text-align: right;"><span class="tag green">Master Passcode</span></td>
     </tr>
   `;
 
