@@ -73,7 +73,7 @@ function clientLogout() {
   showToast('Vault Locked. Logged out successfully.');
 }
 
-// --- FULL BINARY FILE DIRECT DOWNLOAD ENGINE ---
+// --- AUTOMATIC VERCEL SERVERLESS STREAM DIRECT DOWNLOAD ENGINE ---
 function triggerDirectDownload(fileId, fileName) {
   // Increment Download Counter
   const fileObj = allFilesList.find(f => (f.file_key || '').includes(fileId) || f.id == fileId);
@@ -95,7 +95,7 @@ function openDownloadBypassModal(fileId, fileName) {
     document.body.appendChild(modal);
   }
 
-  const gdriveViewUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+  const mirrorUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
 
   modal.innerHTML = `
     <div class="modal-card" style="text-align: center; max-width: 460px; padding: 1.75rem;" onclick="event.stopPropagation()">
@@ -114,14 +114,14 @@ function openDownloadBypassModal(fileId, fileName) {
       <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.35rem;">Download full uncorrupted file directly to your PC.</p>
 
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <!-- Option 1: Direct Full Binary File Download -->
+        <!-- Option 1: Automatic Vercel Serverless Stream Download -->
         <button onclick="saveFileImmediately('${fileId}', '${escapeHtml(fileName)}')" class="btn-download" style="background: var(--primary); text-align: center; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">
           <i class="fa-solid fa-download"></i> Click Here to Save File Immediately
         </button>
 
-        <!-- Option 2: Alternative Google Drive View Link -->
-        <a href="${gdriveViewUrl}" target="_blank" class="btn-secondary" style="text-decoration: none; text-align: center; justify-content: center; font-size: 0.85rem; padding: 0.65rem; color: var(--text-muted);">
-          <i class="fa-solid fa-folder-open"></i> Open in Google Drive
+        <!-- Option 2: Alternative Google Drive Mirror Link on Bottom -->
+        <a href="${mirrorUrl}" target="_blank" class="btn-secondary" style="text-decoration: none; text-align: center; justify-content: center; font-size: 0.85rem; padding: 0.65rem; color: var(--text-muted);">
+          <i class="fa-solid fa-folder-open"></i> Alternative Google Mirror Link
         </a>
       </div>
     </div>
@@ -135,25 +135,25 @@ function closeDownloadBypassModal() {
   if (modal) modal.style.display = 'none';
 }
 
-// Option 1: Direct full binary file download without HTML truncation
+// Option 1: Automatic Vercel serverless stream download straight to browser download bar
 function saveFileImmediately(fileId, fileName) {
-  showToast(`🚚 Downloading ${fileName} directly...`);
+  showToast(`🚚 Starting automatic download for ${fileName}...`);
 
-  // Direct download link with confirm=t parameter to stream FULL binary file
-  const fullBinaryUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&authuser=0`;
+  // Direct Vercel Serverless Proxy Stream Endpoint
+  const vercelApiUrl = `/api/download?fileId=${fileId}&fileName=${encodeURIComponent(fileName)}`;
 
-  // Trigger browser download stream
+  // Trigger automatic download stream in current browser session
   const a = document.createElement('a');
-  a.href = fullBinaryUrl;
+  a.href = vercelApiUrl;
   a.download = fileName;
   a.target = '_self';
   document.body.appendChild(a);
   a.click();
   setTimeout(() => a.remove(), 400);
 
-  // Backup fallback
+  // Backup fallback on current window
   setTimeout(() => {
-    window.location.href = fullBinaryUrl;
+    window.location.href = vercelApiUrl;
   }, 600);
 
   closeDownloadBypassModal();
