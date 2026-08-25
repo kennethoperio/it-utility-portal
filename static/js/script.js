@@ -1,5 +1,5 @@
 // IT Utility Portal - Client Application Logic
-const API_BASE = (window.location.pathname.includes('it-utility-portal') || window.location.hostname.includes('github.io')) ? 'static/api' : 'api';
+const VERCEL_API_BASE = 'https://it-utility-portal.vercel.app/api';
 
 let categoriesList = [];
 let allFilesList = [];
@@ -73,7 +73,7 @@ function clientLogout() {
   showToast('Vault Locked. Logged out successfully.');
 }
 
-// --- EXACT DOWNLOAD MODAL FLOW ---
+// --- EXACT DOWNLOAD MODAL FLOW WITH VERCEL SERVERLESS PROXY ---
 function triggerDirectDownload(fileId, fileName) {
   // Increment Download Counter
   const fileObj = allFilesList.find(f => (f.file_key || '').includes(fileId) || f.id == fileId);
@@ -114,7 +114,7 @@ function openDownloadBypassModal(fileId, fileName) {
       <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.35rem;">Download should start automatically in your browser.</p>
 
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <!-- Option 1: Direct Local Save without going to usercontent tab -->
+        <!-- Option 1: Direct Vercel Serverless Stream Download (NO DRIVE USERCONTENT TABS!) -->
         <button onclick="saveFileImmediately('${fileId}', '${escapeHtml(fileName)}')" class="btn-download" style="background: var(--primary); text-align: center; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">
           <i class="fa-solid fa-download"></i> Click Here to Save File Immediately
         </button>
@@ -135,13 +135,13 @@ function closeDownloadBypassModal() {
   if (modal) modal.style.display = 'none';
 }
 
-// Option 1: Save file directly to PC without opening drive.usercontent page
-async function saveFileImmediately(fileId, fileName) {
-  showToast(`🚚 Direct downloading ${fileName}...`);
+// Option 1: Trigger Vercel Serverless Direct Download Stream
+function saveFileImmediately(fileId, fileName) {
+  showToast(`🚚 Direct streaming ${fileName} to PC...`);
 
-  const gdriveDirectUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
+  // Direct Vercel Serverless Proxy Download Link
+  const vercelDownloadUrl = `/api/download?fileId=${fileId}&fileName=${encodeURIComponent(fileName)}`;
 
-  // Use hidden iframe to trigger direct file save stream
   let frame = document.getElementById('hidden-download-iframe');
   if (!frame) {
     frame = document.createElement('iframe');
@@ -149,7 +149,15 @@ async function saveFileImmediately(fileId, fileName) {
     frame.style.display = 'none';
     document.body.appendChild(frame);
   }
-  frame.src = gdriveDirectUrl;
+  frame.src = vercelDownloadUrl;
+
+  const a = document.createElement('a');
+  a.href = vercelDownloadUrl;
+  a.download = fileName;
+  a.target = '_self';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 400);
 
   closeDownloadBypassModal();
 }
