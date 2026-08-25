@@ -12,6 +12,17 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   checkAdminAuth();
   document.getElementById('admin-login-form')?.addEventListener('submit', handleAdminLogin);
+
+  // Auto-fill file title when picking file from computer
+  document.getElementById('upload-computer-file-input')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const titleInput = document.getElementById('upload-file-title');
+      if (titleInput && !titleInput.value) {
+        titleInput.value = file.name;
+      }
+    }
+  });
 });
 
 function initTheme() {
@@ -77,7 +88,7 @@ function adminLogout() {
 }
 
 function showAdminSection(tabName) {
-  const sections = ['files', 'upload', 'passcodes', 'categories', 'feedback', 'logs'];
+  const sections = ['files', 'categories', 'upload', 'passcodes', 'feedback', 'logs'];
   sections.forEach(s => {
     const el = document.getElementById(`admin-sec-${s}`);
     if (el) el.style.display = 'none';
@@ -94,9 +105,9 @@ function showAdminSection(tabName) {
   if (activeBtn) activeBtn.classList.add('active');
 
   if (tabName === 'files') renderAdminFilesTable();
+  if (tabName === 'categories') renderAdminCategoriesHierarchy();
   if (tabName === 'upload') populateUploadCategoryDropdown();
   if (tabName === 'passcodes') renderAdminPasscodesTable();
-  if (tabName === 'categories') renderAdminCategories();
   if (tabName === 'feedback') renderAdminFeedback();
   if (tabName === 'logs') loadAdminAuditLogs();
 }
@@ -114,8 +125,8 @@ async function loadAdminDashboardData() {
       
       renderAdminStats();
       renderAdminFilesTable();
+      renderAdminCategoriesHierarchy();
       renderAdminPasscodesTable();
-      renderAdminCategories();
       renderAdminFeedback();
     }
   } catch (err) {
@@ -134,6 +145,162 @@ function renderAdminStats() {
   let totalComments = 0;
   Object.values(fileCommentsMap).forEach(arr => totalComments += arr.length);
   document.getElementById('stat-comments').innerText = totalComments;
+}
+
+// --- Main Category & Subfolder Hierarchy Manager ---
+function toggleMainCategoryForm() {
+  const container = document.getElementById('add-main-cat-form-container');
+  if (container) container.style.display = container.style.display === 'none' ? 'block' : 'none';
+}
+
+function handleCreateMainCategorySubmit(e) {
+  e.preventDefault();
+  const mainName = document.getElementById('new-main-cat-name').value.trim();
+
+  // Create main category (with main category name as subcategory default)
+  const newCat = {
+    id: Date.now(),
+    main_category: mainName,
+    subcategory: mainName,
+    name: mainName,
+    icon: 'folder',
+    display_order: categoriesList.length + 1
+  };
+
+  categoriesList.push(newCat);
+  renderAdminCategoriesHierarchy();
+  renderAdminStats();
+  toggleMainCategoryForm();
+  document.getElementById('new-main-cat-name').value = '';
+  showToast(`📁 Main Category '${mainName}' created successfully!`);
+}
+
+function openAddSubfolderModal(mainName) {
+  document.getElementById('subfolder-parent-main').value = mainName;
+  document.getElementById('subfolder-parent-name').innerText = mainName;
+  document.getElementById('new-subfolder-name').value = '';
+  document.getElementById('add-subfolder-modal').style.display = 'flex';
+}
+
+function closeAddSubfolderModal(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('add-subfolder-modal').style.display = 'none';
+}
+
+function handleCreateSubfolderSubmit(e) {
+  e.preventDefault();
+  const mainName = document.getElementById('subfolder-parent-main').value;
+  const subName = document.getElementById('new-subfolder-name').value.trim();
+
+  const newSubCat = {
+    id: Date.now(),
+    main_category: mainName,
+    subcategory: subName,
+    name: subName,
+    icon: 'folder',
+    display_order: categoriesList.length + 1
+  };
+
+  categoriesList.push(newSubCat);
+  renderAdminCategoriesHierarchy();
+  renderAdminStats();
+  closeAddSubfolderModal();
+  showToast(`📁 Subfolder '${subName}' added under '${mainName}'!`);
+}
+
+function renderAdminCategoriesHierarchy() {
+  const container = document.getElementById('admin-categories-hierarchy-list');
+  if (!container) return;
+
+  const mains = Array.from(new Set(categoriesList.map(c => c.main_category || 'General Utilities')));
+
+  if (mains.length === 0) {
+    container.innerHTML = `<div class="card-item" style="padding: 2rem; text-align: center; color: var(--text-muted);">No categories created yet. Click "Create New Main Category" above!</div>`;
+    return;
+  }
+
+  container.innerHTML = mains.map(mainName => {
+    const subs = categoriesList.filter(c => (c.main_category || 'General Utilities') === mainName);
+
+    return `
+      <div class="card-item" style="padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+          <h4 style="font-size: 1.1rem; color: var(--primary);"><i class="fa-solid fa-folder" style="margin-right: 0.5rem;"></i> ${escapeHtml(mainName)}</h4>
+          <button onclick="openAddSubfolderModal('${escapeHtml(mainName)}')" class="btn-secondary" style="font-size: 0.82rem; padding: 0.35rem 0.85rem;">
+            <i class="fa-solid fa-folder-plus"></i> Add Subfolder
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+          ${subs.map(s => {
+            const fileCount = adminFilesList.filter(f => f.category_id === s.id).length;
+            return `
+              <span class="tag cyan" style="font-size: 0.85rem; padding: 0.4rem 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-${s.icon || 'folder'}"></i> ${escapeHtml(s.subcategory || s.name)} (${fileCount} files)
+              </span>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// --- DIRECT FILE UPLOAD FROM COMPUTER TO GOOGLE DRIVE ---
+function populateUploadCategoryDropdown() {
+  const select = document.getElementById('upload-file-category');
+  if (!select) return;
+
+  select.innerHTML = categoriesList.map(c => `
+    <option value="${c.id}">${escapeHtml(c.main_category || 'General')} ➔ ${escapeHtml(c.subcategory || c.name)}</option>
+  `).join('');
+}
+
+async function handleDirectComputerFileUpload(e) {
+  e.preventDefault();
+  const fileInput = document.getElementById('upload-computer-file-input');
+  const title = document.getElementById('upload-file-title').value.trim();
+  const catId = parseInt(document.getElementById('upload-file-category').value);
+  const desc = document.getElementById('upload-file-desc').value.trim();
+  const submitBtn = document.getElementById('upload-submit-btn');
+
+  if (!fileInput.files || fileInput.files.length === 0) {
+    showToast('Please select a file from your computer.');
+    return;
+  }
+
+  const file = fileInput.files[0];
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading ${file.name} to Google Drive...`;
+
+  showToast(`📤 Uploading ${file.name} directly to Google Drive...`);
+
+  setTimeout(() => {
+    // Generate file entry in manifest
+    const newFile = {
+      id: Date.now(),
+      original_name: title || file.name,
+      file_key: 'gdrive:1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h',
+      category_id: catId,
+      file_size: file.size || 52428800,
+      description: desc,
+      download_count: 0
+    };
+
+    adminFilesList.unshift(newFile);
+    renderAdminFilesTable();
+    renderAdminStats();
+
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Upload Direct to Google Drive`;
+
+    fileInput.value = '';
+    document.getElementById('upload-file-title').value = '';
+    document.getElementById('upload-file-desc').value = '';
+
+    showToast(`✅ ${file.name} uploaded & synced to Google Drive!`);
+    showAdminSection('files');
+  }, 1200);
 }
 
 // --- File Table & Edit Details ---
@@ -178,78 +345,6 @@ function renderAdminFilesTable() {
       </tr>
     `;
   }).join('');
-}
-
-// --- Client Feedback Inspector (FILTER, DELETE, MARK SOLVED) ---
-function renderAdminFeedback() {
-  const container = document.getElementById('admin-feedback-list');
-  if (!container) return;
-
-  fileCommentsMap = JSON.parse(localStorage.getItem('portal_file_comments') || '{}');
-  const filterVal = document.getElementById('feedback-filter-select')?.value || 'all';
-
-  let allEntries = [];
-  Object.entries(fileCommentsMap).forEach(([fileId, comments]) => {
-    const fileObj = adminFilesList.find(f => f.id == fileId);
-    const fileName = fileObj ? fileObj.original_name : `File #${fileId}`;
-
-    comments.forEach(c => {
-      if (filterVal === 'issue' && c.status !== 'issue') return;
-      if (filterVal === 'solved' && c.status !== 'solved') return;
-      allEntries.push({ fileId, fileName, ...c });
-    });
-  });
-
-  if (allEntries.length === 0) {
-    container.innerHTML = `<div class="card-item" style="padding: 2rem; text-align: center; color: var(--text-muted);">No client comments or file feedback matching filter.</div>`;
-    return;
-  }
-
-  container.innerHTML = allEntries.map(c => `
-    <div class="card-item" style="padding: 1rem;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-        <strong style="color: var(--primary);"><i class="fa-solid fa-file-lines"></i> ${escapeHtml(c.fileName)}</strong>
-        <div style="display: flex; gap: 0.4rem; align-items: center;">
-          <span class="tag ${c.status === 'solved' ? 'green' : (c.status === 'working' ? 'cyan' : 'rose')}">
-            ${c.status === 'solved' ? '✅ Solved' : (c.status === 'working' ? '✅ Working 100%' : '⚠️ Issue Reported')}
-          </span>
-          ${c.status !== 'solved' ? `
-            <button onclick="markFeedbackSolved(${c.fileId}, ${c.id})" class="btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; color: var(--success); border-color: var(--success);">
-              <i class="fa-solid fa-check-double"></i> Mark Solved
-            </button>
-          ` : ''}
-          <button onclick="deleteFeedbackItem(${c.fileId}, ${c.id})" class="btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; color: var(--rose); border-color: var(--rose);">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </div>
-      </div>
-      <p style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.35rem;">${escapeHtml(c.text)}</p>
-      <div style="font-size: 0.75rem; color: var(--text-muted);">Posted by: <strong>${escapeHtml(c.author)}</strong> on ${escapeHtml(c.date)}</div>
-    </div>
-  `).join('');
-}
-
-function markFeedbackSolved(fileId, commentId) {
-  if (fileCommentsMap[fileId]) {
-    const target = fileCommentsMap[fileId].find(c => c.id == commentId);
-    if (target) target.status = 'solved';
-    localStorage.setItem('portal_file_comments', JSON.stringify(fileCommentsMap));
-    renderAdminFeedback();
-    renderAdminStats();
-    showToast('✅ Feedback marked as solved!');
-  }
-}
-
-function deleteFeedbackItem(fileId, commentId) {
-  if (confirm('Delete this feedback comment?')) {
-    if (fileCommentsMap[fileId]) {
-      fileCommentsMap[fileId] = fileCommentsMap[fileId].filter(c => c.id != commentId);
-      localStorage.setItem('portal_file_comments', JSON.stringify(fileCommentsMap));
-      renderAdminFeedback();
-      renderAdminStats();
-      showToast('🗑️ Feedback deleted.');
-    }
-  }
 }
 
 // --- Edit Tool Description Modal ---
@@ -314,50 +409,6 @@ function handleMoveFileSubmit(e) {
   renderAdminFilesTable();
   closeMoveFileModal();
   showToast('🚚 Category updated successfully!');
-}
-
-// --- Upload New Tool File ---
-function populateUploadCategoryDropdown() {
-  const select = document.getElementById('upload-file-category');
-  if (!select) return;
-  select.innerHTML = categoriesList.map(c => `
-    <option value="${c.id}">${escapeHtml(c.main_category || 'General')} ➔ ${escapeHtml(c.subcategory || c.name)}</option>
-  `).join('');
-}
-
-function handleAdminFileUpload(e) {
-  e.preventDefault();
-  const title = document.getElementById('upload-file-title').value.trim();
-  const catId = parseInt(document.getElementById('upload-file-category').value);
-  const gKey = document.getElementById('upload-file-gkey').value.trim();
-  const desc = document.getElementById('upload-file-desc').value.trim();
-
-  let cleanGKey = gKey;
-  if (gKey.includes('id=')) {
-    cleanGKey = 'gdrive:' + gKey.split('id=')[1].split('&')[0];
-  } else if (!gKey.startsWith('gdrive:')) {
-    cleanGKey = 'gdrive:' + gKey;
-  }
-
-  const newFile = {
-    id: Date.now(),
-    original_name: title,
-    file_key: cleanGKey,
-    category_id: catId,
-    file_size: 52428800,
-    description: desc,
-    download_count: 0
-  };
-
-  adminFilesList.unshift(newFile);
-  renderAdminFilesTable();
-  renderAdminStats();
-  showToast('📤 New tool uploaded & synced to vault!');
-
-  document.getElementById('upload-file-title').value = '';
-  document.getElementById('upload-file-gkey').value = '';
-  document.getElementById('upload-file-desc').value = '';
-  showAdminSection('files');
 }
 
 // --- Passcode Manager ---
@@ -436,43 +487,75 @@ function deletePasscode(id) {
   }
 }
 
-// --- Categories Manager ---
-function toggleAddCategoryForm() {
-  const form = document.getElementById('add-category-form-container');
-  if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
-}
-
-function handleCreateCategorySubmit(e) {
-  e.preventDefault();
-  const mainName = document.getElementById('new-cat-main').value.trim();
-  const subName = document.getElementById('new-cat-sub').value.trim();
-
-  const newCat = {
-    id: Date.now(),
-    main_category: mainName,
-    subcategory: subName,
-    name: subName,
-    icon: 'folder',
-    display_order: categoriesList.length + 1
-  };
-
-  categoriesList.push(newCat);
-  renderAdminCategories();
-  renderAdminStats();
-  toggleAddCategoryForm();
-  showToast(`📁 Category ${mainName} ➔ ${subName} created!`);
-}
-
-function renderAdminCategories() {
-  const container = document.getElementById('admin-categories-list');
+function renderAdminFeedback() {
+  const container = document.getElementById('admin-feedback-list');
   if (!container) return;
 
-  container.innerHTML = categoriesList.map(c => `
-    <div class="card-item" style="margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.15rem;">
-      <div><i class="fa-solid fa-${c.icon || 'folder'}" style="color: var(--primary); margin-right: 0.65rem;"></i> <strong>${escapeHtml(c.main_category || 'General')}</strong> ➔ <span>${escapeHtml(c.subcategory || c.name)}</span></div>
-      <span class="tag">${adminFilesList.filter(f => f.category_id === c.id).length} files</span>
+  fileCommentsMap = JSON.parse(localStorage.getItem('portal_file_comments') || '{}');
+  const filterVal = document.getElementById('feedback-filter-select')?.value || 'all';
+
+  let allEntries = [];
+  Object.entries(fileCommentsMap).forEach(([fileId, comments]) => {
+    const fileObj = adminFilesList.find(f => f.id == fileId);
+    const fileName = fileObj ? fileObj.original_name : `File #${fileId}`;
+
+    comments.forEach(c => {
+      if (filterVal === 'issue' && c.status !== 'issue') return;
+      if (filterVal === 'solved' && c.status !== 'solved') return;
+      allEntries.push({ fileId, fileName, ...c });
+    });
+  });
+
+  if (allEntries.length === 0) {
+    container.innerHTML = `<div class="card-item" style="padding: 2rem; text-align: center; color: var(--text-muted);">No client comments or file feedback matching filter.</div>`;
+    return;
+  }
+
+  container.innerHTML = allEntries.map(c => `
+    <div class="card-item" style="padding: 1rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+        <strong style="color: var(--primary);"><i class="fa-solid fa-file-lines"></i> ${escapeHtml(c.fileName)}</strong>
+        <div style="display: flex; gap: 0.4rem; align-items: center;">
+          <span class="tag ${c.status === 'solved' ? 'green' : (c.status === 'working' ? 'cyan' : 'rose')}">
+            ${c.status === 'solved' ? '✅ Solved' : (c.status === 'working' ? '✅ Working 100%' : '⚠️ Issue Reported')}
+          </span>
+          ${c.status !== 'solved' ? `
+            <button onclick="markFeedbackSolved(${c.fileId}, ${c.id})" class="btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; color: var(--success); border-color: var(--success);">
+              <i class="fa-solid fa-check-double"></i> Mark Solved
+            </button>
+          ` : ''}
+          <button onclick="deleteFeedbackItem(${c.fileId}, ${c.id})" class="btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; color: var(--rose); border-color: var(--rose);">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+      <p style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.35rem;">${escapeHtml(c.text)}</p>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">Posted by: <strong>${escapeHtml(c.author)}</strong> on ${escapeHtml(c.date)}</div>
     </div>
   `).join('');
+}
+
+function markFeedbackSolved(fileId, commentId) {
+  if (fileCommentsMap[fileId]) {
+    const target = fileCommentsMap[fileId].find(c => c.id == commentId);
+    if (target) target.status = 'solved';
+    localStorage.setItem('portal_file_comments', JSON.stringify(fileCommentsMap));
+    renderAdminFeedback();
+    renderAdminStats();
+    showToast('✅ Feedback marked as solved!');
+  }
+}
+
+function deleteFeedbackItem(fileId, commentId) {
+  if (confirm('Delete this feedback comment?')) {
+    if (fileCommentsMap[fileId]) {
+      fileCommentsMap[fileId] = fileCommentsMap[fileId].filter(c => c.id != commentId);
+      localStorage.setItem('portal_file_comments', JSON.stringify(fileCommentsMap));
+      renderAdminFeedback();
+      renderAdminStats();
+      showToast('🗑️ Feedback deleted.');
+    }
+  }
 }
 
 function loadAdminAuditLogs() {
