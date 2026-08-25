@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Utility Vault</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/nextgen_style.css?v=12.0">
+  <link rel="stylesheet" href="css/nextgen_style.css?v=13.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -17,7 +17,6 @@
       <span>Technician Control Dashboard</span>
     </a>
     <div style="display: flex; gap: 0.85rem; align-items: center;">
-      <!-- Light / Dark Mode Toggle Button -->
       <button onclick="toggleTheme()" class="btn-secondary" title="Toggle Light/Dark Theme">
         <i id="theme-icon" class="fa-solid fa-sun"></i> <span id="theme-text">Light Mode</span>
       </button>
@@ -31,7 +30,7 @@
     </div>
   </nav>
 
-  <!-- Login Overlay / Modal -->
+  <!-- Login Modal -->
   <div id="admin-login-modal" class="modal-overlay" style="display: none;">
     <div class="modal-card" style="text-align: center;">
       <div class="card-icon" style="margin: 0 auto 1.25rem; width: 56px; height: 56px; font-size: 1.5rem;">
@@ -54,7 +53,7 @@
   <!-- Main Container -->
   <main class="main-content" style="max-width: 1240px; margin: 0 auto;">
     
-    <!-- Stats Cards Summary Grid -->
+    <!-- Stats Summary Grid -->
     <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1.75rem;">
       <div class="card-item" style="padding: 1.15rem;">
         <div style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-solid fa-box-archive"></i> Total Vault Files</div>
@@ -69,8 +68,8 @@
         <div style="font-size: 1.75rem; font-weight: 800; color: var(--amber); margin-top: 0.25rem;" id="stat-categories">0</div>
       </div>
       <div class="card-item" style="padding: 1.15rem;">
-        <div style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-solid fa-comments"></i> Total Feedback</div>
-        <div style="font-size: 1.75rem; font-weight: 800; color: var(--primary); margin-top: 0.25rem;" id="stat-comments">0</div>
+        <div style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-solid fa-key"></i> Active Passcodes</div>
+        <div style="font-size: 1.75rem; font-weight: 800; color: var(--primary); margin-top: 0.25rem;" id="stat-passcodes">0</div>
       </div>
     </div>
 
@@ -78,9 +77,10 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
       <div class="tab-navigation" style="margin-bottom: 0;">
         <button class="tab-link active" onclick="showAdminSection('files')"><i class="fa-solid fa-file-lines"></i> File Management</button>
+        <button class="tab-link" onclick="showAdminSection('upload')"><i class="fa-solid fa-cloud-arrow-up"></i> Upload New Tool</button>
+        <button class="tab-link" onclick="showAdminSection('passcodes')"><i class="fa-solid fa-key"></i> Passcode Manager</button>
+        <button class="tab-link" onclick="showAdminSection('categories')"><i class="fa-solid fa-folder-plus"></i> Categories & Folders</button>
         <button class="tab-link" onclick="showAdminSection('feedback')"><i class="fa-solid fa-comments"></i> Client Feedback</button>
-        <button class="tab-link" onclick="showAdminSection('categories')"><i class="fa-solid fa-folder-plus"></i> Categories</button>
-        <button class="tab-link" onclick="showAdminSection('passcodes')"><i class="fa-solid fa-key"></i> Guest Passcodes</button>
         <button class="tab-link" onclick="showAdminSection('logs')"><i class="fa-solid fa-list-ul"></i> Audit Logs</button>
       </div>
 
@@ -94,7 +94,7 @@
       </div>
     </div>
 
-    <!-- File Management Section -->
+    <!-- Section 1: File Management -->
     <section id="admin-sec-files" class="card-item" style="padding: 1.5rem;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
         <h3 style="font-size: 1.2rem;"><i class="fa-solid fa-toolbox" style="color: var(--primary);"></i> Vault Files & Software Tools</h3>
@@ -107,41 +107,137 @@
         <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
           <thead>
             <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
-              <th style="padding: 0.8rem;">Filename</th>
-              <th style="padding: 0.8rem;">Category</th>
+              <th style="padding: 0.8rem;">Filename & Description</th>
+              <th style="padding: 0.8rem;">Category / Subfolder</th>
               <th style="padding: 0.8rem;">Size</th>
-              <th style="padding: 0.8rem;">Feedback</th>
+              <th style="padding: 0.8rem;">Downloads</th>
               <th style="padding: 0.8rem; text-align: right;">Actions</th>
             </tr>
           </thead>
           <tbody id="admin-files-table-body">
-            <!-- Table rows -->
+            <!-- File rows -->
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- Client Feedback Section -->
-    <section id="admin-sec-feedback" class="card-item" style="padding: 1.5rem; display: none;">
-      <h3 style="margin-bottom: 1.25rem;"><i class="fa-solid fa-comments" style="color: var(--primary);"></i> Client & Technician Comments Feedback</h3>
-      <div id="admin-feedback-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <!-- Feedback list -->
+    <!-- Section 2: Upload New Tool File -->
+    <section id="admin-sec-upload" class="card-item" style="padding: 1.5rem; display: none;">
+      <h3 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Upload New Software Tool to Vault</h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Add a new utility file or driver. Files automatically sync across client portal and Google Drive.</p>
+
+      <form id="admin-upload-form" onsubmit="handleAdminFileUpload(event)">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div>
+            <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">File Name / Display Title</label>
+            <input type="text" id="upload-file-title" placeholder="e.g. Epson_L3210_Driver_x64.exe" required style="width: 100%; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.9rem;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">Target Category / Subfolder</label>
+            <select id="upload-file-category" style="width: 100%; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.9rem;" required>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">Google Drive File ID or Download Link</label>
+          <input type="text" id="upload-file-gkey" placeholder="e.g. 1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h or full GDrive URL" required style="width: 100%; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.9rem;">
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+          <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">Tool Description & Instructions</label>
+          <textarea id="upload-file-desc" placeholder="Provide helpful description, OS compatibility, or usage instructions..." required style="width: 100%; height: 80px; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.9rem; resize: none;"></textarea>
+        </div>
+
+        <button type="submit" class="btn-download" style="background: var(--primary);"><i class="fa-solid fa-plus"></i> Add Tool to Vault Now</button>
+      </form>
+    </section>
+
+    <!-- Section 3: Passcode Manager (Validity, Max Downloads, Add/Revoke) -->
+    <section id="admin-sec-passcodes" class="card-item" style="padding: 1.5rem; display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3><i class="fa-solid fa-key" style="color: var(--primary);"></i> Passcode Access Control & Limits Manager</h3>
+        <button onclick="toggleAddPasscodeForm()" class="btn-secondary"><i class="fa-solid fa-plus"></i> Create New Passcode</button>
+      </div>
+
+      <!-- Add New Passcode Form -->
+      <div id="add-passcode-form-container" style="display: none; background: var(--bg-input); border: 1px solid var(--border-color); padding: 1.25rem; border-radius: 10px; margin-bottom: 1.5rem;">
+        <h4 style="margin-bottom: 0.85rem; color: var(--primary); font-size: 1rem;"><i class="fa-solid fa-plus-circle"></i> Create Custom Client Access Passcode</h4>
+        <form onsubmit="handleCreatePasscodeSubmit(event)">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; margin-bottom: 1rem;">
+            <div>
+              <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Passcode String</label>
+              <input type="text" id="new-pass-code" placeholder="e.g. CLIENT2026" required style="width: 100%; padding: 0.55rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Client Name / Label</label>
+              <input type="text" id="new-pass-label" placeholder="e.g. ABC Company Repair" required style="width: 100%; padding: 0.55rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Expiration Date (Validity)</label>
+              <input type="date" id="new-pass-validity" style="width: 100%; padding: 0.55rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Max Downloads Limit (0 = Unlimited)</label>
+              <input type="number" id="new-pass-max-downloads" value="5" min="0" required style="width: 100%; padding: 0.55rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem;">
+            </div>
+          </div>
+          <button type="submit" class="btn-download" style="background: var(--primary);"><i class="fa-solid fa-check"></i> Generate & Save Passcode</button>
+        </form>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
+              <th style="padding: 0.75rem;">Passcode</th>
+              <th style="padding: 0.75rem;">Client Label</th>
+              <th style="padding: 0.75rem;">Download Usage</th>
+              <th style="padding: 0.75rem;">Validity Expiration</th>
+              <th style="padding: 0.75rem; text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="admin-passcodes-table-body">
+            <!-- Passcodes rows -->
+          </tbody>
+        </table>
       </div>
     </section>
 
-    <!-- Categories Section -->
+    <!-- Section 4: Categories & Folders -->
     <section id="admin-sec-categories" class="card-item" style="padding: 1.5rem; display: none;">
-      <h3 style="margin-bottom: 1.25rem;"><i class="fa-solid fa-folder-plus" style="color: var(--primary);"></i> Vault Categories & Hierarchy</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h3><i class="fa-solid fa-folder-plus" style="color: var(--primary);"></i> Vault Categories & Subfolders</h3>
+        <button onclick="toggleAddCategoryForm()" class="btn-secondary"><i class="fa-solid fa-folder-plus"></i> Create New Folder / Category</button>
+      </div>
+
+      <div id="add-category-form-container" style="display: none; background: var(--bg-input); border: 1px solid var(--border-color); padding: 1.25rem; border-radius: 10px; margin-bottom: 1.5rem;">
+        <h4 style="margin-bottom: 0.85rem; color: var(--primary); font-size: 1rem;"><i class="fa-solid fa-folder-plus"></i> Create New Category Folder</h4>
+        <form onsubmit="handleCreateCategorySubmit(event)">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1rem;">
+            <div>
+              <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Main Category Name</label>
+              <input type="text" id="new-cat-main" placeholder="e.g. Printers & Drivers" required style="width: 100%; padding: 0.55rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Subfolder Name</label>
+              <input type="text" id="new-cat-sub" placeholder="e.g. Epson L3210" required style="width: 100%; padding: 0.55rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem;">
+            </div>
+          </div>
+          <button type="submit" class="btn-download" style="background: var(--primary);"><i class="fa-solid fa-check"></i> Create Folder Category</button>
+        </form>
+      </div>
+
       <div id="admin-categories-list"></div>
     </section>
 
-    <!-- Passcodes Section -->
-    <section id="admin-sec-passcodes" class="card-item" style="padding: 1.5rem; display: none;">
-      <h3 style="margin-bottom: 1.25rem;"><i class="fa-solid fa-key" style="color: var(--primary);"></i> Passcodes Management</h3>
-      <div id="admin-passcodes-list"></div>
+    <!-- Section 5: Feedback -->
+    <section id="admin-sec-feedback" class="card-item" style="padding: 1.5rem; display: none;">
+      <h3 style="margin-bottom: 1.25rem;"><i class="fa-solid fa-comments" style="color: var(--primary);"></i> Client Feedback & Reports</h3>
+      <div id="admin-feedback-list"></div>
     </section>
 
-    <!-- Audit Logs Section -->
+    <!-- Section 6: Audit Logs -->
     <section id="admin-sec-logs" class="card-item" style="padding: 1.5rem; display: none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
         <h3><i class="fa-solid fa-shield-cat" style="color: var(--primary);"></i> Activity Audit Logs</h3>
@@ -168,23 +264,61 @@
     </section>
   </main>
 
-  <!-- Move File Modal -->
-  <div id="move-file-modal" class="modal-overlay" style="display: none;">
-    <div class="modal-card">
-      <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-truck-ramp-box" style="color: var(--primary);"></i> Move File Category</h3>
-      <p id="move-file-name" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;"></p>
+  <!-- Move File Modal (WITH PROMINENT CLOSE AND CANCEL BUTTONS) -->
+  <div id="move-file-modal" class="modal-overlay" style="display: none;" onclick="closeMoveFileModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="font-size: 1.15rem; color: var(--text-main);"><i class="fa-solid fa-truck-ramp-box" style="color: var(--primary);"></i> Move File Category</h3>
+        <!-- Prominent Close Button -->
+        <button onclick="closeMoveFileModal(event)" class="btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 1.1rem; border: none;">&times;</button>
+      </div>
+      
+      <p id="move-file-name" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem; font-weight: 600;"></p>
       
       <form id="move-file-form" onsubmit="handleMoveFileSubmit(event)">
         <input type="hidden" id="move-file-id">
-        <select id="move-file-target-category" style="width: 100%; padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.95rem; margin-bottom: 1.5rem; outline: none;" required>
+        <select id="move-file-target-category" style="width: 100%; padding: 0.75rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.92rem; margin-bottom: 1.5rem; outline: none;" required>
         </select>
-        <button type="submit" class="btn-download" style="background: var(--primary);"><i class="fa-solid fa-check"></i> Save New Category</button>
+        
+        <div style="display: flex; gap: 0.75rem;">
+          <button type="button" onclick="closeMoveFileModal(event)" class="btn-secondary" style="flex: 1; padding: 0.75rem; text-align: center;">Cancel</button>
+          <button type="submit" class="btn-download" style="flex: 2; background: var(--primary);"><i class="fa-solid fa-check"></i> Save New Category</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit File Description Modal -->
+  <div id="edit-file-modal" class="modal-overlay" style="display: none;" onclick="closeEditFileModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="font-size: 1.15rem; color: var(--text-main);"><i class="fa-solid fa-pen-to-square" style="color: var(--primary);"></i> Edit Tool Details</h3>
+        <button onclick="closeEditFileModal(event)" class="btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 1.1rem; border: none;">&times;</button>
+      </div>
+
+      <form id="edit-file-form" onsubmit="handleEditFileSubmit(event)">
+        <input type="hidden" id="edit-file-id">
+        
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Tool Display Name</label>
+          <input type="text" id="edit-file-title" required style="width: 100%; padding: 0.6rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem;">
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+          <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Tool Description & Notes</label>
+          <textarea id="edit-file-desc" required style="width: 100%; height: 90px; padding: 0.6rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem; resize: none;"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem;">
+          <button type="button" onclick="closeEditFileModal(event)" class="btn-secondary" style="flex: 1; padding: 0.75rem;">Cancel</button>
+          <button type="submit" class="btn-download" style="flex: 2; background: var(--primary);"><i class="fa-solid fa-floppy-disk"></i> Save Details</button>
+        </div>
       </form>
     </div>
   </div>
 
   <div id="toast-box" class="toast-box"></div>
 
-  <script src="js/admin_app.js?v=12.0"></script>
+  <script src="js/admin_app.js?v=13.0"></script>
 </body>
 </html>
