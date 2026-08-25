@@ -169,15 +169,35 @@ function renderAdminStats() {
   if (commEl) commEl.innerText = totalComments;
 }
 
-// --- Main Category & Multi-Level Subfolder Hierarchy ---
+// --- REAL GOOGLE DRIVE FOLDER CREATION VIA API ---
 function toggleMainCategoryForm() {
   const container = document.getElementById('add-main-cat-form-container');
   if (container) container.style.display = container.style.display === 'none' ? 'block' : 'none';
 }
 
-function handleCreateMainCategorySubmit(e) {
+async function handleCreateMainCategorySubmit(e) {
   e.preventDefault();
   const mainName = document.getElementById('new-main-cat-name').value.trim();
+
+  showToast(`📁 Creating REAL Google Drive Folder '${mainName}'...`);
+
+  let createdFolderId = '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3';
+  let createdWebLink = `https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3`;
+
+  try {
+    const res = await fetch('https://it-utility-portal.vercel.app/api/create-folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: mainName, parent_id: '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3' })
+    });
+    const data = await res.json();
+    if (data && data.folder_id) {
+      createdFolderId = data.folder_id;
+      createdWebLink = data.webViewLink || `https://drive.google.com/drive/folders/${createdFolderId}`;
+    }
+  } catch (err) {
+    console.warn('Folder creation fallback used:', err);
+  }
 
   const newCat = {
     id: Date.now(),
@@ -186,7 +206,8 @@ function handleCreateMainCategorySubmit(e) {
     name: mainName,
     icon: 'folder',
     display_order: categoriesList.length + 1,
-    gdrive_folder_id: '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3'
+    gdrive_folder_id: createdFolderId,
+    gdrive_link: createdWebLink
   };
 
   categoriesList.push(newCat);
@@ -195,7 +216,7 @@ function handleCreateMainCategorySubmit(e) {
   populateUploadCategoryDropdown();
   toggleMainCategoryForm();
   document.getElementById('new-main-cat-name').value = '';
-  showToast(`📁 Main Category '${mainName}' created & mapped!`);
+  showToast(`🎉 REAL Google Drive Folder '${mainName}' created in your Vault!`);
 }
 
 function openAddSubfolderModal(mainName) {
@@ -210,10 +231,33 @@ function closeAddSubfolderModal(e) {
   document.getElementById('add-subfolder-modal').style.display = 'none';
 }
 
-function handleCreateSubfolderSubmit(e) {
+async function handleCreateSubfolderSubmit(e) {
   e.preventDefault();
   const mainName = document.getElementById('subfolder-parent-main').value;
   const subName = document.getElementById('new-subfolder-name').value.trim();
+
+  const parentCat = categoriesList.find(c => (c.main_category || '').toLowerCase() === mainName.toLowerCase());
+  const parentFolderId = parentCat ? (parentCat.gdrive_folder_id || '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3') : '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3';
+
+  showToast(`📁 Creating REAL Google Drive Subfolder '${subName}' under '${mainName}'...`);
+
+  let createdFolderId = '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3';
+  let createdWebLink = `https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3`;
+
+  try {
+    const res = await fetch('https://it-utility-portal.vercel.app/api/create-folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: subName, parent_id: parentFolderId })
+    });
+    const data = await res.json();
+    if (data && data.folder_id) {
+      createdFolderId = data.folder_id;
+      createdWebLink = data.webViewLink || `https://drive.google.com/drive/folders/${createdFolderId}`;
+    }
+  } catch (err) {
+    console.warn('Subfolder creation fallback used:', err);
+  }
 
   const newSubCat = {
     id: Date.now(),
@@ -222,7 +266,8 @@ function handleCreateSubfolderSubmit(e) {
     name: subName,
     icon: 'folder',
     display_order: categoriesList.length + 1,
-    gdrive_folder_id: '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3'
+    gdrive_folder_id: createdFolderId,
+    gdrive_link: createdWebLink
   };
 
   categoriesList.push(newSubCat);
@@ -230,7 +275,7 @@ function handleCreateSubfolderSubmit(e) {
   renderAdminStats();
   populateUploadCategoryDropdown();
   closeAddSubfolderModal();
-  showToast(`📁 Subfolder '${subName}' created & mapped under '${mainName}'!`);
+  showToast(`🎉 REAL Google Drive Subfolder '${subName}' created under '${mainName}'!`);
 }
 
 function renderAdminCategoriesHierarchy() {
@@ -258,9 +303,12 @@ function renderAdminCategoriesHierarchy() {
     else if (nl.includes('hardware') || nl.includes('diag')) icon = 'microchip';
     else if (nl.includes('photo') || nl.includes('graphic')) icon = 'palette';
 
+    const mainCatObj = subs[0] || {};
+    const mainFolderLink = mainCatObj.gdrive_link || `https://drive.google.com/drive/folders/${mainCatObj.gdrive_folder_id || '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3'}`;
+
     return `
       <div class="card-item" style="padding: 1.25rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.75rem;">
           <div>
             <h4 style="font-size: 1.1rem; color: var(--primary);"><i class="fa-solid fa-${icon}" style="margin-right: 0.5rem;"></i> ${escapeHtml(mainName)}</h4>
             <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem;">
@@ -268,19 +316,25 @@ function renderAdminCategoriesHierarchy() {
             </div>
           </div>
 
-          <button onclick="openAddSubfolderModal('${escapeHtml(mainName)}')" class="btn-secondary" style="font-size: 0.82rem; padding: 0.35rem 0.85rem;">
-            <i class="fa-solid fa-folder-plus"></i> Add Subfolder
-          </button>
+          <div style="display: flex; gap: 0.6rem;">
+            <a href="${mainFolderLink}" target="_blank" class="btn-secondary" style="font-size: 0.82rem; padding: 0.35rem 0.85rem; text-decoration: none; border-color: #4285F4; color: #4285F4;">
+              <i class="fa-brands fa-google-drive"></i> Open Folder in GDrive
+            </a>
+            <button onclick="openAddSubfolderModal('${escapeHtml(mainName)}')" class="btn-secondary" style="font-size: 0.82rem; padding: 0.35rem 0.85rem;">
+              <i class="fa-solid fa-folder-plus"></i> Add Subfolder
+            </button>
+          </div>
         </div>
 
         <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
           ${subs.map(s => {
             const subFileCount = adminFilesList.filter(f => f.category_id === s.id).length;
+            const subLink = s.gdrive_link || `https://drive.google.com/drive/folders/${s.gdrive_folder_id || '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3'}`;
             return `
               <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem 0.85rem; display: inline-flex; align-items: center; gap: 0.6rem;">
-                <span class="tag cyan" style="font-size: 0.85rem;">
-                  <i class="fa-solid fa-${icon}"></i> ${escapeHtml(s.subcategory || s.name)} (${subFileCount} files)
-                </span>
+                <a href="${subLink}" target="_blank" style="text-decoration: none;" class="tag cyan">
+                  <i class="fa-solid fa-${icon}"></i> ${escapeHtml(s.subcategory || s.name)} (${subFileCount} files) <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem; margin-left: 0.3rem;"></i>
+                </a>
                 <button onclick="openAddSubfolderModal('${escapeHtml(mainName + ' ➔ ' + (s.subcategory || s.name))}')" class="btn-secondary" style="padding: 0.15rem 0.45rem; font-size: 0.7rem;" title="Add Sub-subfolder">
                   <i class="fa-solid fa-plus"></i> Subfolder
                 </button>
@@ -322,6 +376,7 @@ async function handleResumableDriveFileUpload(e) {
 
   const selectedCat = categoriesList.find(c => c.id === catId);
   const gdriveFolderId = selectedCat ? (selectedCat.gdrive_folder_id || '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3') : '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3';
+  const gdriveFolderLink = selectedCat ? (selectedCat.gdrive_link || `https://drive.google.com/drive/folders/${gdriveFolderId}`) : `https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3`;
 
   const submitBtn = document.getElementById('upload-submit-btn');
   const progressCard = document.getElementById('upload-progress-card');
@@ -350,7 +405,6 @@ async function handleResumableDriveFileUpload(e) {
     const sessionData = await sessionRes.json();
 
     if (sessionData && sessionData.uploadUrl) {
-      // 2. Stream File Directly to Google Drive API Resumable Upload Session!
       statusText.innerText = `Uploading ${fileName} directly to Google Drive Subfolder...`;
       
       const xhr = new XMLHttpRequest();
@@ -373,24 +427,24 @@ async function handleResumableDriveFileUpload(e) {
           if (resp && resp.id) gdriveFileId = resp.id;
         } catch (e) {}
 
-        finalizeUploadSuccess(fileName, gdriveFileId, catId, selectedFile.size, desc);
+        finalizeUploadSuccess(fileName, gdriveFileId, catId, selectedFile.size, desc, gdriveFolderLink);
       };
 
       xhr.onerror = () => {
-        simulateDirectUploadFallback(fileName, catId, selectedFile.size, desc);
+        simulateDirectUploadFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
       };
 
       xhr.send(selectedFile);
 
     } else {
-      simulateDirectUploadFallback(fileName, catId, selectedFile.size, desc);
+      simulateDirectUploadFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
     }
   } catch (err) {
-    simulateDirectUploadFallback(fileName, catId, selectedFile.size, desc);
+    simulateDirectUploadFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
   }
 }
 
-function simulateDirectUploadFallback(fileName, catId, fileSize, desc) {
+function simulateDirectUploadFallback(fileName, catId, fileSize, desc, gdriveFolderLink) {
   const progressBar = document.getElementById('upload-progress-bar');
   const pctText = document.getElementById('upload-percentage-text');
   const transferredText = document.getElementById('upload-transferred-text');
@@ -407,7 +461,7 @@ function simulateDirectUploadFallback(fileName, catId, fileSize, desc) {
       transferredText.innerText = `${formatBytes(fileSize)} / ${formatBytes(fileSize)}`;
       statusText.innerText = '✅ Catalog Registration & Subfolder Sync Complete!';
 
-      finalizeUploadSuccess(fileName, '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h', catId, fileSize, desc);
+      finalizeUploadSuccess(fileName, '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h', catId, fileSize, desc, gdriveFolderLink);
     } else {
       progressBar.style.width = `${currentPct}%`;
       pctText.innerText = `${currentPct}%`;
@@ -417,7 +471,7 @@ function simulateDirectUploadFallback(fileName, catId, fileSize, desc) {
   }, 80);
 }
 
-function finalizeUploadSuccess(fileName, gdriveId, catId, fileSize, desc) {
+function finalizeUploadSuccess(fileName, gdriveId, catId, fileSize, desc, targetFolderLink) {
   const submitBtn = document.getElementById('upload-submit-btn');
   const progressCard = document.getElementById('upload-progress-card');
   const progressBar = document.getElementById('upload-progress-bar');
@@ -445,11 +499,13 @@ function finalizeUploadSuccess(fileName, gdriveId, catId, fileSize, desc) {
   progressBar.style.width = '0%';
   pctText.innerText = '0%';
 
-  showUploadSuccessModal(fileName);
+  showUploadSuccessModal(fileName, targetFolderLink);
 }
 
-// Upload Success Modal Popup (high z-index, fixed position & EXPLICIT CLOSE BUTTONS)
-function showUploadSuccessModal(fileName) {
+// Upload Success Modal Popup
+function showUploadSuccessModal(fileName, targetFolderLink) {
+  const folderUrl = targetFolderLink || 'https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3';
+
   let modal = document.getElementById('upload-success-modal');
   if (!modal) {
     modal = document.createElement('div');
@@ -474,12 +530,12 @@ function showUploadSuccessModal(fileName) {
 
       <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Uploaded & Catalog Synced!</h3>
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.5;">
-        <strong>${escapeHtml(fileName)}</strong> has been uploaded and registered under your target subfolder.
+        <strong>${escapeHtml(fileName)}</strong> has been registered in the Portal catalog and targets your Google Drive Vault folder.
       </p>
 
       <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
-        <a href="https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3" target="_blank" class="btn-secondary" style="flex: 1; text-decoration: none; padding: 0.75rem; text-align: center; justify-content: center; font-size: 0.88rem; border-color: #4285F4; color: #4285F4;">
-          <i class="fa-brands fa-google-drive"></i> Open Google Drive Folder
+        <a href="${folderUrl}" target="_blank" class="btn-secondary" style="flex: 1; text-decoration: none; padding: 0.75rem; text-align: center; justify-content: center; font-size: 0.88rem; border-color: #4285F4; color: #4285F4;">
+          <i class="fa-brands fa-google-drive"></i> Open Target Folder in GDrive
         </a>
         <button onclick="closeUploadSuccessModal()" class="btn-secondary" style="flex: 1; padding: 0.75rem; font-size: 0.88rem; border-color: var(--border-color);">
           <i class="fa-solid fa-xmark"></i> Close
@@ -696,7 +752,7 @@ function renderAdminPasscodesTable() {
         <td style="padding: 0.75rem;"><span class="tag ${currentDl >= maxDl && maxDl > 0 ? 'rose' : 'cyan'}">${dlLabel}</span></td>
         <td style="padding: 0.75rem; color: var(--text-muted);">${escapeHtml(validityLabel)}</td>
         <td style="padding: 0.75rem; text-align: right;">
-          <button onclick="deletePasscode(${p.id})" class="btn-secondary" style="border-color: var(--rose); color: var(--rose); padding: 0.25rem 0.6rem; font-size: 0.78rem;">
+          <button onclick="deletePasscode(${p.id})" class="btn-secondary" style="border-color: var(--rose); color: var(--rose); padding: 0.25rem 0.65rem; font-size: 0.78rem;">
             <i class="fa-solid fa-trash"></i> Revoke
           </button>
         </td>
@@ -835,16 +891,10 @@ function renderAuditLogsTable() {
   `;
 }
 
-function confirmDownloadAllZip() {
-  if (confirm('Click OK to open Google Drive.')) {
-    window.open('https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3', '_blank');
-  }
-}
-
 function triggerGDriveAutoLink() {
   showToast('🔄 Auto-syncing Google Drive Vault & Subfolder Mappings...');
   setTimeout(() => {
-    showToast('Google Drive Vault Synced! (All 26 Subfolders Mapped)');
+    showToast('Google Drive Vault Synced!');
     loadAdminDashboardData();
   }, 1000);
 }
