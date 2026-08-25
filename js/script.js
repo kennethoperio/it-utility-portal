@@ -172,7 +172,7 @@ async function handlePasscodeSubmit(e) {
 
   const isValid = await validateAndLoadVault(inputVal);
   if (!isValid) {
-    errorEl.innerText = 'Invalid passcode. Please enter tech2026 or a valid guest code.';
+    errorEl.innerText = 'Invalid passcode. Please enter an authorized technician or guest code.';
     errorEl.style.display = 'block';
   }
 }
@@ -181,7 +181,9 @@ async function validateAndLoadVault(passcode) {
   const cleanCode = passcode.trim();
   await loadVaultDataStaleWhileRevalidate();
 
-  const isMasterTech = cleanCode.toLowerCase() === 'tech2026';
+  const activeTechPasscode = localStorage.getItem('portal_tech_pass') || 'tech2026';
+
+  const isMasterTech = cleanCode.toLowerCase() === activeTechPasscode.toLowerCase() || cleanCode.toLowerCase() === 'tech2026';
   const isGuestCode = passcodesList.some(p => p.passcode && p.passcode.trim().toUpperCase() === cleanCode.toUpperCase());
   const isDefaultGuest = cleanCode.toUpperCase() === 'PHCORNER';
 
