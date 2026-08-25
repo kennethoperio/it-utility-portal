@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('passcode-form')?.addEventListener('submit', handlePasscodeSubmit);
 });
 
-// --- Theme Toggle (Light / Dark Mode) ---
+// --- Theme Toggle ---
 function initTheme() {
   const savedTheme = localStorage.getItem('portal_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', savedTheme);
@@ -73,20 +73,21 @@ function clientLogout() {
   showToast('Vault Locked. Logged out successfully.');
 }
 
-// --- Direct Download Engine ---
+// --- Direct Download Engine (ZERO BLANK TABS / ZERO 403 ERRORS) ---
 function triggerDirectDownload(fileId, fileName) {
-  showToast(`🚚 Starting direct download: ${fileName}...`);
+  showToast(`🚚 Starting download for ${fileName}...`);
 
-  const directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&authuser=0&confirm=t`;
-  
-  // Trigger direct download without opening new browser tab
-  const a = document.createElement('a');
-  a.href = directUrl;
-  a.download = fileName;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => a.remove(), 1000);
+  let frame = document.getElementById('hidden-download-iframe');
+  if (!frame) {
+    frame = document.createElement('iframe');
+    frame.id = 'hidden-download-iframe';
+    frame.style.display = 'none';
+    document.body.appendChild(frame);
+  }
+
+  // Direct download URL for public Google Drive files
+  const directUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
+  frame.src = directUrl;
 }
 
 // --- Passcode Authorization Logic ---
@@ -156,7 +157,7 @@ async function loadVaultDataStaleWhileRevalidate() {
   }
 }
 
-// --- Left Navigation Sidebar Explorer Engine ---
+// --- Left Navigation Sidebar Explorer ---
 function renderLeftSidebar() {
   const container = document.getElementById('sidebar-categories-menu');
   if (!container) return;
@@ -368,7 +369,7 @@ function createToolCardHtml(f) {
   `;
 }
 
-// --- Comments & Feedback System ---
+// --- Comments System ---
 function openCommentsModal(fileId, fileName) {
   document.getElementById('comment-file-id').value = fileId;
   document.getElementById('comment-modal-title').innerText = `💬 Feedback: ${fileName}`;
@@ -520,7 +521,7 @@ function renderDiagnostics() {
     });
 }
 
-// --- CMD Commands Library ---
+// --- CMD Commands ---
 function renderCmdScripts() {
   const container = document.getElementById('cmd-scripts-container');
   if (!container) return;
@@ -550,7 +551,7 @@ function copyCommand(text) {
   showToast('📋 Command copied to clipboard!');
 }
 
-// --- Automated Batch Script Generator ---
+// --- Automated Batch Generator ---
 function generateBatchScript(e) {
   e.preventDefault();
   const checkboxes = document.querySelectorAll('#batch-form input[name="tasks"]:checked');
