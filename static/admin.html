@@ -162,6 +162,18 @@
       <h3 style="margin-bottom: 0.4rem;"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Upload File Directly to Google Drive Vault</h3>
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Choose a file from your computer and select the Google Drive folder/subfolder to upload it into.</p>
 
+      <!-- 5 TB Google Drive Storage Authorization Card -->
+      <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h4 style="font-size: 1rem; color: var(--primary); margin-bottom: 0.25rem;"><i class="fa-brands fa-google-drive"></i> 5 TB Google Drive Account Authorization</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">Connect your Google Account token to stream large files (ISOs, drivers, software) directly into your 5 TB storage quota.</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <input type="password" id="gdrive-user-token-input" placeholder="Paste OAuth Token (Optional)..." style="padding: 0.5rem 0.75rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.82rem; width: 220px; outline: none;">
+          <button type="button" onclick="saveUserGDriveToken()" class="btn-download" style="width: auto; padding: 0.5rem 1rem; font-size: 0.85rem; background: var(--primary);"><i class="fa-solid fa-key"></i> Connect Token</button>
+        </div>
+      </div>
+
       <form id="admin-upload-form" onsubmit="handleResumableDriveFileUpload(event)">
         <div style="border: 2px dashed var(--border-color); border-radius: 12px; padding: 2.25rem; text-align: center; background: var(--bg-input); margin-bottom: 1.5rem;">
           <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.75rem; color: var(--primary); margin-bottom: 0.85rem;"></i>
