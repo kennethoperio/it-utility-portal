@@ -71,18 +71,32 @@ async function initResumableSession(token, fileName, parentId, fileSize, mimeTyp
     parents: [parentId || DEFAULT_PARENT_FOLDER_ID]
   };
 
-  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
+  let response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json; charset=UTF-8',
-      'X-Upload-Content-Type': mimeType || 'application/octet-stream',
-      'X-Upload-Content-Length': (fileSize || 0).toString()
+      'X-Upload-Content-Type': mimeType || 'application/octet-stream'
     },
     body: JSON.stringify(metadata)
   });
 
-  const locationUrl = response.headers.get('location');
+  let locationUrl = response.headers.get('location');
+  if (!locationUrl && parentId !== DEFAULT_PARENT_FOLDER_ID) {
+    // Fail-proof fallback to default root vault folder if target subfolder is inaccessible
+    metadata.parents = [DEFAULT_PARENT_FOLDER_ID];
+    response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Type': mimeType || 'application/octet-stream'
+      },
+      body: JSON.stringify(metadata)
+    });
+    locationUrl = response.headers.get('location');
+  }
+
   if (locationUrl) {
     return locationUrl;
   }
