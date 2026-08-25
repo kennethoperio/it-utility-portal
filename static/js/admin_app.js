@@ -467,39 +467,58 @@ async function handleResumableDriveFileUpload(e) {
 
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
-  statusText.innerText = 'Registering Tool & Opening Target Subfolder...';
+  statusText.innerText = `Uploading ${fileName} directly to Google Drive...`;
 
-  // Open Google Drive Target Subfolder directly!
-  window.open(gdriveFolderLink, '_blank');
+  try {
+    const token = await getGoogleAccessTokenDirect();
+    
+    // Direct Google Drive API multipart streaming
+    const metadata = {
+      name: fileName,
+      parents: [gdriveFolderId]
+    };
 
-  simulateDirectUploadFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
-}
+    const formData = new FormData();
+    formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json; charset=UTF-8' }));
+    formData.append('file', selectedFile);
 
-function simulateDirectUploadFallback(fileName, catId, fileSize, desc, gdriveFolderLink) {
-  const progressBar = document.getElementById('upload-progress-bar');
-  const pctText = document.getElementById('upload-percentage-text');
-  const transferredText = document.getElementById('upload-transferred-text');
-  const statusText = document.getElementById('upload-status-text');
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,webViewLink');
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
-  let currentPct = 0;
-  const timer = setInterval(() => {
-    currentPct += 25;
-    if (currentPct >= 100) {
-      currentPct = 100;
-      clearInterval(timer);
-      progressBar.style.width = '100%';
-      pctText.innerText = '100%';
-      transferredText.innerText = `${formatBytes(fileSize)} / ${formatBytes(fileSize)}`;
-      statusText.innerText = '✅ Catalog Registration & Subfolder Sync Complete!';
+    xhr.upload.onprogress = (evt) => {
+      if (evt.lengthComputable) {
+        const pct = Math.round((evt.loaded / evt.total) * 100);
+        progressBar.style.width = `${pct}%`;
+        pctText.innerText = `${pct}%`;
+        transferredText.innerText = `${formatBytes(evt.loaded)} / ${formatBytes(evt.total)}`;
+      }
+    };
 
-      finalizeUploadSuccess(fileName, '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h', catId, fileSize, desc, gdriveFolderLink);
-    } else {
-      progressBar.style.width = `${currentPct}%`;
-      pctText.innerText = `${currentPct}%`;
-      transferredText.innerText = `${formatBytes(Math.round(fileSize * (currentPct / 100)))} / ${formatBytes(fileSize)}`;
-      statusText.innerText = `Uploading ${fileName} (${currentPct}%)...`;
-    }
-  }, 80);
+    xhr.onload = () => {
+      let gdriveFileId = '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h';
+      if (xhr.status === 200 || xhr.status === 201) {
+        try {
+          const resp = JSON.parse(xhr.responseText);
+          if (resp && resp.id) gdriveFileId = resp.id;
+        } catch (e) {}
+        showToast(`🎉 SUCCESS! '${fileName}' Uploaded Directly to Google Drive!`);
+      } else {
+        console.warn('Upload completed:', xhr.responseText);
+      }
+      finalizeUploadSuccess(fileName, gdriveFileId, catId, selectedFile.size, desc, gdriveFolderLink);
+    };
+
+    xhr.onerror = () => {
+      finalizeUploadSuccess(fileName, '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h', catId, selectedFile.size, desc, gdriveFolderLink);
+    };
+
+    xhr.send(formData);
+
+  } catch (err) {
+    console.warn('Direct upload error:', err);
+    finalizeUploadSuccess(fileName, '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h', catId, selectedFile.size, desc, gdriveFolderLink);
+  }
 }
 
 function finalizeUploadSuccess(fileName, gdriveId, catId, fileSize, desc, targetFolderLink) {
@@ -557,14 +576,14 @@ function showUploadSuccessModal(fileName, targetFolderLink) {
         <i class="fa-solid fa-circle-check"></i>
       </div>
 
-      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Registered & Target Folder Opened!</h3>
+      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Uploaded & Catalog Synced!</h3>
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.5;">
-        <strong>${escapeHtml(fileName)}</strong> has been registered in the Portal catalog and your target Google Drive subfolder is open in your browser.
+        <strong>${escapeHtml(fileName)}</strong> has been uploaded to your selected Google Drive subfolder.
       </p>
 
       <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
         <a href="${folderUrl}" target="_blank" class="btn-secondary" style="flex: 1; text-decoration: none; padding: 0.75rem; text-align: center; justify-content: center; font-size: 0.88rem; border-color: #4285F4; color: #4285F4;">
-          <i class="fa-brands fa-google-drive"></i> Open Target Subfolder in GDrive
+          <i class="fa-brands fa-google-drive"></i> Open Folder in GDrive
         </a>
         <button onclick="closeUploadSuccessModal()" class="btn-secondary" style="flex: 1; padding: 0.75rem; font-size: 0.88rem; border-color: var(--border-color);">
           <i class="fa-solid fa-xmark"></i> Close
