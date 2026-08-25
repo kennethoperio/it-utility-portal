@@ -65,36 +65,29 @@ function getGoogleAccessToken() {
   });
 }
 
-function initResumableSession(token, fileName, parentId, fileSize, mimeType) {
-  return new Promise((resolve, reject) => {
-    const metadata = JSON.stringify({
-      name: fileName,
-      parents: [parentId || DEFAULT_PARENT_FOLDER_ID]
-    });
+async function initResumableSession(token, fileName, parentId, fileSize, mimeType) {
+  const metadata = {
+    name: fileName,
+    parents: [parentId || DEFAULT_PARENT_FOLDER_ID]
+  };
 
-    const req = https.request('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json; charset=UTF-8',
-        'X-Upload-Content-Type': mimeType || 'application/octet-stream',
-        'X-Upload-Content-Length': (fileSize || 0).toString()
-      }
-    }, (res) => {
-      const location = res.headers['location'];
-      if (location) {
-        resolve(location);
-      } else {
-        let body = '';
-        res.on('data', chunk => body += chunk);
-        res.on('end', () => reject(new Error('No location header: ' + body)));
-      }
-    });
-
-    req.on('error', reject);
-    req.write(metadata);
-    req.end();
+  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json; charset=UTF-8',
+      'X-Upload-Content-Type': mimeType || 'application/octet-stream',
+      'X-Upload-Content-Length': (fileSize || 0).toString()
+    },
+    body: JSON.stringify(metadata)
   });
+
+  const locationUrl = response.headers.get('location');
+  if (locationUrl) {
+    return locationUrl;
+  }
+  const text = await response.text();
+  throw new Error(`Google Drive API returned status ${response.status}: ${text}`);
 }
 
 module.exports = async (req, res) => {
