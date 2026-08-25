@@ -73,20 +73,82 @@ function clientLogout() {
   showToast('Vault Locked. Logged out successfully.');
 }
 
-// --- ZERO-NEW-TAB DIRECT FILE DOWNLOAD ENGINE ---
+// --- EXACT DOWNLOAD MODAL FLOW (SCREENSHOT 1 & 2 BEHAVIOR) ---
 function triggerDirectDownload(fileId, fileName) {
-  showToast(`🚚 Starting direct download for ${fileName}...`);
-
-  // 1. Increment Download Counter
+  // Increment Download Counter
   const fileObj = allFilesList.find(f => (f.file_key || '').includes(fileId) || f.id == fileId);
   if (fileObj) {
     fileObj.download_count = (fileObj.download_count || 0) + 1;
     renderToolsGrid();
   }
 
-  const directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&authuser=0`;
+  // Always open the exact Direct Download Modal requested in Screenshot 2
+  openDownloadBypassModal(fileId, fileName);
+}
 
-  // Trigger download directly on current page WITHOUT opening any new browser tab or page
+function openDownloadBypassModal(fileId, fileName) {
+  let modal = document.getElementById('download-bypass-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'download-bypass-modal';
+    modal.className = 'modal-overlay';
+    document.body.appendChild(modal);
+  }
+
+  const directUcUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
+  const mirrorUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&authuser=0`;
+
+  modal.innerHTML = `
+    <div class="modal-card" style="text-align: center; max-width: 460px; padding: 1.75rem;" onclick="event.stopPropagation()">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <h3 style="font-size: 1.15rem; color: var(--text-main); font-weight: 700;">
+          <i class="fa-solid fa-cloud-arrow-down" style="color: var(--primary);"></i> Direct Download File
+        </h3>
+        <button onclick="closeDownloadBypassModal()" class="btn-secondary" style="padding: 0.2rem 0.55rem; font-size: 1.1rem; border: none;">&times;</button>
+      </div>
+
+      <div class="card-icon" style="margin: 0 auto 0.85rem; width: 56px; height: 56px; font-size: 1.5rem; color: #10b981; background: rgba(16, 185, 129, 0.12);">
+        <i class="fa-solid fa-file-zipper"></i>
+      </div>
+
+      <h4 style="margin-bottom: 0.25rem; color: var(--text-main); font-size: 1.05rem;">${escapeHtml(fileName)}</h4>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.35rem;">Download should start automatically in your browser.</p>
+
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <!-- Option 1: Save Immediately on PC -->
+        <button onclick="saveFileImmediately('${directUcUrl}', '${escapeHtml(fileName)}')" class="btn-download" style="background: var(--primary); text-align: center; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">
+          <i class="fa-solid fa-download"></i> Click Here to Save File Immediately
+        </button>
+
+        <!-- Option 2: Alternative Google Mirror Link (Opens Screenshot 1) -->
+        <a href="${mirrorUrl}" target="_blank" class="btn-secondary" style="text-decoration: none; text-align: center; justify-content: center; font-size: 0.85rem; padding: 0.65rem; color: var(--text-muted);">
+          <i class="fa-solid fa-shield-virus"></i> Alternative Google Mirror Link
+        </a>
+      </div>
+    </div>
+  `;
+
+  modal.style.display = 'flex';
+}
+
+function closeDownloadBypassModal() {
+  const modal = document.getElementById('download-bypass-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+// Save file immediately to PC without opening new tab
+function saveFileImmediately(directUrl, fileName) {
+  showToast(`🚚 Direct downloading ${fileName}...`);
+
+  let frame = document.getElementById('hidden-download-iframe');
+  if (!frame) {
+    frame = document.createElement('iframe');
+    frame.id = 'hidden-download-iframe';
+    frame.style.display = 'none';
+    document.body.appendChild(frame);
+  }
+  frame.src = directUrl;
+
   const a = document.createElement('a');
   a.href = directUrl;
   a.download = fileName;
@@ -95,10 +157,7 @@ function triggerDirectDownload(fileId, fileName) {
   a.click();
   setTimeout(() => a.remove(), 400);
 
-  // Backup fallback on current window after 800ms
-  setTimeout(() => {
-    window.location.href = directUrl;
-  }, 800);
+  closeDownloadBypassModal();
 }
 
 // --- Passcode Authorization Logic ---
