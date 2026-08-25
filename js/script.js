@@ -1,4 +1,4 @@
-// IT Utility Portal - Friendly Client Application Logic
+// IT Utility Portal - Friendly Hierarchical Client Logic
 const API_BASE = (window.location.pathname.includes('it-utility-portal') || window.location.hostname.includes('github.io')) ? 'static/api' : 'api';
 
 let categoriesList = [];
@@ -6,7 +6,9 @@ let allFilesList = [];
 let cmdScriptsList = [];
 let passcodesList = [];
 let starredFileIds = JSON.parse(localStorage.getItem('portal_starred_ids') || '[]');
-let activeCategoryFilter = 'all';
+
+let activeMainCategory = 'all';
+let activeSubcategory = 'all';
 
 // Default Technician Onsite Repair Checklist
 const defaultChecklist = [
@@ -29,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('passcode-form')?.addEventListener('submit', handlePasscodeSubmit);
 });
 
-// --- Direct Download Without Opening New Tab ---
+// --- Direct Download Handler Without Opening New Tab ---
 function triggerDirectDownload(fileId, fileName) {
   showToast(`🚚 Starting direct download: ${fileName}...`);
   
@@ -41,17 +43,8 @@ function triggerDirectDownload(fileId, fileName) {
     document.body.appendChild(iframe);
   }
 
-  // Primary direct download URL from Google Drive
   const directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
   iframe.src = directUrl;
-
-  // Backup fallback after 3 seconds if needed
-  setTimeout(() => {
-    if (!iframe.src || iframe.src === 'about:blank') {
-      const fallbackUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
-      iframe.src = fallbackUrl;
-    }
-  }, 3000);
 }
 
 // --- Passcode Authorization Logic ---
@@ -111,7 +104,7 @@ async function loadVaultDataStaleWhileRevalidate() {
       cmdScriptsList = data.cmd_scripts || [];
       passcodesList = data.passcodes || [];
       
-      renderCategoryPills();
+      renderMainCategoriesGrid();
       renderToolsGrid();
       renderFavoritesGrid();
       renderCmdScripts();
@@ -135,27 +128,80 @@ function switchTab(tabId) {
   if (tabId === 'favorites') renderFavoritesGrid();
 }
 
-// --- Category Pills Bar ---
-function renderCategoryPills() {
-  const container = document.getElementById('category-pills');
+// --- Hierarchical Category Selector Logic ---
+function renderMainCategoriesGrid() {
+  const container = document.getElementById('main-category-grid');
   if (!container) return;
 
-  let html = `<button class="cat-pill ${activeCategoryFilter === 'all' ? 'active' : ''}" onclick="filterCategory('all')"><i class="fa-solid fa-layer-group"></i> All Tools (${allFilesList.length})</button>`;
+  const mains = Array.from(new Set(categoriesList.map(c => c.main_category || 'General')));
+
+  let html = `<button class="cat-pill ${activeMainCategory === 'all' ? 'active' : ''}" onclick="selectMainCategory('all')"><i class="fa-solid fa-layer-group"></i> All Tools (${allFilesList.length})</button>`;
+
+  mains.forEach(mainName => {
+    const matchingCatIds = categoriesList.filter(c => (c.main_category || 'General') === mainName).map(c => c.id);
+    const count = allFilesList.filter(f => matchingCatIds.includes(f.category_id)).length;
+    
+    if (count > 0) {
+      const isActive = activeMainCategory === mainName;
+      let icon = 'folder';
+      const nl = mainName.lower ? mainName.lower() : mainName.toLowerCase();
+      if (nl.includes('printer') || nl.includes('driver')) icon = 'print';
+      else if (nl.includes('graphic') || nl.includes('design') || nl.includes('photo')) icon = 'image';
+      else if (nl.includes('video')) icon = 'video';
+      else if (nl.includes('diagnostic') || nl.includes('hardware')) icon = 'microchip';
+      else if (nl.includes('iso') || nl.includes('windows')) icon = 'compact-disc';
+
+      html += `<button class="cat-pill ${isActive ? 'active' : ''}" onclick="selectMainCategory('${escapeHtml(mainName)}')"><i class="fa-solid fa-${icon}"></i> ${escapeHtml(mainName)} (${count})</button>`;
+    }
+  });
+
+  container.innerHTML = html;
+  renderSubcategoriesBar();
+}
+
+function selectMainCategory(mainName) {
+  activeMainCategory = mainName;
+  activeSubcategory = 'all';
+  renderMainCategoriesGrid();
+  renderToolsGrid();
+}
+
+function renderSubcategoriesBar() {
+  const wrapper = document.getElementById('subcategory-wrapper');
+  const container = document.getElementById('subcategory-pills');
+  if (!wrapper || !container) return;
+
+  if (activeMainCategory === 'all') {
+    wrapper.style.display = 'none';
+    return;
+  }
+
+  const matchingCats = categoriesList.filter(c => (c.main_category || 'General') === activeMainCategory);
   
-  categoriesList.forEach(cat => {
+  if (matchingCats.length <= 1) {
+    wrapper.style.display = 'none';
+    return;
+  }
+
+  wrapper.style.display = 'block';
+  document.getElementById('subcategory-title').innerHTML = `<i class="fa-solid fa-folder-open"></i> ${escapeHtml(activeMainCategory)} Subfolders`;
+
+  let html = `<button class="cat-pill ${activeSubcategory === 'all' ? 'active' : ''}" onclick="selectSubcategory('all')"><i class="fa-solid fa-layer-group"></i> All ${escapeHtml(activeMainCategory)}</button>`;
+
+  matchingCats.forEach(cat => {
     const count = allFilesList.filter(f => f.category_id === cat.id).length;
     if (count > 0) {
-      const isActive = activeCategoryFilter == cat.id;
-      html += `<button class="cat-pill ${isActive ? 'active' : ''}" onclick="filterCategory(${cat.id})"><i class="fa-solid fa-${cat.icon || 'folder'}"></i> ${cat.name} (${count})</button>`;
+      const isActive = activeSubcategory == cat.id;
+      html += `<button class="cat-pill ${isActive ? 'active' : ''}" onclick="selectSubcategory(${cat.id})"><i class="fa-solid fa-${cat.icon || 'folder'}"></i> ${escapeHtml(cat.subcategory || cat.name)} (${count})</button>`;
     }
   });
 
   container.innerHTML = html;
 }
 
-function filterCategory(catId) {
-  activeCategoryFilter = catId;
-  renderCategoryPills();
+function selectSubcategory(subId) {
+  activeSubcategory = subId;
+  renderSubcategoriesBar();
   renderToolsGrid();
 }
 
@@ -167,19 +213,32 @@ function renderToolsGrid() {
   const searchQuery = (document.getElementById('main-search-input')?.value || '').toLowerCase().trim();
 
   let filtered = allFilesList.filter(f => {
-    if (activeCategoryFilter !== 'all' && f.category_id != activeCategoryFilter) return false;
+    // 1. Filter by Main Category
+    if (activeMainCategory !== 'all') {
+      const catObj = categoriesList.find(c => c.id === f.category_id);
+      const fileMainCat = catObj ? (catObj.main_category || 'General') : 'General';
+      if (fileMainCat !== activeMainCategory) return false;
+    }
+
+    // 2. Filter by Subcategory
+    if (activeSubcategory !== 'all' && f.category_id != activeSubcategory) {
+      return false;
+    }
+
+    // 3. Search query matching
     if (searchQuery) {
       const matchName = f.original_name.toLowerCase().includes(searchQuery);
       const matchDesc = (f.description || '').toLowerCase().includes(searchQuery);
       return matchName || matchDesc;
     }
+
     return true;
   });
 
   if (filtered.length === 0) {
     grid.innerHTML = `<div class="card-item" style="grid-column: 1/-1; padding: 3rem; text-align: center; color: var(--text-muted);">
       <i class="fa-solid fa-folder-open" style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--text-dim);"></i>
-      <p>No tools found matching your filter criteria.</p>
+      <p>No software tools found matching your selection.</p>
     </div>`;
     return;
   }
@@ -193,7 +252,7 @@ function createToolCardHtml(f) {
 
   const gId = (f.file_key || '').replace('gdrive:', '');
   const cat = categoriesList.find(c => c.id === f.category_id);
-  const catName = cat ? cat.name : 'Utility';
+  const catName = cat ? (cat.subcategory || cat.name) : 'Utility';
 
   return `
     <div class="card-item">
@@ -266,7 +325,7 @@ function renderChecklist() {
   container.innerHTML = currentChecklist.map(item => `
     <label class="card-item" style="padding: 0.9rem 1.1rem; display: flex; gap: 1rem; align-items: center; cursor: pointer; text-decoration: ${item.done ? 'line-through' : 'none'}; opacity: ${item.done ? '0.6' : '1'}; flex-direction: row;">
       <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleChecklistItem(${item.id})" style="width: 18px; height: 18px; accent-color: var(--primary-accent);">
-      <span style="font-size: 0.95rem; font-weight: 500;">${escapeHtml(item.text)}</span>
+      <span style="font-size: 0.95rem; font-weight: 500; color: #fff;">${escapeHtml(item.text)}</span>
     </label>
   `).join('');
 }
