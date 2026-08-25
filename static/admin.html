@@ -102,9 +102,14 @@
     <section id="admin-sec-files" class="card-item" style="padding: 1.5rem;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
         <h3 style="font-size: 1.2rem;"><i class="fa-solid fa-toolbox" style="color: var(--primary);"></i> Vault Files & Software Tools</h3>
-        <select id="admin-file-category-filter" onchange="renderAdminFilesTable()" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.88rem; outline: none;">
-          <option value="all">🌐 All Categories</option>
-        </select>
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+          <button onclick="triggerAutomatedGDriveSync()" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.88rem; color: var(--primary); border-color: var(--primary); cursor: pointer;" title="Automatically sync all files & subfolders from Google Drive Vault">
+            <i class="fa-solid fa-arrows-rotate"></i> Auto-Sync GDrive Vault
+          </button>
+          <select id="admin-file-category-filter" onchange="renderAdminFilesTable()" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.88rem; outline: none;">
+            <option value="all">🌐 All Categories</option>
+          </select>
+        </div>
       </div>
 
       <div style="overflow-x: auto;">
