@@ -1,9 +1,10 @@
-// IT Utility Portal - Client Application & Stale-While-Revalidate Engine
+// IT Utility Portal - Client Application Logic
 const API_BASE = (window.location.pathname.includes('it-utility-portal') || window.location.hostname.includes('github.io')) ? 'static/api' : 'api';
 
 let categoriesList = [];
 let allFilesList = [];
 let cmdScriptsList = [];
+let passcodesList = [];
 let starredFileIds = JSON.parse(localStorage.getItem('portal_starred_ids') || '[]');
 let activeCategoryFilter = 'all';
 
@@ -28,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('passcode-form')?.addEventListener('submit', handlePasscodeSubmit);
 });
 
-// --- Passcode Unlock Logic ---
+// --- Passcode Authorization Logic ---
 function initPasscodeCheck() {
   const savedPasscode = sessionStorage.getItem('vault_passcode') || localStorage.getItem('vault_passcode');
   if (savedPasscode) {
@@ -46,109 +47,63 @@ async function handlePasscodeSubmit(e) {
 
   const isValid = await validateAndLoadVault(inputVal);
   if (!isValid) {
-    errorEl.innerText = 'Invalid or expired passcode. Please try again.';
+    errorEl.innerText = 'Invalid or expired passcode. Please enter a valid passcode.';
     errorEl.style.display = 'block';
   }
 }
 
 async function validateAndLoadVault(passcode) {
-  // Hardcoded quick passcodes for instant unlock
-  if (passcode.toLowerCase() === 'tech2026' || passcode.toUpperCase() === 'PHCORNER') {
-    sessionStorage.setItem('vault_passcode', passcode);
+  const cleanCode = passcode.trim();
+
+  // Load manifest data to check custom guest passcodes
+  await loadVaultDataStaleWhileRevalidate();
+
+  const isMasterTech = cleanCode.toLowerCase() === 'tech2026';
+  const isGuestCode = passcodesList.some(p => p.passcode && p.passcode.trim().toUpperCase() === cleanCode.toUpperCase());
+  const isDefaultGuest = cleanCode.toUpperCase() === 'PHCORNER';
+
+  if (isMasterTech || isGuestCode || isDefaultGuest) {
+    sessionStorage.setItem('vault_passcode', cleanCode);
     document.getElementById('passcode-modal').style.display = 'none';
-    document.getElementById('passcode-status-pill').style.display = 'inline-flex';
-    loadVaultDataDataStaleWhileRevalidate();
-    return true;
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/validate-passcode`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passcode })
-    });
-    const data = await res.json();
-
-    if (data.valid || data.success) {
-      sessionStorage.setItem('vault_passcode', passcode);
-      document.getElementById('passcode-modal').style.display = 'none';
-      document.getElementById('passcode-status-pill').style.display = 'inline-flex';
-      loadVaultDataDataStaleWhileRevalidate();
-      return true;
+    
+    const pill = document.getElementById('passcode-status-pill');
+    const label = document.getElementById('active-passcode-label');
+    if (pill && label) {
+      pill.style.display = 'inline-flex';
+      label.innerText = isMasterTech ? 'Master Tech Active' : `Guest (${cleanCode.toUpperCase()})`;
     }
-  } catch (err) {
-    // If backend is offline, accept passcode locally for failover
-    sessionStorage.setItem('vault_passcode', passcode);
-    document.getElementById('passcode-modal').style.display = 'none';
-    loadVaultDataDataStaleWhileRevalidate();
     return true;
   }
   return false;
 }
 
-// --- Stale-While-Revalidate Data Loader & Failover Manifest Engine ---
-async function loadVaultDataDataStaleWhileRevalidate() {
-  // 1. Instant Load from Client Local Cache
-  const cachedManifest = localStorage.getItem('vault_manifest_cache');
-  if (cachedManifest) {
-    try {
-      const data = JSON.parse(cachedManifest);
-      categoriesList = data.categories || [];
-      allFilesList = data.files || [];
-      cmdScriptsList = data.cmd_scripts || [];
-      renderCategoryPills();
-      renderToolsGrid();
-      renderFavoritesGrid();
-      renderCmdScripts();
-    } catch (e) {
-      console.warn('Stale cache read error:', e);
-    }
-  }
-
-  // 2. Fetch fresh data asynchronously in background
+// --- Stale-While-Revalidate Data Loader ---
+async function loadVaultDataStaleWhileRevalidate() {
   try {
-    const res = await fetch(`${API_BASE}/portal-data?_t=${Date.now()}`);
+    const res = await fetch(`vault_manifest.json?_t=${Date.now()}`);
     if (res.ok) {
       const data = await res.json();
       categoriesList = data.categories || [];
       allFilesList = data.files || [];
       cmdScriptsList = data.cmd_scripts || [];
-      localStorage.setItem('vault_manifest_cache', JSON.stringify(data));
+      passcodesList = data.passcodes || [];
+      
       renderCategoryPills();
       renderToolsGrid();
       renderFavoritesGrid();
       renderCmdScripts();
-      return;
-    }
-  } catch (err) {
-    console.warn('API fetch offline, switching to Failover Manifest...', err);
-  }
-
-  // 3. 24/7 HA Failover Manifest Backup (`vault_manifest.json`)
-  try {
-    const failoverRes = await fetch(`vault_manifest.json?_t=${Date.now()}`);
-    if (failoverRes.ok) {
-      const data = await failoverRes.json();
-      categoriesList = data.categories || [];
-      allFilesList = data.files || [];
-      cmdScriptsList = data.cmd_scripts || [];
-      renderCategoryPills();
-      renderToolsGrid();
-      renderFavoritesGrid();
-      renderCmdScripts();
-      console.log('24/7 Failover Manifest loaded successfully!');
     }
   } catch (e) {
-    console.error('Critical failover error:', e);
+    console.warn('Manifest load error:', e);
   }
 }
 
 // --- Tab Switching ---
 function switchTab(tabId) {
-  document.querySelectorAll('.nav-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-navigation .tab-link').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('main > section').forEach(sec => sec.style.display = 'none');
 
-  const activeTabBtn = Array.from(document.querySelectorAll('.nav-tabs .tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
+  const activeTabBtn = Array.from(document.querySelectorAll('.tab-navigation .tab-link')).find(b => b.getAttribute('onclick')?.includes(tabId));
   if (activeTabBtn) activeTabBtn.classList.add('active');
 
   const targetSec = document.getElementById(`tab-${tabId}`);
@@ -162,12 +117,14 @@ function renderCategoryPills() {
   const container = document.getElementById('category-pills');
   if (!container) return;
 
-  let html = `<button class="meta-badge ${activeCategoryFilter === 'all' ? 'win' : ''}" onclick="filterCategory('all')" style="cursor: pointer; padding: 0.4rem 1rem; font-size: 0.85rem;"><i class="fa-solid fa-layer-group"></i> All Tools (${allFilesList.length})</button>`;
+  let html = `<button class="cat-pill ${activeCategoryFilter === 'all' ? 'active' : ''}" onclick="filterCategory('all')"><i class="fa-solid fa-layer-group"></i> All Tools (${allFilesList.length})</button>`;
   
   categoriesList.forEach(cat => {
     const count = allFilesList.filter(f => f.category_id === cat.id).length;
-    const isActive = activeCategoryFilter == cat.id;
-    html += `<button class="meta-badge ${isActive ? 'win' : ''}" onclick="filterCategory(${cat.id})" style="cursor: pointer; padding: 0.4rem 1rem; font-size: 0.85rem;"><i class="fa-solid fa-${cat.icon || 'folder'}"></i> ${cat.name} (${count})</button>`;
+    if (count > 0) {
+      const isActive = activeCategoryFilter == cat.id;
+      html += `<button class="cat-pill ${isActive ? 'active' : ''}" onclick="filterCategory(${cat.id})"><i class="fa-solid fa-${cat.icon || 'folder'}"></i> ${cat.name} (${count})</button>`;
+    }
   });
 
   container.innerHTML = html;
@@ -197,9 +154,9 @@ function renderToolsGrid() {
   });
 
   if (filtered.length === 0) {
-    grid.innerHTML = `<div class="glass-panel" style="grid-column: 1/-1; padding: 3rem; text-align: center; color: var(--text-muted);">
+    grid.innerHTML = `<div class="card-item" style="grid-column: 1/-1; padding: 3rem; text-align: center; color: var(--text-muted);">
       <i class="fa-solid fa-folder-open" style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--text-dim);"></i>
-      <p>No software tools found matching your filter criteria.</p>
+      <p>No utility tools found matching your search query.</p>
     </div>`;
     return;
   }
@@ -211,38 +168,41 @@ function createToolCardHtml(f) {
   const isStarred = starredFileIds.includes(f.id);
   const formattedSize = formatBytes(f.file_size || 0);
 
-  // Google Drive direct download URL format
-  let downloadUrl = `/api/files/${f.id}/download`;
-  if (f.file_key && f.file_key.startswith && f.file_key.startswith('gdrive:')) {
+  // Direct Google Drive download URL
+  let downloadUrl = `#`;
+  if (f.file_key && f.file_key.startsWith && f.file_key.startsWith('gdrive:')) {
     const gId = f.file_key.replace('gdrive:', '');
     downloadUrl = `https://drive.google.com/uc?export=download&id=${gId}&confirm=t`;
   }
 
+  const cat = categoriesList.find(c => c.id === f.category_id);
+  const catName = cat ? cat.name : 'Utility';
+
   return `
-    <div class="tool-card">
-      <div class="tool-card-header">
-        <div class="tool-icon-wrapper">
-          <i class="fa-solid fa-file-zipper"></i>
+    <div class="card-item">
+      <div>
+        <div class="card-head">
+          <div class="card-icon">
+            <i class="fa-solid fa-file-zipper"></i>
+          </div>
+          <button class="star-icon ${isStarred ? 'starred' : ''}" onclick="toggleStar(${f.id})" title="Star / Favorite">
+            <i class="fa-${isStarred ? 'solid' : 'regular'} fa-star"></i>
+          </button>
         </div>
-        <button class="star-btn ${isStarred ? 'starred' : ''}" onclick="toggleStar(${f.id})" title="Star / Favorite">
-          <i class="fa-${isStarred ? 'solid' : 'regular'} fa-star"></i>
-        </button>
+
+        <div class="card-title">${escapeHtml(f.original_name)}</div>
+        <div class="card-desc">${escapeHtml(f.description || 'Google Drive Vault Utility Tool')}</div>
       </div>
 
       <div>
-        <div class="tool-title">${escapeHtml(f.original_name)}</div>
-        <div class="tool-desc">${escapeHtml(f.description || 'No description provided.')}</div>
-      </div>
-
-      <div>
-        <div class="tool-meta-row">
-          <span class="meta-badge win"><i class="fa-brands fa-windows"></i> ${f.os_compatibility || 'Win 10/11'}</span>
-          <span class="meta-badge portable"><i class="fa-solid fa-box-open"></i> ${f.is_portable ? 'Portable' : 'Installer'}</span>
-          <span class="meta-badge"><i class="fa-solid fa-hard-drive"></i> ${formattedSize}</span>
+        <div class="card-tags">
+          <span class="tag cyan"><i class="fa-solid fa-folder"></i> ${escapeHtml(catName)}</span>
+          <span class="tag"><i class="fa-brands fa-windows"></i> Win 10/11</span>
+          <span class="tag"><i class="fa-solid fa-hard-drive"></i> ${formattedSize}</span>
         </div>
 
-        <a href="${downloadUrl}" target="_blank" class="btn btn-primary" style="width: 100%;" onclick="showToast('🚚 Starting direct 1-click download...')">
-          <i class="fa-solid fa-download"></i> Download Tool
+        <a href="${downloadUrl}" target="_blank" class="btn-action" onclick="showToast('🚚 Starting 1-click direct download...')">
+          <i class="fa-solid fa-download"></i> Direct Download
         </a>
       </div>
     </div>
@@ -272,9 +232,9 @@ function renderFavoritesGrid() {
   const starredFiles = allFilesList.filter(f => starredFileIds.includes(f.id));
 
   if (starredFiles.length === 0) {
-    grid.innerHTML = `<div class="glass-panel" style="grid-column: 1/-1; padding: 3rem; text-align: center; color: var(--text-muted);">
+    grid.innerHTML = `<div class="card-item" style="grid-column: 1/-1; padding: 3rem; text-align: center; color: var(--text-muted);">
       <i class="fa-solid fa-star" style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--text-dim);"></i>
-      <p>No starred favorites yet. Click the ⭐ star icon on any tool to pin it here for quick 1-click access!</p>
+      <p>No starred favorites yet. Click the ⭐ star icon on any tool card to pin it here for quick 1-click access!</p>
     </div>`;
     return;
   }
@@ -288,9 +248,9 @@ function renderChecklist() {
   if (!container) return;
 
   container.innerHTML = currentChecklist.map(item => `
-    <label class="glass-panel" style="padding: 1rem 1.25rem; display: flex; gap: 1rem; align-items: center; cursor: pointer; text-decoration: ${item.done ? 'line-through' : 'none'}; opacity: ${item.done ? '0.6' : '1'};">
-      <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleChecklistItem(${item.id})" style="width: 18px; height: 18px; accent-color: var(--neon-cyan);">
-      <span style="font-size: 0.95rem; font-weight: 500;">${escapeHtml(item.text)}</span>
+    <label class="card-item" style="padding: 0.9rem 1.1rem; display: flex; gap: 1rem; align-items: center; cursor: pointer; text-decoration: ${item.done ? 'line-through' : 'none'}; opacity: ${item.done ? '0.6' : '1'}; flex-direction: row;">
+      <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleChecklistItem(${item.id})" style="width: 18px; height: 18px; accent-color: var(--cyan-accent);">
+      <span style="font-size: 0.92rem; font-weight: 500;">${escapeHtml(item.text)}</span>
     </label>
   `).join('');
 }
@@ -327,15 +287,14 @@ function renderDiagnostics() {
   document.getElementById('diag-browser').innerText = browser;
   document.getElementById('diag-screen').innerText = `${window.screen.width} x ${window.screen.height}`;
 
-  // Measure Latency Ping
   const startTime = Date.now();
-  fetch(`${API_BASE}/ping?_t=${startTime}`)
+  fetch(`vault_manifest.json?_t=${startTime}`)
     .then(() => {
       const ping = Date.now() - startTime;
-      document.getElementById('diag-ping').innerText = `${ping} ms`;
+      document.getElementById('diag-ping').innerText = `${ping} ms (Fast CDN)`;
     })
     .catch(() => {
-      document.getElementById('diag-ping').innerText = 'Online (CDN Fast)';
+      document.getElementById('diag-ping').innerText = 'Online';
     });
 }
 
@@ -353,13 +312,13 @@ function renderCmdScripts() {
   }
 
   container.innerHTML = cmdScriptsList.map(s => `
-    <div class="glass-panel" style="padding: 1.25rem;">
+    <div class="card-item">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-        <strong style="color: var(--neon-cyan); font-size: 1.05rem;"><i class="fa-solid fa-terminal"></i> ${escapeHtml(s.title)}</strong>
-        <button class="btn btn-secondary" onclick="copyCommand('${escapeHtml(s.command)}')" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;"><i class="fa-solid fa-copy"></i> Copy Code</button>
+        <strong style="color: var(--cyan-accent); font-size: 1.05rem;"><i class="fa-solid fa-terminal"></i> ${escapeHtml(s.title)}</strong>
+        <button class="tab-link" onclick="copyCommand('${escapeHtml(s.command)}')" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;"><i class="fa-solid fa-copy"></i> Copy Code</button>
       </div>
       <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">${escapeHtml(s.description || '')}</p>
-      <pre style="background: rgba(0,0,0,0.5); padding: 0.75rem; border-radius: 8px; font-family: monospace; font-size: 0.85rem; color: #a7f3d0; overflow-x: auto;"><code>${escapeHtml(s.command)}</code></pre>
+      <pre style="background: #090d16; padding: 0.75rem; border-radius: 6px; font-family: monospace; font-size: 0.85rem; color: #a7f3d0; overflow-x: auto; border: 1px solid var(--border-color);"><code>${escapeHtml(s.command)}</code></pre>
     </div>
   `).join('');
 }
@@ -376,7 +335,7 @@ function generateBatchScript(e) {
   const tasks = Array.from(checkboxes).map(cb => cb.value);
 
   if (tasks.length === 0) {
-    showToast('Please select at least one repair task.', 'warning');
+    showToast('Please select at least one repair task.');
     return;
   }
 
@@ -411,20 +370,18 @@ function generateBatchScript(e) {
   showToast('⚡ Custom .bat repair script downloaded!');
 }
 
-// --- Live Search Setup ---
 function initSearchAndFilter() {
   document.getElementById('main-search-input')?.addEventListener('input', () => {
     renderToolsGrid();
   });
 }
 
-// --- Helper Utilities ---
 function showToast(msg) {
-  const container = document.getElementById('toast-container');
+  const container = document.getElementById('toast-box');
   if (!container) return;
   const t = document.createElement('div');
-  t.className = 'toast';
-  t.innerHTML = `<i class="fa-solid fa-circle-check" style="color: var(--neon-cyan);"></i> <span>${escapeHtml(msg)}</span>`;
+  t.className = 'toast-item';
+  t.innerHTML = `<i class="fa-solid fa-circle-check" style="color: var(--cyan-accent);"></i> <span>${escapeHtml(msg)}</span>`;
   container.appendChild(t);
   setTimeout(() => t.remove(), 3500);
 }
