@@ -197,7 +197,7 @@ async function validateAndLoadVault(passcode) {
   return false;
 }
 
-// --- Data Loader (MERGES MANIFEST, LOCAL STORAGE & LIVE GOOGLE DRIVE API FILES) ---
+// --- Data Loader (LOADS PERFECT GOOGLE DRIVE HIERARCHY FROM MANIFEST & SYNC) ---
 async function loadVaultDataStaleWhileRevalidate() {
   try {
     const res = await fetch(`vault_manifest.json?_t=${Date.now()}`);
@@ -212,23 +212,6 @@ async function loadVaultDataStaleWhileRevalidate() {
     console.warn('Manifest load error:', e);
   }
 
-  // Merge local storage saved custom files
-  try {
-    const savedCustomFiles = JSON.parse(localStorage.getItem('portal_custom_files') || '[]');
-    savedCustomFiles.forEach(sf => {
-      if (!allFilesList.some(f => f.id === sf.id || f.original_name === sf.original_name)) {
-        allFilesList.unshift(sf);
-      }
-    });
-
-    const savedCustomCats = JSON.parse(localStorage.getItem('portal_custom_categories') || '[]');
-    savedCustomCats.forEach(sc => {
-      if (!categoriesList.some(c => c.id === sc.id)) {
-        categoriesList.push(sc);
-      }
-    });
-  } catch (err) {}
-
   renderLeftSidebar();
   renderToolsGrid();
   renderFavoritesGrid();
@@ -239,7 +222,7 @@ async function loadVaultDataStaleWhileRevalidate() {
   } catch (gErr) {}
 }
 
-// --- REAL-TIME LIVE GOOGLE DRIVE CLIENT SCANNER ---
+// --- REAL-TIME LIVE GOOGLE DRIVE CLIENT SCANNER (PRESERVES PERFECT HIERARCHY) ---
 async function syncRealGDriveStructureClient() {
   try {
     const tokenRes = await fetch(`${VERCEL_API_BASE}/api/create-folder`, {
@@ -265,17 +248,6 @@ async function syncRealGDriveStructureClient() {
         if (existing) {
           existing.gdrive_folder_id = gf.id;
           existing.gdrive_link = gf.webViewLink || `https://drive.google.com/drive/folders/${gf.id}`;
-        } else {
-          categoriesList.push({
-            id: Date.now() + Math.floor(Math.random() * 1000),
-            main_category: gf.name,
-            subcategory: gf.name,
-            name: gf.name,
-            icon: 'folder',
-            display_order: categoriesList.length + 1,
-            gdrive_folder_id: gf.id,
-            gdrive_link: gf.webViewLink || `https://drive.google.com/drive/folders/${gf.id}`
-          });
         }
       });
     }
@@ -302,28 +274,33 @@ async function syncRealGDriveStructureClient() {
     gFiles.forEach(gf => {
       if (gf.name.endsWith('.db') || gf.name.endsWith('.json')) return;
 
+      // Check if file is ALREADY registered in allFilesList with perfect category_id
+      const existing = allFilesList.find(f => (f.file_key || '').includes(gf.id) || f.original_name === gf.name);
+      if (existing) {
+        return; // PRESERVE PERFECT HIERARCHICAL CATEGORY_ID FROM MANIFEST
+      }
+
       const parentId = (gf.parents && gf.parents[0]) ? gf.parents[0] : DEFAULT_VAULT_FOLDER_ID;
       const matchingCat = categoriesList.find(c => c.gdrive_folder_id === parentId);
       const catId = matchingCat ? matchingCat.id : 1;
 
-      if (!allFilesList.some(f => (f.file_key || '').includes(gf.id) || f.original_name === gf.name)) {
-        allFilesList.unshift({
-          id: Date.now() + Math.floor(Math.random() * 1000),
-          original_name: gf.name,
-          file_key: `gdrive:${gf.id}`,
-          category_id: catId,
-          file_size: gf.size ? parseInt(gf.size) : 180 * 1024 * 1024,
-          description: `Google Drive Vault File (${gf.name})`,
-          download_count: 0
-        });
-        newlyAdded++;
-      }
+      allFilesList.unshift({
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        original_name: gf.name,
+        file_key: `gdrive:${gf.id}`,
+        category_id: catId,
+        file_size: gf.size ? parseInt(gf.size) : 180 * 1024 * 1024,
+        description: `Google Drive Vault File (${gf.name})`,
+        download_count: 0
+      });
+      newlyAdded++;
     });
 
-    // RE-RENDER SIDEBAR & GRID SO CLIENT PAGE IS 100% SYNCHRONIZED WITH ADMIN PAGE
-    renderLeftSidebar();
-    renderToolsGrid();
-    updateCategoryBannerLabel(activeMainCategory === 'all' ? 'All Vault Tools' : activeMainCategory, getActiveCategoryFilesCount());
+    if (newlyAdded > 0) {
+      renderLeftSidebar();
+      renderToolsGrid();
+      updateCategoryBannerLabel(activeMainCategory === 'all' ? 'All Vault Tools' : activeMainCategory, getActiveCategoryFilesCount());
+    }
 
   } catch (err) {}
 }
