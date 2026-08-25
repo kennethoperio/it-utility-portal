@@ -185,15 +185,16 @@ async function getGoogleAccessTokenDirect() {
   return null;
 }
 
-// --- DYNAMICALLY PULL ALL REAL GOOGLE DRIVE SUBFOLDERS FROM GOOGLE DRIVE API ---
+// --- DYNAMICALLY PULL ALL REAL GOOGLE DRIVE SUBFOLDERS & FILES FROM GOOGLE DRIVE API ---
 async function syncRealGDriveStructureDirect() {
   try {
     const token = await getGoogleAccessTokenDirect();
     if (!token) return;
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q='${DEFAULT_VAULT_FOLDER_ID}'+in+parents+and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,webViewLink)`, {
+
+    // Fetch Folders
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,parents,webViewLink)&pageSize=100`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-
     const data = await res.json();
     const gFolders = data.files || [];
 
@@ -217,6 +218,34 @@ async function syncRealGDriveStructureDirect() {
         }
       });
     }
+
+    // Fetch Files
+    const filesRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType!='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,size,parents,webViewLink)&pageSize=100`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const filesData = await filesRes.json();
+    const gFiles = filesData.files || [];
+
+    gFiles.forEach(gf => {
+      if (gf.name.endsWith('.db') || gf.name.endsWith('.json')) return;
+
+      const parentId = (gf.parents && gf.parents[0]) ? gf.parents[0] : DEFAULT_VAULT_FOLDER_ID;
+      const matchingCat = categoriesList.find(c => c.gdrive_folder_id === parentId);
+      const catId = matchingCat ? matchingCat.id : 1;
+
+      if (!adminFilesList.some(f => (f.file_key || '').includes(gf.id) || f.original_name === gf.name)) {
+        adminFilesList.unshift({
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          original_name: gf.name,
+          file_key: `gdrive:${gf.id}`,
+          category_id: catId,
+          file_size: gf.size ? parseInt(gf.size) : 180 * 1024 * 1024,
+          description: `Google Drive Vault File (${gf.name})`,
+          download_count: 0
+        });
+      }
+    });
+
   } catch (err) {}
 }
 
