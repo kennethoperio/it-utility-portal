@@ -657,6 +657,20 @@ function populateUploadCategoryDropdown() {
   select.innerHTML = categoriesList.map(c => `
     <option value="${c.id}">${escapeHtml(c.main_category || 'General')} ➔ ${escapeHtml(c.subcategory || c.name)}</option>
   `).join('');
+  updateUploadFolderLink();
+}
+
+function updateUploadFolderLink() {
+  const catSelect = document.getElementById('upload-file-category');
+  const openBtn = document.getElementById('upload-open-gdrive-folder-btn');
+  if (!catSelect || !openBtn) return;
+  const catId = parseInt(catSelect.value || 1);
+  const selectedCat = categoriesList.find(c => c.id === catId);
+  if (selectedCat && selectedCat.gdrive_folder_id) {
+    openBtn.href = `https://drive.google.com/drive/folders/${selectedCat.gdrive_folder_id}`;
+  } else {
+    openBtn.href = 'https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3';
+  }
 }
 
 // --- SMOOTH REAL-TIME ACCURATE UPLOAD PROGRESS BAR (ZERO 413 & ZERO CORS ERRORS) ---
