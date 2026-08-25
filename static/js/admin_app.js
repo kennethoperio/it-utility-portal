@@ -1,4 +1,4 @@
-// IT Utility Portal - Admin Dashboard Application Logic
+// IT Utility Portal - Advanced Admin Dashboard Logic
 const API_BASE = (window.location.pathname.includes('it-utility-portal') || window.location.hostname.includes('github.io')) ? 'static/api' : 'api';
 
 let categoriesList = [];
@@ -77,7 +77,7 @@ function adminLogout() {
 }
 
 function showAdminSection(tabName) {
-  const sections = ['files', 'feedback', 'categories', 'passcodes', 'logs'];
+  const sections = ['files', 'upload', 'passcodes', 'categories', 'feedback', 'logs'];
   sections.forEach(s => {
     const el = document.getElementById(`admin-sec-${s}`);
     if (el) el.style.display = 'none';
@@ -94,9 +94,10 @@ function showAdminSection(tabName) {
   if (activeBtn) activeBtn.classList.add('active');
 
   if (tabName === 'files') renderAdminFilesTable();
-  if (tabName === 'feedback') renderAdminFeedback();
+  if (tabName === 'upload') populateUploadCategoryDropdown();
+  if (tabName === 'passcodes') renderAdminPasscodesTable();
   if (tabName === 'categories') renderAdminCategories();
-  if (tabName === 'passcodes') renderAdminPasscodes();
+  if (tabName === 'feedback') renderAdminFeedback();
   if (tabName === 'logs') loadAdminAuditLogs();
 }
 
@@ -113,9 +114,9 @@ async function loadAdminDashboardData() {
       
       renderAdminStats();
       renderAdminFilesTable();
-      renderAdminFeedback();
+      renderAdminPasscodesTable();
       renderAdminCategories();
-      renderAdminPasscodes();
+      renderAdminFeedback();
     }
   } catch (err) {
     console.warn('Dashboard data load error:', err);
@@ -125,15 +126,13 @@ async function loadAdminDashboardData() {
 function renderAdminStats() {
   document.getElementById('stat-files').innerText = adminFilesList.length;
   document.getElementById('stat-categories').innerText = categoriesList.length;
+  document.getElementById('stat-passcodes').innerText = passcodesList.length + 1; // +1 master
   
   const totalSize = adminFilesList.reduce((acc, f) => acc + (f.file_size || 0), 0);
   document.getElementById('stat-storage').innerText = formatBytes(totalSize);
-
-  let totalComments = 0;
-  Object.values(fileCommentsMap).forEach(arr => totalComments += arr.length);
-  document.getElementById('stat-comments').innerText = totalComments;
 }
 
+// --- File Table & Edit Details ---
 function renderAdminFilesTable() {
   const tbody = document.getElementById('admin-files-table-body');
   if (!tbody) return;
@@ -153,22 +152,251 @@ function renderAdminFilesTable() {
   tbody.innerHTML = filtered.map(f => {
     const cat = categoriesList.find(c => c.id === f.category_id);
     const catName = cat ? (cat.subcategory || cat.name) : 'Utility';
-    const comments = fileCommentsMap[f.id] || [];
+    const mainCatName = cat ? (cat.main_category || 'General') : 'General';
 
     return `
       <tr style="border-bottom: 1px solid var(--border-color);">
-        <td style="padding: 0.8rem; font-weight: 600; color: var(--text-main);"><i class="fa-solid fa-file-zipper" style="color: var(--primary); margin-right: 0.5rem;"></i> ${escapeHtml(f.original_name)}</td>
-        <td style="padding: 0.8rem;"><span class="tag cyan"><i class="fa-solid fa-folder"></i> ${escapeHtml(catName)}</span></td>
+        <td style="padding: 0.8rem;">
+          <div style="font-weight: 700; color: var(--text-main);"><i class="fa-solid fa-file-zipper" style="color: var(--primary); margin-right: 0.4rem;"></i> ${escapeHtml(f.original_name)}</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">${escapeHtml(f.description || '')}</div>
+        </td>
+        <td style="padding: 0.8rem;"><span class="tag cyan"><i class="fa-solid fa-folder"></i> ${escapeHtml(mainCatName)} ➔ ${escapeHtml(catName)}</span></td>
         <td style="padding: 0.8rem; color: var(--text-muted);">${formatBytes(f.file_size || 0)}</td>
-        <td style="padding: 0.8rem;"><span class="tag">${comments.length} Comments</span></td>
+        <td style="padding: 0.8rem; color: var(--text-muted);">${f.download_count || 0}</td>
         <td style="padding: 0.8rem; text-align: right;">
-          <button onclick="openMoveFileModal(${f.id}, '${escapeHtml(f.original_name)}', ${f.category_id})" class="btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.8rem;">
+          <button onclick="openEditFileModal(${f.id})" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.78rem; margin-right: 0.3rem;">
+            <i class="fa-solid fa-pen"></i> Edit
+          </button>
+          <button onclick="openMoveFileModal(${f.id}, '${escapeHtml(f.original_name)}', ${f.category_id})" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.78rem;">
             <i class="fa-solid fa-truck-ramp-box"></i> Move
           </button>
         </td>
       </tr>
     `;
   }).join('');
+}
+
+// --- Edit Tool Description Modal ---
+function openEditFileModal(fileId) {
+  const fileObj = adminFilesList.find(f => f.id == fileId);
+  if (!fileObj) return;
+
+  document.getElementById('edit-file-id').value = fileId;
+  document.getElementById('edit-file-title').value = fileObj.original_name;
+  document.getElementById('edit-file-desc').value = fileObj.description || '';
+  document.getElementById('edit-file-modal').style.display = 'flex';
+}
+
+function closeEditFileModal(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('edit-file-modal').style.display = 'none';
+}
+
+function handleEditFileSubmit(e) {
+  e.preventDefault();
+  const fileId = document.getElementById('edit-file-id').value;
+  const newTitle = document.getElementById('edit-file-title').value.trim();
+  const newDesc = document.getElementById('edit-file-desc').value.trim();
+
+  const fileObj = adminFilesList.find(f => f.id == fileId);
+  if (fileObj) {
+    fileObj.original_name = newTitle;
+    fileObj.description = newDesc;
+    renderAdminFilesTable();
+    showToast('✏️ Tool description & details updated!');
+  }
+  closeEditFileModal();
+}
+
+// --- Move File Modal (WITH CLOSE / CANCEL BUTTONS) ---
+function openMoveFileModal(fileId, fileName, currentCatId) {
+  activeMovingFileId = fileId;
+  document.getElementById('move-file-id').value = fileId;
+  document.getElementById('move-file-name').innerText = fileName;
+
+  const select = document.getElementById('move-file-target-category');
+  select.innerHTML = categoriesList.map(c => `
+    <option value="${c.id}" ${c.id === currentCatId ? 'selected' : ''}>${escapeHtml(c.main_category || 'General')} ➔ ${escapeHtml(c.subcategory || c.name)}</option>
+  `).join('');
+
+  document.getElementById('move-file-modal').style.display = 'flex';
+}
+
+function closeMoveFileModal(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('move-file-modal').style.display = 'none';
+}
+
+function handleMoveFileSubmit(e) {
+  e.preventDefault();
+  const fileId = document.getElementById('move-file-id').value;
+  const targetCatId = document.getElementById('move-file-target-category').value;
+
+  const fileItem = adminFilesList.find(f => f.id == fileId);
+  if (fileItem) fileItem.category_id = parseInt(targetCatId);
+
+  renderAdminFilesTable();
+  closeMoveFileModal();
+  showToast('🚚 Category updated successfully!');
+}
+
+// --- Upload New Tool File ---
+function populateUploadCategoryDropdown() {
+  const select = document.getElementById('upload-file-category');
+  if (!select) return;
+  select.innerHTML = categoriesList.map(c => `
+    <option value="${c.id}">${escapeHtml(c.main_category || 'General')} ➔ ${escapeHtml(c.subcategory || c.name)}</option>
+  `).join('');
+}
+
+function handleAdminFileUpload(e) {
+  e.preventDefault();
+  const title = document.getElementById('upload-file-title').value.trim();
+  const catId = parseInt(document.getElementById('upload-file-category').value);
+  const gKey = document.getElementById('upload-file-gkey').value.trim();
+  const desc = document.getElementById('upload-file-desc').value.trim();
+
+  let cleanGKey = gKey;
+  if (gKey.includes('id=')) {
+    cleanGKey = 'gdrive:' + gKey.split('id=')[1].split('&')[0];
+  } else if (!gKey.startsWith('gdrive:')) {
+    cleanGKey = 'gdrive:' + gKey;
+  }
+
+  const newFile = {
+    id: Date.now(),
+    original_name: title,
+    file_key: cleanGKey,
+    category_id: catId,
+    file_size: 52428800, // 50MB estimate
+    description: desc,
+    download_count: 0
+  };
+
+  adminFilesList.unshift(newFile);
+  renderAdminFilesTable();
+  renderAdminStats();
+  showToast('📤 New tool uploaded & synced to vault!');
+
+  document.getElementById('upload-file-title').value = '';
+  document.getElementById('upload-file-gkey').value = '';
+  document.getElementById('upload-file-desc').value = '';
+  showAdminSection('files');
+}
+
+// --- Advanced Passcode Access Control & Limits Manager ---
+function toggleAddPasscodeForm() {
+  const form = document.getElementById('add-passcode-form-container');
+  if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function renderAdminPasscodesTable() {
+  const tbody = document.getElementById('admin-passcodes-table-body');
+  if (!tbody) return;
+
+  let html = `
+    <tr style="border-bottom: 1px solid var(--border-color); background: rgba(59,130,246,0.05);">
+      <td style="padding: 0.75rem; font-weight: 700; color: var(--primary);"><i class="fa-solid fa-key"></i> tech2026</td>
+      <td style="padding: 0.75rem;"><strong>Master Technician</strong></td>
+      <td style="padding: 0.75rem;"><span class="tag green">Unlimited Downloads</span></td>
+      <td style="padding: 0.75rem;"><span class="tag cyan">Never Expires</span></td>
+      <td style="padding: 0.75rem; text-align: right;"><span class="tag green">System Passcode</span></td>
+    </tr>
+  `;
+
+  passcodesList.forEach(p => {
+    const maxDl = p.max_uses || p.max_downloads || 0;
+    const currentDl = p.current_uses || p.current_downloads || 0;
+    const dlLabel = maxDl === 0 ? `Unlimited (${currentDl} used)` : `${currentDl} / ${maxDl} downloads`;
+    const validityLabel = p.validity || p.expiration_date || 'No Expiration';
+
+    html += `
+      <tr style="border-bottom: 1px solid var(--border-color);">
+        <td style="padding: 0.75rem; font-weight: 600; color: var(--text-main);">${escapeHtml(p.passcode)}</td>
+        <td style="padding: 0.75rem; color: var(--text-muted);">${escapeHtml(p.label || 'Guest Access')}</td>
+        <td style="padding: 0.75rem;"><span class="tag ${currentDl >= maxDl && maxDl > 0 ? 'rose' : 'cyan'}">${dlLabel}</span></td>
+        <td style="padding: 0.75rem; color: var(--text-muted);">${escapeHtml(validityLabel)}</td>
+        <td style="padding: 0.75rem; text-align: right;">
+          <button onclick="deletePasscode(${p.id})" class="btn-secondary" style="border-color: var(--rose); color: var(--rose); padding: 0.25rem 0.6rem; font-size: 0.78rem;">
+            <i class="fa-solid fa-trash"></i> Revoke
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+function handleCreatePasscodeSubmit(e) {
+  e.preventDefault();
+  const code = document.getElementById('new-pass-code').value.trim().toUpperCase();
+  const label = document.getElementById('new-pass-label').value.trim();
+  const validity = document.getElementById('new-pass-validity').value || 'Never Expires';
+  const maxDl = parseInt(document.getElementById('new-pass-max-downloads').value || 0);
+
+  const newPass = {
+    id: Date.now(),
+    passcode: code,
+    label: label,
+    validity: validity,
+    max_downloads: maxDl,
+    current_downloads: 0
+  };
+
+  passcodesList.push(newPass);
+  renderAdminPasscodesTable();
+  renderAdminStats();
+  toggleAddPasscodeForm();
+  showToast(`🔑 Access passcode ${code} generated successfully!`);
+}
+
+function deletePasscode(id) {
+  if (confirm('Revoke and delete this access passcode?')) {
+    passcodesList = passcodesList.filter(p => p.id !== id);
+    renderAdminPasscodesTable();
+    renderAdminStats();
+    showToast('🔑 Passcode revoked successfully.');
+  }
+}
+
+// --- Categories & Folders Manager ---
+function toggleAddCategoryForm() {
+  const form = document.getElementById('add-category-form-container');
+  if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function handleCreateCategorySubmit(e) {
+  e.preventDefault();
+  const mainName = document.getElementById('new-cat-main').value.trim();
+  const subName = document.getElementById('new-cat-sub').value.trim();
+
+  const newCat = {
+    id: Date.now(),
+    main_category: mainName,
+    subcategory: subName,
+    name: subName,
+    icon: 'folder',
+    display_order: categoriesList.length + 1
+  };
+
+  categoriesList.push(newCat);
+  renderAdminCategories();
+  renderAdminStats();
+  toggleAddCategoryForm();
+  showToast(`📁 Category ${mainName} ➔ ${subName} created!`);
+}
+
+function renderAdminCategories() {
+  const container = document.getElementById('admin-categories-list');
+  if (!container) return;
+
+  container.innerHTML = categoriesList.map(c => `
+    <div class="card-item" style="margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.15rem;">
+      <div><i class="fa-solid fa-${c.icon || 'folder'}" style="color: var(--primary); margin-right: 0.65rem;"></i> <strong>${escapeHtml(c.main_category || 'General')}</strong> ➔ <span>${escapeHtml(c.subcategory || c.name)}</span></div>
+      <span class="tag">${adminFilesList.filter(f => f.category_id === c.id).length} files</span>
+    </div>
+  `).join('');
 }
 
 function renderAdminFeedback() {
@@ -205,61 +433,6 @@ function renderAdminFeedback() {
   container.innerHTML = html;
 }
 
-function openMoveFileModal(fileId, fileName, currentCatId) {
-  activeMovingFileId = fileId;
-  document.getElementById('move-file-id').value = fileId;
-  document.getElementById('move-file-name').innerText = fileName;
-
-  const select = document.getElementById('move-file-target-category');
-  select.innerHTML = categoriesList.map(c => `
-    <option value="${c.id}" ${c.id === currentCatId ? 'selected' : ''}>${escapeHtml(c.main_category || 'General')} ➔ ${escapeHtml(c.subcategory || c.name)}</option>
-  `).join('');
-
-  document.getElementById('move-file-modal').style.display = 'flex';
-}
-
-function handleMoveFileSubmit(e) {
-  e.preventDefault();
-  const fileId = document.getElementById('move-file-id').value;
-  const targetCatId = document.getElementById('move-file-target-category').value;
-
-  const fileItem = adminFilesList.find(f => f.id == fileId);
-  if (fileItem) fileItem.category_id = parseInt(targetCatId);
-
-  renderAdminFilesTable();
-  document.getElementById('move-file-modal').style.display = 'none';
-  showToast('🚚 Category updated successfully!');
-}
-
-function renderAdminCategories() {
-  const container = document.getElementById('admin-categories-list');
-  if (!container) return;
-
-  container.innerHTML = categoriesList.map(c => `
-    <div class="card-item" style="margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.15rem;">
-      <div><i class="fa-solid fa-${c.icon || 'folder'}" style="color: var(--primary); margin-right: 0.65rem;"></i> <strong>${escapeHtml(c.main_category || 'General')}</strong> ➔ <span>${escapeHtml(c.subcategory || c.name)}</span></div>
-      <span class="tag">${adminFilesList.filter(f => f.category_id === c.id).length} files</span>
-    </div>
-  `).join('');
-}
-
-function renderAdminPasscodes() {
-  const container = document.getElementById('admin-passcodes-list');
-  if (!container) return;
-
-  container.innerHTML = `
-    <div class="card-item" style="padding: 1.25rem;">
-      <h4 style="margin-bottom: 0.5rem; color: var(--primary);"><i class="fa-solid fa-key"></i> Passcodes Management</h4>
-      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">Client & technician login access passcodes.</p>
-      
-      <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
-        <span class="tag cyan" style="font-size: 0.88rem; padding: 0.4rem 0.85rem;">Master Technician: tech2026</span>
-        <span class="tag" style="font-size: 0.88rem; padding: 0.4rem 0.85rem;">Community Guest: PHCORNER</span>
-      </div>
-    </div>
-  `;
-}
-
 function loadAdminAuditLogs() {
   const refreshBtns = document.querySelectorAll('button[onclick="loadAdminAuditLogs()"] i');
   refreshBtns.forEach(icon => icon.classList.add('fa-spin'));
@@ -286,12 +459,7 @@ function renderAuditLogsTable() {
 }
 
 function confirmDownloadAllZip() {
-  const confirmed = confirm(
-    `📦 GOOGLE DRIVE VAULT CONFIRMATION\n\n` +
-    `Click OK to open your Google Drive IT_Utility_Vault folder.`
-  );
-
-  if (confirmed) {
+  if (confirm('Click OK to open your Google Drive IT_Utility_Vault folder.')) {
     window.open('https://drive.google.com', '_blank');
   }
 }
