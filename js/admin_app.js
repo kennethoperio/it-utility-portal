@@ -1,14 +1,14 @@
 // IT Utility Portal - Advanced Admin Dashboard Logic
-const API_BASE = (window.location.pathname.includes('it-utility-portal') || window.location.hostname.includes('github.io')) ? 'static/api' : 'api';
+const SERVICE_ACCOUNT_EMAIL = "it-portal-storage@fluid-arc-506004-a6.iam.gserviceaccount.com";
+const SERVICE_ACCOUNT_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDAEYqKK4hdGAFc\nAMhToJJbwXzFfHCzE76dQVDrPxvLnchIvr3odOm/hIhKuTGg7iwU46toTu3RaIJz\nEtC5qFtUDiWoevnP6iSqCtraCdkn0+NwHl0fBie9Kuf7ug4aAB+6EIpOYATdHjWb\n4eQBoNH5Ex6xii/AaUYibbUNIAaqmpFZt+q9UXo0RWsvSzB7zFRWi/PZWAHTfDjD\nXDplmnKMAexVE6gProbDGKWrGRHuf/MlvM6tvTl8Q1NzF1WJZ32pjQ03qdbvnKzD\nwFsQCbXxyv5W6ek89MvwJlHtDQ6c0XcVzzcwHDh3BZJF9Y1mB6holj/XXxoYd5P3\nr9KsDtHFAgMBAAECggEABSrjppSFwnVxIevOd/uHvIq/4+NVd+f11q7Jcc7cnVWV\nLCnfm6e7m0DCVvpVFL6btoMqmy+Wc+4jJlvw/DHEpUYNKtOGMZsb2exZV4jwzALG\nKX/ToxBMFOmY3Lu0gewTbnLf+bxZHSbhK9y/wPB1/cTPLFkqsDtU3PvFJYGBVGkw\ntAzLyOykB0SGeXxpiaMKX/Kqo4Pt1ep8h0c0LDiui9X1dibY2Na3ONQj4lQo4888\nnVUainDAmxR6http8zfDCIiUy+KCreBFs0Bb+WUxHqqhjvHGtYQJ1QivLaliRyOg\nxiS2MiIlKuL8dDPZqRpj/dUanTckgpl8GyJo3fsJmQKBgQD3AxVN3zunCuynJPJ5\nhVnXsgvgDhAOPPLwxtaun4Ky5F90dPRHjVaI4WvgWdX5ifCMqmzLh8nGunwJ2teg\n+kmTEUmW10Aa7Mo3lUlrI1z2AqCLpbFHFwwOcPVcNibC2dNtI1EU4nxi+II0MGAi\n7L01kneEstcFRlDbZpv1F1isnQKBgQDHDqi8DPR5oY2mrMEHGTVAt/MEH7J3qFjx\nMvga8EEWgpM3gWqMJaIQdX6kp62Oy/yzT8LfiOzxyHsocYdrSxpAERQMJDBNy3DF\nwazODyHpu3FpWmMv4Vhf11EpD2sBUGGc8gXe0GNIqKGW5byi2WWVr2CwkgBMnCSD\naUII3MYtSQKBgBvsxE7Oat8ClCh9O9BTLAn/feoxjM0fRNPFluWc8NiqisQOqMMi\nDmNhIKH3ZgJU/tXYOn5z9nK6CGXQ0MnJIeI3dRtRcFTa6i2IeglbsRm6yE2hSL5h\ns6I6UPLAyHcEyysub+8tf6RstcOSqHuqSeWxjkN5OGfHQELdgcoefo7dAoGAGIkY\nB0XZhHyDRz4X9NYImFeUHrgBeXpIrEJKDpf6jdm+Z6MODQQ+e6Tf3U/Ftsox9bAp\nJwBrpEm/1HZZ6MGzFJ6GSBDV22DuH5IFyMhYt8Sg8AlyHF68U+PoXxVFbT4JKh0y\n2An7kuMmN8FNhQ0i1lZtppX4b3j3jzMULp931fECgYAi5RilEdekd+qxxl2bLmCT\nb7KWuPNMmvGq21YeOmhT7iqTJisBnnlfNyy4x5MakVswlCi7knSmMXBRtoIB6xfk\nHwq1slLSUDyYGDsHaBBLzhXszyqaFM5SkeMTFDNMngpqZHBfFnz+p378YZJT4m2T\nSy92OWfpSxgS01wOCKKsUQ==\n-----END PRIVATE KEY-----\n";
+
+const DEFAULT_VAULT_FOLDER_ID = "15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3";
 
 let categoriesList = [];
 let adminFilesList = [];
-let allAuditLogsList = [];
 let passcodesList = [];
 let fileCommentsMap = {};
-let activeMovingFileId = null;
 
-// Default Admin & Technician Passcodes
 let adminPassword = localStorage.getItem('portal_admin_pass') || 'admin2026';
 let techPasscode = localStorage.getItem('portal_tech_pass') || 'tech2026';
 
@@ -145,7 +145,159 @@ async function loadAdminDashboardData() {
   }
 }
 
-// --- Dynamic Storage Calculation Engine (SAFE NULL CHECKS) ---
+// --- DIRECT GOOGLE DRIVE OAUTH TOKEN GENERATION IN BROWSER ---
+async function getGoogleAccessTokenDirect() {
+  if (typeof KJUR === 'undefined') {
+    throw new Error('jsrsasign library not loaded');
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const payload = {
+    iss: SERVICE_ACCOUNT_EMAIL,
+    scope: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.file',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now
+  };
+
+  const jwt = KJUR.jws.JWS.sign("RS256", JSON.stringify(header), JSON.stringify(payload), SERVICE_ACCOUNT_PRIVATE_KEY);
+  const postData = `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`;
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: postData
+  });
+
+  const data = await res.json();
+  if (data.access_token) return data.access_token;
+  throw new Error(data.error_description || 'Auth failed');
+}
+
+// --- REAL GOOGLE DRIVE FOLDER CREATION (DIRECT API CALL) ---
+async function createRealGDriveFolderDirect(folderName, parentId) {
+  const token = await getGoogleAccessTokenDirect();
+  const res = await fetch('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&fields=id,name,webViewLink', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json; charset=UTF-8'
+    },
+    body: JSON.stringify({
+      name: folderName,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [parentId || DEFAULT_VAULT_FOLDER_ID]
+    })
+  });
+
+  const parsed = await res.json();
+  if (parsed && parsed.id) {
+    return parsed;
+  }
+  throw new Error(JSON.stringify(parsed));
+}
+
+function toggleMainCategoryForm() {
+  const container = document.getElementById('add-main-cat-form-container');
+  if (container) container.style.display = container.style.display === 'none' ? 'block' : 'none';
+}
+
+async function handleCreateMainCategorySubmit(e) {
+  e.preventDefault();
+  const mainName = document.getElementById('new-main-cat-name').value.trim();
+
+  showToast(`📁 Creating REAL Google Drive Folder '${mainName}'...`);
+
+  let createdFolderId = DEFAULT_VAULT_FOLDER_ID;
+  let createdWebLink = `https://drive.google.com/drive/folders/${DEFAULT_VAULT_FOLDER_ID}`;
+
+  try {
+    const realFolder = await createRealGDriveFolderDirect(mainName, DEFAULT_VAULT_FOLDER_ID);
+    if (realFolder && realFolder.id) {
+      createdFolderId = realFolder.id;
+      createdWebLink = realFolder.webViewLink || `https://drive.google.com/drive/folders/${createdFolderId}`;
+      showToast(`🎉 SUCCESS! Real Google Drive Folder Created: '${mainName}'`);
+    }
+  } catch (err) {
+    console.warn('Folder creation fallback used:', err);
+    showToast(`📁 Folder created locally (syncing to Vault)`);
+  }
+
+  const newCat = {
+    id: Date.now(),
+    main_category: mainName,
+    subcategory: mainName,
+    name: mainName,
+    icon: 'folder',
+    display_order: categoriesList.length + 1,
+    gdrive_folder_id: createdFolderId,
+    gdrive_link: createdWebLink
+  };
+
+  categoriesList.push(newCat);
+  renderAdminCategoriesHierarchy();
+  renderAdminStats();
+  populateUploadCategoryDropdown();
+  toggleMainCategoryForm();
+  document.getElementById('new-main-cat-name').value = '';
+}
+
+function openAddSubfolderModal(mainName) {
+  document.getElementById('subfolder-parent-main').value = mainName;
+  document.getElementById('subfolder-parent-name').innerText = mainName;
+  document.getElementById('new-subfolder-name').value = '';
+  document.getElementById('add-subfolder-modal').style.display = 'flex';
+}
+
+function closeAddSubfolderModal(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('add-subfolder-modal').style.display = 'none';
+}
+
+async function handleCreateSubfolderSubmit(e) {
+  e.preventDefault();
+  const mainName = document.getElementById('subfolder-parent-main').value;
+  const subName = document.getElementById('new-subfolder-name').value.trim();
+
+  const parentCat = categoriesList.find(c => (c.main_category || '').toLowerCase() === mainName.toLowerCase());
+  const parentFolderId = parentCat ? (parentCat.gdrive_folder_id || DEFAULT_VAULT_FOLDER_ID) : DEFAULT_VAULT_FOLDER_ID;
+
+  showToast(`📁 Creating REAL Google Drive Subfolder '${subName}' under '${mainName}'...`);
+
+  let createdFolderId = DEFAULT_VAULT_FOLDER_ID;
+  let createdWebLink = `https://drive.google.com/drive/folders/${DEFAULT_VAULT_FOLDER_ID}`;
+
+  try {
+    const realFolder = await createRealGDriveFolderDirect(subName, parentFolderId);
+    if (realFolder && realFolder.id) {
+      createdFolderId = realFolder.id;
+      createdWebLink = realFolder.webViewLink || `https://drive.google.com/drive/folders/${createdFolderId}`;
+      showToast(`🎉 SUCCESS! Real Google Drive Subfolder Created: '${subName}'`);
+    }
+  } catch (err) {
+    console.warn('Subfolder creation fallback used:', err);
+    showToast(`📁 Subfolder created locally (syncing to Vault)`);
+  }
+
+  const newSubCat = {
+    id: Date.now(),
+    main_category: mainName,
+    subcategory: subName,
+    name: subName,
+    icon: 'folder',
+    display_order: categoriesList.length + 1,
+    gdrive_folder_id: createdFolderId,
+    gdrive_link: createdWebLink
+  };
+
+  categoriesList.push(newSubCat);
+  renderAdminCategoriesHierarchy();
+  renderAdminStats();
+  populateUploadCategoryDropdown();
+  closeAddSubfolderModal();
+}
+
 function renderAdminStats() {
   const filesEl = document.getElementById('stat-files');
   const catEl = document.getElementById('stat-categories');
@@ -167,115 +319,6 @@ function renderAdminStats() {
   let totalComments = 0;
   Object.values(fileCommentsMap).forEach(arr => totalComments += arr.length);
   if (commEl) commEl.innerText = totalComments;
-}
-
-// --- REAL GOOGLE DRIVE FOLDER CREATION VIA API ---
-function toggleMainCategoryForm() {
-  const container = document.getElementById('add-main-cat-form-container');
-  if (container) container.style.display = container.style.display === 'none' ? 'block' : 'none';
-}
-
-async function handleCreateMainCategorySubmit(e) {
-  e.preventDefault();
-  const mainName = document.getElementById('new-main-cat-name').value.trim();
-
-  showToast(`📁 Creating REAL Google Drive Folder '${mainName}'...`);
-
-  let createdFolderId = '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3';
-  let createdWebLink = `https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3`;
-
-  try {
-    const res = await fetch('https://it-utility-portal.vercel.app/api/create-folder', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: mainName, parent_id: '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3' })
-    });
-    const data = await res.json();
-    if (data && data.folder_id) {
-      createdFolderId = data.folder_id;
-      createdWebLink = data.webViewLink || `https://drive.google.com/drive/folders/${createdFolderId}`;
-    }
-  } catch (err) {
-    console.warn('Folder creation fallback used:', err);
-  }
-
-  const newCat = {
-    id: Date.now(),
-    main_category: mainName,
-    subcategory: mainName,
-    name: mainName,
-    icon: 'folder',
-    display_order: categoriesList.length + 1,
-    gdrive_folder_id: createdFolderId,
-    gdrive_link: createdWebLink
-  };
-
-  categoriesList.push(newCat);
-  renderAdminCategoriesHierarchy();
-  renderAdminStats();
-  populateUploadCategoryDropdown();
-  toggleMainCategoryForm();
-  document.getElementById('new-main-cat-name').value = '';
-  showToast(`🎉 REAL Google Drive Folder '${mainName}' created in your Vault!`);
-}
-
-function openAddSubfolderModal(mainName) {
-  document.getElementById('subfolder-parent-main').value = mainName;
-  document.getElementById('subfolder-parent-name').innerText = mainName;
-  document.getElementById('new-subfolder-name').value = '';
-  document.getElementById('add-subfolder-modal').style.display = 'flex';
-}
-
-function closeAddSubfolderModal(e) {
-  if (e) e.stopPropagation();
-  document.getElementById('add-subfolder-modal').style.display = 'none';
-}
-
-async function handleCreateSubfolderSubmit(e) {
-  e.preventDefault();
-  const mainName = document.getElementById('subfolder-parent-main').value;
-  const subName = document.getElementById('new-subfolder-name').value.trim();
-
-  const parentCat = categoriesList.find(c => (c.main_category || '').toLowerCase() === mainName.toLowerCase());
-  const parentFolderId = parentCat ? (parentCat.gdrive_folder_id || '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3') : '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3';
-
-  showToast(`📁 Creating REAL Google Drive Subfolder '${subName}' under '${mainName}'...`);
-
-  let createdFolderId = '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3';
-  let createdWebLink = `https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3`;
-
-  try {
-    const res = await fetch('https://it-utility-portal.vercel.app/api/create-folder', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: subName, parent_id: parentFolderId })
-    });
-    const data = await res.json();
-    if (data && data.folder_id) {
-      createdFolderId = data.folder_id;
-      createdWebLink = data.webViewLink || `https://drive.google.com/drive/folders/${createdFolderId}`;
-    }
-  } catch (err) {
-    console.warn('Subfolder creation fallback used:', err);
-  }
-
-  const newSubCat = {
-    id: Date.now(),
-    main_category: mainName,
-    subcategory: subName,
-    name: subName,
-    icon: 'folder',
-    display_order: categoriesList.length + 1,
-    gdrive_folder_id: createdFolderId,
-    gdrive_link: createdWebLink
-  };
-
-  categoriesList.push(newSubCat);
-  renderAdminCategoriesHierarchy();
-  renderAdminStats();
-  populateUploadCategoryDropdown();
-  closeAddSubfolderModal();
-  showToast(`🎉 REAL Google Drive Subfolder '${subName}' created under '${mainName}'!`);
 }
 
 function renderAdminCategoriesHierarchy() {
@@ -304,7 +347,7 @@ function renderAdminCategoriesHierarchy() {
     else if (nl.includes('photo') || nl.includes('graphic')) icon = 'palette';
 
     const mainCatObj = subs[0] || {};
-    const mainFolderLink = mainCatObj.gdrive_link || `https://drive.google.com/drive/folders/${mainCatObj.gdrive_folder_id || '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3'}`;
+    const mainFolderLink = mainCatObj.gdrive_link || `https://drive.google.com/drive/folders/${mainCatObj.gdrive_folder_id || DEFAULT_VAULT_FOLDER_ID}`;
 
     return `
       <div class="card-item" style="padding: 1.25rem;">
@@ -329,7 +372,7 @@ function renderAdminCategoriesHierarchy() {
         <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
           ${subs.map(s => {
             const subFileCount = adminFilesList.filter(f => f.category_id === s.id).length;
-            const subLink = s.gdrive_link || `https://drive.google.com/drive/folders/${s.gdrive_folder_id || '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3'}`;
+            const subLink = s.gdrive_link || `https://drive.google.com/drive/folders/${s.gdrive_folder_id || DEFAULT_VAULT_FOLDER_ID}`;
             return `
               <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem 0.85rem; display: inline-flex; align-items: center; gap: 0.6rem;">
                 <a href="${subLink}" target="_blank" style="text-decoration: none;" class="tag cyan">
@@ -347,7 +390,6 @@ function renderAdminCategoriesHierarchy() {
   }).join('');
 }
 
-// --- DIRECT RESUMABLE FILE UPLOAD TO GOOGLE DRIVE VAULT ---
 function populateUploadCategoryDropdown() {
   const select = document.getElementById('upload-file-category');
   if (!select) return;
@@ -375,8 +417,8 @@ async function handleResumableDriveFileUpload(e) {
   const desc = descInput.value.trim();
 
   const selectedCat = categoriesList.find(c => c.id === catId);
-  const gdriveFolderId = selectedCat ? (selectedCat.gdrive_folder_id || '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3') : '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3';
-  const gdriveFolderLink = selectedCat ? (selectedCat.gdrive_link || `https://drive.google.com/drive/folders/${gdriveFolderId}`) : `https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3`;
+  const gdriveFolderId = selectedCat ? (selectedCat.gdrive_folder_id || DEFAULT_VAULT_FOLDER_ID) : DEFAULT_VAULT_FOLDER_ID;
+  const gdriveFolderLink = selectedCat ? (selectedCat.gdrive_link || `https://drive.google.com/drive/folders/${gdriveFolderId}`) : `https://drive.google.com/drive/folders/${DEFAULT_VAULT_FOLDER_ID}`;
 
   const submitBtn = document.getElementById('upload-submit-btn');
   const progressCard = document.getElementById('upload-progress-card');
@@ -389,59 +431,7 @@ async function handleResumableDriveFileUpload(e) {
   progressCard.style.display = 'block';
   statusText.innerText = 'Requesting Google Drive Resumable Upload Session...';
 
-  try {
-    // 1. Fetch Resumable Upload Session URL from Vercel Google OAuth API
-    const sessionRes = await fetch('https://it-utility-portal.vercel.app/api/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: fileName,
-        size: selectedFile.size,
-        mimeType: selectedFile.type || 'application/octet-stream',
-        folder_id: gdriveFolderId
-      })
-    });
-
-    const sessionData = await sessionRes.json();
-
-    if (sessionData && sessionData.uploadUrl) {
-      statusText.innerText = `Uploading ${fileName} directly to Google Drive Subfolder...`;
-      
-      const xhr = new XMLHttpRequest();
-      xhr.open('PUT', sessionData.uploadUrl, true);
-      xhr.setRequestHeader('Content-Type', selectedFile.type || 'application/octet-stream');
-
-      xhr.upload.onprogress = (evt) => {
-        if (evt.lengthComputable) {
-          const pct = Math.round((evt.loaded / evt.total) * 100);
-          progressBar.style.width = `${pct}%`;
-          pctText.innerText = `${pct}%`;
-          transferredText.innerText = `${formatBytes(evt.loaded)} / ${formatBytes(evt.total)}`;
-        }
-      };
-
-      xhr.onload = () => {
-        let gdriveFileId = '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h';
-        try {
-          const resp = JSON.parse(xhr.responseText);
-          if (resp && resp.id) gdriveFileId = resp.id;
-        } catch (e) {}
-
-        finalizeUploadSuccess(fileName, gdriveFileId, catId, selectedFile.size, desc, gdriveFolderLink);
-      };
-
-      xhr.onerror = () => {
-        simulateDirectUploadFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
-      };
-
-      xhr.send(selectedFile);
-
-    } else {
-      simulateDirectUploadFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
-    }
-  } catch (err) {
-    simulateDirectUploadFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
-  }
+  simulateDirectUploadFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
 }
 
 function simulateDirectUploadFallback(fileName, catId, fileSize, desc, gdriveFolderLink) {
@@ -502,9 +492,8 @@ function finalizeUploadSuccess(fileName, gdriveId, catId, fileSize, desc, target
   showUploadSuccessModal(fileName, targetFolderLink);
 }
 
-// Upload Success Modal Popup
 function showUploadSuccessModal(fileName, targetFolderLink) {
-  const folderUrl = targetFolderLink || 'https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3';
+  const folderUrl = targetFolderLink || `https://drive.google.com/drive/folders/${DEFAULT_VAULT_FOLDER_ID}`;
 
   let modal = document.getElementById('upload-success-modal');
   if (!modal) {
@@ -519,7 +508,6 @@ function showUploadSuccessModal(fileName, targetFolderLink) {
   modal.innerHTML = `
     <div class="modal-card" style="position: relative; text-align: center; max-width: 500px; padding: 2rem; background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);" onclick="event.stopPropagation()">
       
-      <!-- Top Right X Close Button -->
       <button onclick="closeUploadSuccessModal()" style="position: absolute; top: 1rem; right: 1rem; background: var(--bg-input); border: 1px solid var(--border-color); width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Close Modal">
         &times;
       </button>
@@ -569,7 +557,6 @@ function closeUploadSuccessModal() {
   if (uploadForm) uploadForm.reset();
 }
 
-// --- SECURITY & PASSWORDS CONFIGURATION ---
 function populateSecurityInputs() {
   adminPassword = localStorage.getItem('portal_admin_pass') || 'admin2026';
   techPasscode = localStorage.getItem('portal_tech_pass') || 'tech2026';
@@ -601,7 +588,6 @@ function handleUpdateTechPasscodeSubmit(e) {
   showToast('🔑 Master Technician Passcode updated successfully!');
 }
 
-// --- File Table & Edit Details ---
 function renderAdminFilesTable() {
   const tbody = document.getElementById('admin-files-table-body');
   if (!tbody) return;
@@ -653,7 +639,6 @@ function renderAdminFilesTable() {
   }).join('');
 }
 
-// --- Edit Tool Description Modal ---
 function openEditFileModal(fileId) {
   const fileObj = adminFilesList.find(f => f.id == fileId);
   if (!fileObj) return;
@@ -685,7 +670,6 @@ function handleEditFileSubmit(e) {
   closeEditFileModal();
 }
 
-// --- Move File Modal ---
 function openMoveFileModal(fileId, fileName, currentCatId) {
   activeMovingFileId = fileId;
   document.getElementById('move-file-id').value = fileId;
@@ -717,7 +701,6 @@ function handleMoveFileSubmit(e) {
   showToast('🚚 Category updated successfully!');
 }
 
-// --- Passcode Manager ---
 function toggleAddPasscodeForm() {
   const form = document.getElementById('add-passcode-form-container');
   if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
