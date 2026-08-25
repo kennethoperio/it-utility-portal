@@ -304,7 +304,7 @@ async function handleResumableDriveFileUpload(e) {
   progressCard.style.display = 'block';
 
   let uploadedBytes = 0;
-  const chunkSize = 3 * 1024 * 1024;
+  const chunkSize = Math.ceil(totalBytes / 20);
 
   const interval = setInterval(() => {
     uploadedBytes += chunkSize;
@@ -344,13 +344,13 @@ async function handleResumableDriveFileUpload(e) {
         descInput.value = '';
 
         showUploadSuccessModal(title || file.name);
-      }, 500);
+      }, 400);
     } else {
       const pct = Math.round((uploadedBytes / totalBytes) * 100);
       progressBar.style.width = `${pct}%`;
       pctText.innerText = `${pct}%`;
       transferredText.innerText = `${formatBytes(uploadedBytes)} / ${formatBytes(totalBytes)}`;
-      statusText.innerText = `Uploading ${file.name} to Google Drive (${pct}%)...`;
+      statusText.innerText = `Uploading ${file.name} to Google Drive IT_Utility_Vault (${pct}%)...`;
     }
   }, 100);
 }
@@ -607,11 +607,11 @@ function renderAdminFeedback() {
             ${c.status === 'solved' ? '✅ Solved' : (c.status === 'working' ? '✅ Working 100%' : '⚠️ Issue Reported')}
           </span>
           ${c.status !== 'solved' ? `
-            <button onclick="markFeedbackSolved(${c.fileId}, ${c.id})" class="btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; color: var(--success); border-color: var(--success);">
+            <button onclick="markFeedbackSolved(${c.fileId}, ${c.id})" class="btn-secondary" style="padding: 0.2rem 0.55rem; font-size: 0.72rem; color: var(--success); border-color: var(--success);">
               <i class="fa-solid fa-check-double"></i> Mark Solved
             </button>
           ` : ''}
-          <button onclick="deleteFeedbackItem(${c.fileId}, ${c.id})" class="btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; color: var(--rose); border-color: var(--rose);">
+          <button onclick="deleteFeedbackItem(${c.fileId}, ${c.id})" class="btn-secondary" style="padding: 0.2rem 0.55rem; font-size: 0.72rem; color: var(--rose); border-color: var(--rose);">
             <i class="fa-solid fa-trash"></i>
           </button>
         </div>
