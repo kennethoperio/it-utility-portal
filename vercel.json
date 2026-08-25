@@ -20,6 +20,10 @@
       "dest": "/api/upload.js"
     },
     {
+      "src": "/api/create-folder",
+      "dest": "/api/create-folder.js"
+    },
+    {
       "src": "/api/manifest",
       "dest": "/api/manifest.js"
     },
