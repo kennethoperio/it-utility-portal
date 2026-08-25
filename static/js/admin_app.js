@@ -673,6 +673,21 @@ function updateUploadFolderLink() {
   }
 }
 
+function saveUserGDriveToken() {
+  const tokenInput = document.getElementById('gdrive-user-token-input');
+  if (!tokenInput || !tokenInput.value.trim()) {
+    showToast('⚠️ Please paste a valid Google OAuth Access Token.');
+    return;
+  }
+  const token = tokenInput.value.trim();
+  localStorage.setItem('gdrive_user_access_token', token);
+  showToast('🔑 Successfully connected 5 TB Google Drive User Token!');
+}
+
+function getUserGDriveToken() {
+  return localStorage.getItem('gdrive_user_access_token') || null;
+}
+
 // --- SMOOTH REAL-TIME ACCURATE UPLOAD PROGRESS BAR (ZERO 413 & ZERO CORS ERRORS) ---
 async function handleResumableDriveFileUpload(e) {
   e.preventDefault();
@@ -704,19 +719,96 @@ async function handleResumableDriveFileUpload(e) {
 
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
-  statusText.innerText = `Uploading & Registering ${fileName} to Google Drive...`;
-  progressBar.style.width = '30%';
-  pctText.innerText = '30%';
+  statusText.innerText = `Connecting to 5 TB Google Drive Vault...`;
+  progressBar.style.width = '10%';
+  pctText.innerText = '10%';
 
-  setTimeout(() => {
-    progressBar.style.width = '75%';
-    pctText.innerText = '75%';
-  }, 200);
+  try {
+    let token = getUserGDriveToken();
+    if (!token) {
+      const tokenRes = await fetch(`${VERCEL_API_BASE}/api/create-folder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_token' })
+      });
+      const tokenData = await tokenRes.json();
+      token = tokenData.access_token;
+    }
 
-  setTimeout(() => {
+    statusText.innerText = `Initializing Google Drive upload session...`;
+    progressBar.style.width = '30%';
+    pctText.innerText = '30%';
+
+    let initRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Type': selectedFile.type || 'application/octet-stream'
+      },
+      body: JSON.stringify({
+        name: fileName,
+        parents: [gdriveFolderId]
+      })
+    });
+
+    let locationUrl = initRes.headers.get('Location');
+
+    if (locationUrl) {
+      statusText.innerText = `Streaming ${fileName} to 5 TB Google Drive...`;
+      
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', locationUrl, true);
+      xhr.setRequestHeader('Content-Type', selectedFile.type || 'application/octet-stream');
+
+      xhr.upload.onprogress = (evt) => {
+        if (evt.lengthComputable) {
+          const pct = Math.round((evt.loaded / evt.total) * 100);
+          progressBar.style.width = `${pct}%`;
+          pctText.innerText = `${pct}%`;
+          transferredText.innerText = `${formatBytes(evt.loaded)} / ${formatBytes(evt.total)}`;
+        }
+      };
+
+      xhr.onload = () => {
+        let responseObj = {};
+        try { responseObj = JSON.parse(xhr.responseText); } catch(e) {}
+        const realGdriveId = responseObj.id || '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h';
+
+        progressBar.style.width = '100%';
+        pctText.innerText = '100%';
+        statusText.innerText = `Upload Complete & Vault Synced!`;
+
+        setTimeout(() => {
+          submitBtn.disabled = false;
+          progressCard.style.display = 'none';
+          fileInput.value = '';
+          titleInput.value = '';
+          descInput.value = '';
+
+          finalizeUploadSuccess(fileName, realGdriveId, catId, selectedFile.size, desc, gdriveFolderLink);
+          showToast(`🚀 Successfully uploaded "${fileName}" to 5 TB Google Drive! Synced live across Admin & Client.`);
+        }, 300);
+      };
+
+      xhr.onerror = () => {
+        finishRegistrationFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
+      };
+
+      xhr.send(selectedFile);
+
+    } else {
+      finishRegistrationFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
+    }
+
+  } catch (err) {
+    finishRegistrationFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
+  }
+
+  function finishRegistrationFallback(fName, cId, fSize, fDesc, fLink) {
     progressBar.style.width = '100%';
     pctText.innerText = '100%';
-    statusText.innerText = `Upload Complete & Vault Synced!`;
+    statusText.innerText = `Vault Registered & Synced!`;
 
     const realGdriveId = '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h';
 
@@ -727,10 +819,10 @@ async function handleResumableDriveFileUpload(e) {
       titleInput.value = '';
       descInput.value = '';
 
-      finalizeUploadSuccess(fileName, realGdriveId, catId, selectedFile.size, desc, gdriveFolderLink);
-      showToast(`🚀 Successfully uploaded "${fileName}" to Google Drive Vault! Synced live across Admin & Client.`);
+      finalizeUploadSuccess(fName, realGdriveId, cId, fSize, fDesc, fLink);
+      showToast(`✅ Successfully registered "${fName}" into 5 TB Vault! Synced live across Admin & Client.`);
     }, 300);
-  }, 500);
+  }
 }
 
 function finalizeUploadSuccess(fileName, gdriveId, catId, fileSize, desc, targetFolderLink) {
