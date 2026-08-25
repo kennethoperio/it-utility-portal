@@ -1,7 +1,5 @@
 const crypto = require('crypto');
 const https = require('https');
-const fs = require('fs');
-const path = require('path');
 
 const GDRIVE_CREDENTIALS = {
   client_email: "it-portal-storage@fluid-arc-506004-a6.iam.gserviceaccount.com",
