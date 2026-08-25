@@ -73,7 +73,7 @@ function clientLogout() {
   showToast('Vault Locked. Logged out successfully.');
 }
 
-// --- UNIVERSAL DIRECT BINARY DOWNLOAD ENGINE ---
+// --- ZERO NEW TAB DIRECT BINARY DOWNLOAD ENGINE ---
 function triggerDirectDownload(fileId, fileName) {
   // Increment Download Counter
   const fileObj = allFilesList.find(f => (f.file_key || '').includes(fileId) || f.id == fileId);
@@ -114,7 +114,7 @@ function openDownloadBypassModal(fileId, fileName) {
       <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.35rem;">Download full uncorrupted file directly to your PC.</p>
 
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <!-- Option 1: Direct Full Binary Download Engine -->
+        <!-- Option 1: Direct Binary Stream Download (NO NEW TAB, AUTOMATIC DOWNLOAD IN CURRENT PAGE) -->
         <button onclick="saveFileImmediately('${fileId}', '${escapeHtml(fileName)}')" class="btn-download" style="background: var(--primary); text-align: center; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">
           <i class="fa-solid fa-download"></i> Click Here to Save File Immediately
         </button>
@@ -135,19 +135,19 @@ function closeDownloadBypassModal() {
   if (modal) modal.style.display = 'none';
 }
 
-// Option 1: Direct full binary stream download that starts 100% instantly
+// Option 1: Direct full binary stream download (NO NEW TABS, AUTOMATIC DOWNLOAD IN BROWSER BAR)
 function saveFileImmediately(fileId, fileName) {
   showToast(`🚚 Starting direct download for ${fileName}...`);
 
   const directBinaryUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&authuser=0`;
 
-  // Universal browser download trigger
-  const win = window.open(directBinaryUrl, '_blank');
-  if (win) {
-    setTimeout(() => {
-      try { win.close(); } catch(e){}
-    }, 2000);
-  }
+  // Trigger browser binary attachment download in current page without opening any new tab or window
+  const a = document.createElement('a');
+  a.href = directBinaryUrl;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 400);
 
   closeDownloadBypassModal();
 }
