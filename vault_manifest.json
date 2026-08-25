@@ -8,7 +8,8 @@
       "subcategory": "Epson L8050",
       "name": "Epson L8050",
       "icon": "print",
-      "display_order": 2
+      "display_order": 2,
+      "gdrive_folder_id": "1sv6QKlEZ-DK7aHSCVRev1r23YAa1Zo9y"
     },
     {
       "id": 47,
@@ -16,7 +17,8 @@
       "subcategory": "Tools & Installers",
       "name": "Tools & Installers",
       "icon": "folder",
-      "display_order": 3
+      "display_order": 3,
+      "gdrive_folder_id": "1kjtQMXb8S1ms6a8S7IIHd7B8jRcjDQvm"
     },
     {
       "id": 48,
@@ -24,7 +26,8 @@
       "subcategory": "Hardware Diagnostics",
       "name": "Hardware Diagnostics",
       "icon": "microchip",
-      "display_order": 4
+      "display_order": 4,
+      "gdrive_folder_id": "1mu5ilcNWTbr3S2Njq8r6Yl3e_y4py0WC"
     },
     {
       "id": 49,
@@ -32,7 +35,8 @@
       "subcategory": "Windows ISO Image",
       "name": "Windows ISO Image",
       "icon": "compact-disc",
-      "display_order": 5
+      "display_order": 5,
+      "gdrive_folder_id": "1tisAx6ttQj2jRINXUZgniSiTbxDejunR"
     },
     {
       "id": 50,
@@ -40,7 +44,8 @@
       "subcategory": "Network & Connectivity",
       "name": "Network & Connectivity",
       "icon": "network-wired",
-      "display_order": 6
+      "display_order": 6,
+      "gdrive_folder_id": "1w5OFCOSg-mJ2gbuNff9rusIDekmSOwuW"
     },
     {
       "id": 51,
@@ -48,7 +53,8 @@
       "subcategory": "Activators & License Tools",
       "name": "Activators & License Tools",
       "icon": "key",
-      "display_order": 7
+      "display_order": 7,
+      "gdrive_folder_id": "1IRDgdf-5c9x_LwWHDW8p-9iyRDR3V2-F"
     },
     {
       "id": 52,
@@ -56,7 +62,8 @@
       "subcategory": "Recovery Tools",
       "name": "Recovery Tools",
       "icon": "folder",
-      "display_order": 8
+      "display_order": 8,
+      "gdrive_folder_id": "14jbZTrTT7wFO47DhY2A7qlQGkqw8Phi5"
     },
     {
       "id": 53,
@@ -64,7 +71,8 @@
       "subcategory": "SATO Printer",
       "name": "SATO Printer",
       "icon": "print",
-      "display_order": 9
+      "display_order": 9,
+      "gdrive_folder_id": "1RSs5yeYRg56xUzsRyVzBt8H0tLwN7SoC"
     },
     {
       "id": 54,
@@ -72,7 +80,8 @@
       "subcategory": "HP LaserJet Pro P1100, P1560, P1600 Series",
       "name": "HP LaserJet Pro P1100, P1560, P1600 Series",
       "icon": "print",
-      "display_order": 10
+      "display_order": 10,
+      "gdrive_folder_id": "1QbmImBiUVumW8T_UWp0-fLL1Pu5iy55B"
     },
     {
       "id": 55,
@@ -80,7 +89,8 @@
       "subcategory": "Epson LX310",
       "name": "Epson LX310",
       "icon": "print",
-      "display_order": 11
+      "display_order": 11,
+      "gdrive_folder_id": "1lAlyv0b7i-3dRGuHRj-acA4q6fvI53Ox"
     },
     {
       "id": 56,
@@ -88,7 +98,8 @@
       "subcategory": "Epson LX300",
       "name": "Epson LX300",
       "icon": "print",
-      "display_order": 12
+      "display_order": 12,
+      "gdrive_folder_id": "1d1UB16uVSzgbEipjlpSK8_kjsTBhG5oQ"
     },
     {
       "id": 57,
@@ -96,7 +107,8 @@
       "subcategory": "Epson L405",
       "name": "Epson L405",
       "icon": "print",
-      "display_order": 13
+      "display_order": 13,
+      "gdrive_folder_id": "1GOCxUEtosk_V-MEZrWsU29Aj1AKq-Ip7"
     },
     {
       "id": 58,
@@ -104,7 +116,8 @@
       "subcategory": "Epson L360",
       "name": "Epson L360",
       "icon": "print",
-      "display_order": 14
+      "display_order": 14,
+      "gdrive_folder_id": "1bn1IAETThmztfXnnTL56tGjPIwyqiQ3H"
     },
     {
       "id": 59,
@@ -112,7 +125,8 @@
       "subcategory": "Epson L3110",
       "name": "Epson L3110",
       "icon": "print",
-      "display_order": 15
+      "display_order": 15,
+      "gdrive_folder_id": "10kz5_8S7SyvyeeQyrrTwQ01-ofa-D7zO"
     },
     {
       "id": 60,
@@ -120,7 +134,8 @@
       "subcategory": "Epson L220",
       "name": "Epson L220",
       "icon": "print",
-      "display_order": 16
+      "display_order": 16,
+      "gdrive_folder_id": "1MvlYo2RhzttW-QErZEzIMS4a2_Fj32M2"
     },
     {
       "id": 61,
@@ -128,7 +143,8 @@
       "subcategory": "Epson L210",
       "name": "Epson L210",
       "icon": "print",
-      "display_order": 17
+      "display_order": 17,
+      "gdrive_folder_id": "16kbm0rd66gB8mRO1uKG0OlA6k3QjBwZi"
     },
     {
       "id": 62,
@@ -136,7 +152,8 @@
       "subcategory": "Epson L120",
       "name": "Epson L120",
       "icon": "print",
-      "display_order": 18
+      "display_order": 18,
+      "gdrive_folder_id": "13rfwdFLXbAErWnEoARNDdKOOUXPA676L"
     },
     {
       "id": 63,
@@ -144,7 +161,8 @@
       "subcategory": "Canon LBP6000",
       "name": "Canon LBP6000",
       "icon": "print",
-      "display_order": 19
+      "display_order": 19,
+      "gdrive_folder_id": "1rTBz0uo8rEIZ8BwB4p2U7rVFlaLcAHeG"
     },
     {
       "id": 64,
@@ -152,7 +170,8 @@
       "subcategory": "Canon LBP2900",
       "name": "Canon LBP2900",
       "icon": "print",
-      "display_order": 20
+      "display_order": 20,
+      "gdrive_folder_id": "1LxGVcl2nb5aN69LhMIh04cfwMb5BkeQz"
     },
     {
       "id": 65,
@@ -160,7 +179,8 @@
       "subcategory": "Brother MF240 Series",
       "name": "Brother MF240 Series",
       "icon": "print",
-      "display_order": 21
+      "display_order": 21,
+      "gdrive_folder_id": "1a4iwxcIn5Q2Ww7nhxh2N3k-GWg-ZVw0R"
     },
     {
       "id": 66,
@@ -168,7 +188,8 @@
       "subcategory": "Brother L2550DW",
       "name": "Brother L2550DW",
       "icon": "print",
-      "display_order": 22
+      "display_order": 22,
+      "gdrive_folder_id": "1KlNNqP7Q7BGKp9MhIrArtnS8bYp71xyV"
     },
     {
       "id": 67,
@@ -176,7 +197,8 @@
       "subcategory": "Microsoft Office",
       "name": "Microsoft Office",
       "icon": "file-word",
-      "display_order": 23
+      "display_order": 23,
+      "gdrive_folder_id": "1mDMkI_0W-6AAZr46uKcfv2zPb8_3542J"
     },
     {
       "id": 68,
@@ -184,7 +206,8 @@
       "subcategory": "Resetters",
       "name": "Resetters",
       "icon": "print",
-      "display_order": 24
+      "display_order": 24,
+      "gdrive_folder_id": "15zchrxSA9OVpb6QNJDZVkJ1inexB1zpA"
     },
     {
       "id": 69,
@@ -192,7 +215,8 @@
       "subcategory": "Windows Repair",
       "name": "Windows Repair",
       "icon": "compact-disc",
-      "display_order": 25
+      "display_order": 25,
+      "gdrive_folder_id": "1VnMkwHidlVzigzWS0uR4DIx70p2VPcN8"
     },
     {
       "id": 70,
@@ -200,7 +224,8 @@
       "subcategory": "Antivirus & Malware Removal",
       "name": "Antivirus & Malware Removal",
       "icon": "folder",
-      "display_order": 26
+      "display_order": 26,
+      "gdrive_folder_id": "1ALnmdWip4zZU0BGRZShFTheJJXGeYbJ4"
     },
     {
       "id": 71,
@@ -208,7 +233,8 @@
       "subcategory": "Epson L3210",
       "name": "Epson L3210",
       "icon": "print",
-      "display_order": 27
+      "display_order": 27,
+      "gdrive_folder_id": "1-9IOW-tKl1eirfLZm2zMYf9ItzUBJjoH"
     }
   ],
   "files": [
