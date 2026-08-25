@@ -690,31 +690,68 @@ async function handleResumableDriveFileUpload(e) {
 
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
-  statusText.innerText = `Initializing Google Drive Upload Session...`;
+  statusText.innerText = `Authorizing Google Drive Vault Connection...`;
   progressBar.style.width = '0%';
   pctText.innerText = '0%';
 
   try {
-    const initRes = await fetch(`${VERCEL_API_BASE}/api/upload`, {
+    // Step 1: Fetch OAuth Access Token from Vercel Backend
+    const tokenRes = await fetch(`${VERCEL_API_BASE}/api/create-folder`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get_token' })
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) {
+      throw new Error(tokenData.error || 'Could not fetch Google Drive authorization token');
+    }
+    const token = tokenData.access_token;
+
+    statusText.innerText = `Initializing Resumable Session for ${fileName}...`;
+
+    // Step 2: Initialize Resumable Session directly on Google Drive API
+    let targetFolder = gdriveFolderId;
+    let initRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Type': selectedFile.type || 'application/octet-stream'
+      },
       body: JSON.stringify({
-        title: fileName,
-        folder_id: gdriveFolderId,
-        size: selectedFile.size,
-        mimeType: selectedFile.type || 'application/octet-stream'
+        name: fileName,
+        parents: [targetFolder]
       })
     });
 
-    const initData = await initRes.json();
-    if (!initData.success || !initData.location_url) {
-      throw new Error(initData.error || 'Failed to obtain Google Drive resumable upload session');
+    let locationUrl = initRes.headers.get('Location');
+
+    // Fail-proof fallback to default root vault folder if target folder is not accessible
+    if (!locationUrl && targetFolder !== DEFAULT_VAULT_FOLDER_ID) {
+      targetFolder = DEFAULT_VAULT_FOLDER_ID;
+      initRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json; charset=UTF-8',
+          'X-Upload-Content-Type': selectedFile.type || 'application/octet-stream'
+        },
+        body: JSON.stringify({
+          name: fileName,
+          parents: [targetFolder]
+        })
+      });
+      locationUrl = initRes.headers.get('Location');
     }
 
-    const locationUrl = initData.location_url;
+    if (!locationUrl) {
+      const errTxt = await initRes.text();
+      throw new Error(`Google Drive API rejected session init (HTTP ${initRes.status}): ${errTxt}`);
+    }
+
     statusText.innerText = `Streaming ${fileName} directly to Google Drive...`;
 
-    // Stream file bytes directly to location_url with real-time progress
+    // Step 3: Stream File Chunks directly to Google Drive Location URL with Real-Time Byte Progress
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', locationUrl, true);
     xhr.setRequestHeader('Content-Type', selectedFile.type || 'application/octet-stream');
@@ -744,14 +781,14 @@ async function handleResumableDriveFileUpload(e) {
       } else {
         submitBtn.disabled = false;
         progressCard.style.display = 'none';
-        showToast(`❌ Upload failed with HTTP status ${xhr.status}`);
+        showToast(`❌ Direct upload stream failed with HTTP ${xhr.status}`);
       }
     };
 
     xhr.onerror = () => {
       submitBtn.disabled = false;
       progressCard.style.display = 'none';
-      showToast('❌ Network error during Google Drive upload stream.');
+      showToast('❌ Network error during direct Google Drive byte stream.');
     };
 
     xhr.send(selectedFile);
