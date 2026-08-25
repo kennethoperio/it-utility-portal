@@ -3,393 +3,162 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IT Troubleshooting Utility Vault</title>
-  <link rel="stylesheet" href="css/style.css?v=3.5">
+  <title>IT Troubleshooting Utility Vault | High-Availability Portal</title>
+  <meta name="description" content="Professional IT Repair Software Vault & Technician Utility Toolkit.">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/nextgen_style.css?v=10.0">
 </head>
 <body>
 
-  <!-- Public Client Header -->
-  <header class="header">
-    <div class="header-container">
-      <div class="logo">
-        <i class="fa-solid fa-screwdriver-wrench"></i>
-        <span id="site-title-display">IT Troubleshooting Utility Hub</span>
+  <!-- App Navigation Header -->
+  <header class="app-header">
+    <div class="brand-title">
+      <i class="fa-solid fa-shield-halved"></i>
+      <span>IT Utility Vault</span>
+      <span class="brand-badge">HA 24/7 v10.0</span>
+    </div>
+    <div style="display: flex; gap: 1rem; align-items: center;">
+      <div id="passcode-status-pill" style="display: none;" class="meta-badge win">
+        <i class="fa-solid fa-key"></i> Passcode Active
       </div>
-      <div class="user-actions">
-        <button class="btn btn-secondary btn-sm" id="theme-toggle-btn" title="Toggle Theme" onclick="toggleTheme()">
-          <i class="fa-solid fa-moon"></i>
-        </button>
-        <button class="btn btn-secondary btn-sm" id="client-logout-btn" onclick="logoutClient()" style="display: none;" title="Lock Session / Logout">
-          <i class="fa-solid fa-right-from-bracket"></i> Lock Session
-        </button>
-      </div>
+      <a href="/admin" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+        <i class="fa-solid fa-user-gear"></i> Admin Dashboard
+      </a>
     </div>
   </header>
 
-  <!-- Announcement Banner -->
-  <div class="announcement-banner" id="announcement-banner" style="display: none;">
-    <i class="fa-solid fa-bullhorn"></i> <span id="announcement-text"></span>
+  <!-- Passcode Unlock Overlay / Modal -->
+  <div id="passcode-modal" class="glass-panel" style="position: fixed; inset: 0; margin: auto; max-width: 440px; height: fit-content; padding: 2.5rem; z-index: 10000; text-align: center;">
+    <div class="tool-icon-wrapper" style="margin: 0 auto 1.5rem; width: 64px; height: 64px; font-size: 1.8rem;">
+      <i class="fa-solid fa-lock"></i>
+    </div>
+    <h2 style="margin-bottom: 0.5rem;">Vault Passcode Required</h2>
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">Please enter your Technician or Guest passcode to access utility tools.</p>
+    
+    <form id="passcode-form">
+      <div class="search-container" style="margin-bottom: 1rem;">
+        <i class="fa-solid fa-key search-icon"></i>
+        <input type="password" id="passcode-input" class="search-input" placeholder="Enter Vault Passcode..." required style="padding-left: 3rem; text-align: center; letter-spacing: 2px;">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width: 100%;"><i class="fa-solid fa-unlock"></i> Unlock Utility Vault</button>
+    </form>
+    <div id="passcode-error" style="color: var(--rose-red); margin-top: 1rem; font-size: 0.9rem; display: none;"></div>
   </div>
 
-  <div class="container">
+  <!-- Main Container -->
+  <main class="hero-banner">
+    <h1>IT Troubleshooting & Repair Vault</h1>
+    <p>Enterprise-grade diagnostic software, drivers, and automation utilities. Fast, direct, zero-bandwidth downloads.</p>
+
+    <!-- Global Search -->
+    <div class="search-container">
+      <i class="fa-solid fa-magnifying-glass search-icon"></i>
+      <input type="text" id="main-search-input" class="search-input" placeholder="Search by tool name, driver, category, or keyword...">
+    </div>
 
     <!-- Navigation Tabs -->
-    <div class="tabs">
-      <button class="tab-btn active" id="tab-files-btn" onclick="switchMainTab('files')">
-        <i class="fa-solid fa-boxes-stacked"></i> Software & Utilities
-      </button>
-      <button class="tab-btn" id="tab-builder-btn" onclick="switchMainTab('builder')">
-        <i class="fa-solid fa-wand-magic-sparkles"></i> 1-Click Script Studio
-      </button>
-      <button class="tab-btn" id="tab-cmd-btn" onclick="switchMainTab('cmd')">
-        <i class="fa-solid fa-terminal"></i> Quick IT Commands
-      </button>
-      <button class="tab-btn" id="tab-net-btn" onclick="switchMainTab('net')">
-        <i class="fa-solid fa-network-wired"></i> Network Diagnostics
-      </button>
-      <button class="tab-btn" id="tab-inspector-btn" onclick="switchMainTab('inspector')">
-        <i class="fa-solid fa-laptop-code"></i> Device Inspector
-      </button>
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('tools')"><i class="fa-solid fa-toolbox"></i> IT Tools</button>
+      <button class="tab-btn" onclick="switchTab('favorites')"><i class="fa-solid fa-star"></i> ⭐ Favorites (<span id="fav-count">0</span>)</button>
+      <button class="tab-btn" onclick="switchTab('checklist')"><i class="fa-solid fa-list-check"></i> 📋 Onsite Checklist</button>
+      <button class="tab-btn" onclick="switchTab('diag')"><i class="fa-solid fa-microchip"></i> 🛠️ Diagnostics</button>
+      <button class="tab-btn" onclick="switchTab('batch')"><i class="fa-solid fa-bolt"></i> Batch Script Gen</button>
+      <button class="tab-btn" onclick="switchTab('scripts')"><i class="fa-solid fa-terminal"></i> CMD Commands</button>
     </div>
 
-    <!-- TAB 1: File Browser -->
-    <div id="section-files">
-      <div class="main-layout">
-        <!-- Sidebar Categories -->
-        <aside class="sidebar">
-          <div class="sidebar-title"><i class="fa-solid fa-folder"></i> Utility Categories</div>
-          <ul class="category-nav" id="categories-tree">
-            <!-- Dynamically populated categories -->
-            <li><button class="category-btn active" onclick="selectCategory(null)"><i class="fa-solid fa-border-all"></i> All Utilities</button></li>
-          </ul>
-        </aside>
-
-        <!-- Files Content Area -->
-        <main>
-          <div class="toolbar">
-            <div class="search-box">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" id="search-input" placeholder="Search IT tools, installers, resetters, drivers..." oninput="handleSearch()">
-            </div>
-            <div style="display: flex; gap: 0.5rem;">
-              <button class="btn btn-secondary btn-sm" onclick="loadFiles()"><i class="fa-solid fa-rotate"></i> Refresh</button>
-            </div>
-          </div>
-
-          <!-- Files Grid -->
-          <div class="file-grid" id="files-grid">
-            <div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 3rem;">
-              <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-              <p style="margin-top: 1rem;">Loading IT Utilities...</p>
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
-
-    <!-- TAB 2: Interactive 1-Click Script Studio -->
-    <div id="section-builder" style="display: none;">
-      <h2 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-color);"></i> Interactive Windows Maintenance & Repair Studio</h2>
-      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Select the maintenance actions you want to run, and download a custom 1-click batch script (`.bat`) ready to execute as Administrator.</p>
-
-      <div style="display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; align-items: start;">
-        <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem;">
-          <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-list-check"></i> Select Repair & Optimization Tasks</h3>
-          
-          <div style="display: flex; flex-direction: column; gap: 1rem;">
-            <label style="display: flex; gap: 0.75rem; align-items: flex-start; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; cursor: pointer;">
-              <input type="checkbox" id="task-temp" checked style="margin-top: 0.25rem; transform: scale(1.2);">
-              <div>
-                <strong style="color: var(--text-primary);">🧹 Clean Windows Temp & Prefetch Cache</strong>
-                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">Deletes temporary files in `%TEMP%`, `C:\Windows\Temp`, and `Prefetch` to free up gigabytes of disk space.</p>
-              </div>
-            </label>
-
-            <label style="display: flex; gap: 0.75rem; align-items: flex-start; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; cursor: pointer;">
-              <input type="checkbox" id="task-dns" checked style="margin-top: 0.25rem; transform: scale(1.2);">
-              <div>
-                <strong style="color: var(--text-primary);">🌐 Flush DNS Cache & Reset Winsock Stack</strong>
-                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">Flushes DNS resolver cache, re-registers DNS, and resets IP/Winsock catalog to fix website loading & Wi-Fi issues.</p>
-              </div>
-            </label>
-
-            <label style="display: flex; gap: 0.75rem; align-items: flex-start; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; cursor: pointer;">
-              <input type="checkbox" id="task-spooler" checked style="margin-top: 0.25rem; transform: scale(1.2);">
-              <div>
-                <strong style="color: var(--text-primary);">🖨️ Restart Printer Spooler & Clear Stuck Print Jobs</strong>
-                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">Stops spooler service, purges corrupt `.SHD` / `.SPL` print files, and restarts the spooler automatically.</p>
-              </div>
-            </label>
-
-            <label style="display: flex; gap: 0.75rem; align-items: flex-start; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; cursor: pointer;">
-              <input type="checkbox" id="task-sfc" style="margin-top: 0.25rem; transform: scale(1.2);">
-              <div>
-                <strong style="color: var(--text-primary);">🛠️ Windows System File Checker (SFC Scan)</strong>
-                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">Runs `sfc /scannow` to detect and repair corrupted Windows system files.</p>
-              </div>
-            </label>
-
-            <label style="display: flex; gap: 0.75rem; align-items: flex-start; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; cursor: pointer;">
-              <input type="checkbox" id="task-power" style="margin-top: 0.25rem; transform: scale(1.2);">
-              <div>
-                <strong style="color: var(--text-primary);">⚡ Enable Ultimate High Performance Power Plan</strong>
-                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.2rem;">Unlocks and activates Windows Ultimate Performance power mode for maximum CPU speed.</p>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem; text-align: center;">
-          <div style="width: 50px; height: 50px; border-radius: 50%; background-color: rgba(56, 189, 248, 0.15); color: var(--accent-color); display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem;">
-            <i class="fa-solid fa-file-code"></i>
-          </div>
-          <h3 style="margin-bottom: 0.5rem;">Generate Batch File</h3>
-          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">Download your customized batch script ready to execute on any Windows PC.</p>
-
-          <button class="btn btn-primary" onclick="downloadCustomScript()" style="width: 100%; padding: 0.8rem;"><i class="fa-solid fa-download"></i> Download Script (.bat)</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB 3: Command Cheat Sheet -->
-    <div id="section-cmd" style="display: none;">
-      <h2 style="margin-bottom: 1rem;"><i class="fa-solid fa-terminal"></i> Quick IT Troubleshooting Commands</h2>
-      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">1-Click copy standard PowerShell and CMD scripts for fixing Windows issues, printer spooler, network stack, and license status.</p>
-      <div id="cmd-scripts-list" style="display: flex; flex-direction: column; gap: 1rem;">
+    <!-- Tab 1: IT Tools & Categories -->
+    <section id="tab-tools">
+      <div id="category-pills" style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 1rem; margin-bottom: 1.5rem; justify-content: center;">
         <!-- Populated via JS -->
       </div>
-    </div>
+      <div id="tools-grid" class="tools-grid">
+        <!-- Tool Cards populated via JS -->
+      </div>
+    </section>
 
-    <!-- TAB 4: Network Diagnostics -->
-    <div id="section-net" style="display: none;">
-      <h2 style="margin-bottom: 1rem;"><i class="fa-solid fa-network-wired"></i> Network Information & Diagnostic Suite</h2>
+    <!-- Tab 2: Favorites -->
+    <section id="tab-favorites" style="display: none;">
+      <h3 style="margin-bottom: 1rem; text-align: left;"><i class="fa-solid fa-star" style="color: var(--amber-orange);"></i> Pinned Quick Tools</h3>
+      <div id="favorites-grid" class="tools-grid">
+        <!-- Starred cards populated via JS -->
+      </div>
+    </section>
+
+    <!-- Tab 3: Onsite Technician Repair Checklist -->
+    <section id="tab-checklist" style="display: none;" class="glass-panel" style="padding: 2rem; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3><i class="fa-solid fa-list-check" style="color: var(--neon-cyan);"></i> Technician Onsite Repair Checklist</h3>
+        <button class="btn btn-secondary" onclick="resetChecklist()" style="font-size: 0.85rem;"><i class="fa-solid fa-rotate-left"></i> Reset Checklist</button>
+      </div>
+      <div id="checklist-container" style="display: flex; flex-direction: column; gap: 0.75rem; text-align: left;">
+        <!-- Checklist items populated via JS -->
+      </div>
+    </section>
+
+    <!-- Tab 4: Diagnostics Panel -->
+    <section id="tab-diag" style="display: none;">
+      <h3 style="margin-bottom: 1.5rem; text-align: left;"><i class="fa-solid fa-microchip" style="color: var(--neon-cyan);"></i> Client Hardware & Network Inspector</h3>
+      <div class="diag-grid">
+        <div class="diag-card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Operating System</div>
+          <div class="diag-val" id="diag-os">Detecting...</div>
+        </div>
+        <div class="diag-card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Browser & Engine</div>
+          <div class="diag-val" id="diag-browser">Detecting...</div>
+        </div>
+        <div class="diag-card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Screen Resolution</div>
+          <div class="diag-val" id="diag-screen">Detecting...</div>
+        </div>
+        <div class="diag-card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Network Latency</div>
+          <div class="diag-val" id="diag-ping">Measuring...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 5: Batch Script Generator -->
+    <section id="tab-batch" style="display: none;" class="glass-panel" style="padding: 2rem; text-align: left;">
+      <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-bolt" style="color: var(--neon-cyan);"></i> Automated Windows IT Repair Batch Script Generator</h3>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Select automated repair tasks to compile a single 1-click `.bat` script.</p>
       
-      <!-- IP Stats Grid -->
-      <div class="stats-grid" style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
-        <div class="stat-card">
-          <div class="stat-icon"><i class="fa-solid fa-globe"></i></div>
-          <div>
-            <div class="stat-lbl">Your IP Address</div>
-            <div class="stat-val" id="net-client-ip">Fetching...</div>
-          </div>
+      <form id="batch-form" onsubmit="generateBatchScript(event)">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <label class="glass-panel" style="padding: 1rem; display: flex; gap: 0.75rem; align-items: center; cursor: pointer;">
+            <input type="checkbox" name="tasks" value="sfc" checked>
+            <div><strong>SFC & DISM Repair</strong><br><small style="color: var(--text-muted);">Scans & fixes system file corruption</small></div>
+          </label>
+          <label class="glass-panel" style="padding: 1rem; display: flex; gap: 0.75rem; align-items: center; cursor: pointer;">
+            <input type="checkbox" name="tasks" value="network" checked>
+            <div><strong>Network Reset</strong><br><small style="color: var(--text-muted);">Flushes DNS & resets Winsock/IP</small></div>
+          </label>
+          <label class="glass-panel" style="padding: 1rem; display: flex; gap: 0.75rem; align-items: center; cursor: pointer;">
+            <input type="checkbox" name="tasks" value="temp">
+            <div><strong>Clear Temp Files</strong><br><small style="color: var(--text-muted);">Deletes %temp% and Prefetch junk</small></div>
+          </label>
+          <label class="glass-panel" style="padding: 1rem; display: flex; gap: 0.75rem; align-items: center; cursor: pointer;">
+            <input type="checkbox" name="tasks" value="power">
+            <div><strong>Ultimate Power Plan</strong><br><small style="color: var(--text-muted);">Unlocks high performance power mode</small></div>
+          </label>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon"><i class="fa-solid fa-server"></i></div>
-          <div>
-            <div class="stat-lbl">Server Hostname</div>
-            <div class="stat-val" id="net-server-host">Fetching...</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Network Test Suite Controls -->
-      <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem;">
-        <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-bolt"></i> Interactive Network Testing Tools</h3>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
-          <!-- Tool 1: Ping Test -->
-          <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem;">
-            <h4 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-satellite-dish" style="color: var(--accent-color);"></i> Ping Host Test</h4>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Check reachability and round-trip latency to any IP or domain.</p>
-            <div style="display: flex; gap: 0.5rem;">
-              <input type="text" id="ping-target" value="8.8.8.8" placeholder="e.g. 8.8.8.8 or google.com" style="flex: 1; padding: 0.5rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); outline: none;">
-              <button class="btn btn-primary btn-sm" onclick="runPingTest()"><i class="fa-solid fa-play"></i> Ping</button>
-            </div>
-          </div>
-
-          <!-- Tool 2: Traceroute -->
-          <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem;">
-            <h4 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-route" style="color: var(--accent-color);"></i> Traceroute (Tracert)</h4>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Trace the hop-by-hop path packets take across the network.</p>
-            <div style="display: flex; gap: 0.5rem;">
-              <input type="text" id="tracert-target" value="1.1.1.1" placeholder="e.g. 1.1.1.1 or cloudflare.com" style="flex: 1; padding: 0.5rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); outline: none;">
-              <button class="btn btn-primary btn-sm" onclick="runTracertTest()"><i class="fa-solid fa-play"></i> Tracert</button>
-            </div>
-          </div>
-
-          <!-- Tool 3: DNS Lookup -->
-          <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem;">
-            <h4 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-magnifying-glass-location" style="color: var(--accent-color);"></i> DNS nslookup</h4>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Resolve domain names into IP addresses and CNAME records.</p>
-            <div style="display: flex; gap: 0.5rem;">
-              <input type="text" id="dns-target" value="google.com" placeholder="e.g. google.com" style="flex: 1; padding: 0.5rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); outline: none;">
-              <button class="btn btn-primary btn-sm" onclick="runDnsLookupTest()"><i class="fa-solid fa-play"></i> Lookup</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Live Terminal Output Window -->
-      <div style="background-color: #0d1117; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.25rem; font-family: monospace;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid #30363d; padding-bottom: 0.5rem;">
-          <span style="color: #58a6ff; font-weight: 600; font-size: 0.9rem;"><i class="fa-solid fa-terminal"></i> Diagnostic Terminal Output</span>
-          <button class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" onclick="clearTerminalOutput()"><i class="fa-solid fa-eraser"></i> Clear Console</button>
-        </div>
-        <pre id="net-terminal-output" style="color: #c9d1d9; font-size: 0.85rem; line-height: 1.4; margin: 0; min-height: 160px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">Console Ready. Select a test tool above to execute network diagnostics.</pre>
-      </div>
-
-    </div>
-
-    <!-- TAB 5: Live Device Inspector -->
-    <div id="section-inspector" style="display: none;">
-      <h2 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-laptop-code" style="color: var(--accent-color);"></i> Live Device & System Inspector</h2>
-      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Inspect client hardware, browser capabilities, display specifications, and copy a 1-click PowerShell command to export full system specs.</p>
-
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-        <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem;">
-          <h3 style="margin-bottom: 1rem; color: var(--accent-color);"><i class="fa-solid fa-desktop"></i> Display & Browser Details</h3>
-          <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem;">
-            <li><strong>Operating System:</strong> <span id="insp-os">Detecting...</span></li>
-            <li><strong>Web Browser:</strong> <span id="insp-browser">Detecting...</span></li>
-            <li><strong>Screen Resolution:</strong> <span id="insp-screen">Detecting...</span></li>
-            <li><strong>CPU Logical Cores:</strong> <span id="insp-cores">Detecting...</span></li>
-            <li><strong>Estimated RAM:</strong> <span id="insp-ram">Detecting...</span></li>
-          </ul>
-        </div>
-
-        <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem;">
-          <h3 style="margin-bottom: 1rem; color: var(--accent-color);"><i class="fa-solid fa-microchip"></i> Full Hardware Export Command</h3>
-          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Run this PowerShell command on any client PC to export detailed hardware, RAM model, motherboard, and BIOS specs to a text file on Desktop:</p>
-          
-          <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem; font-family: monospace; font-size: 0.8rem; color: #38bdf8; word-break: break-all; margin-bottom: 1rem;">
-            Get-ComputerInfo | Out-File -FilePath "$env:USERPROFILE\Desktop\SystemSpecs.txt"
-          </div>
-
-          <button class="btn btn-primary btn-sm" onclick="copyPowerShellSpecsCmd()"><i class="fa-solid fa-copy"></i> Copy PowerShell Command</button>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Download Progress Overlay Modal -->
-  <div class="modal-overlay" id="download-progress-modal">
-    <div class="modal-card" style="text-align: center; max-width: 420px; padding: 2rem 1.5rem;">
-      <div style="width: 56px; height: 56px; border-radius: 50%; background-color: rgba(56, 189, 248, 0.15); color: var(--accent-color); display: inline-flex; align-items: center; justify-content: center; font-size: 1.6rem; margin: 0 auto 1rem;">
-        <i class="fa-solid fa-cloud-arrow-down fa-bounce"></i>
-      </div>
-      <h3 style="font-size: 1.2rem; margin-bottom: 0.4rem;">Preparing 1-Click Stream</h3>
-      <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem; word-break: break-word;" id="download-progress-filename">Connecting to 5 TB Google Drive...</p>
-      
-      <div class="progress-bar" style="display: block; margin-bottom: 0.75rem; height: 8px;">
-        <div class="progress-fill" id="download-progress-fill" style="width: 15%; transition: width 0.3s ease;"></div>
-      </div>
-      
-      <p style="font-size: 0.8rem; color: var(--accent-color); font-weight: 600;" id="download-progress-status">Initiating direct byte stream... Please wait</p>
-    </div>
-  </div>
-
-  <!-- Passcode Unlock Modal -->
-  <div class="modal-overlay" id="passcode-modal">
-    <div class="modal-card">
-      <div style="text-align: center; margin-bottom: 1.5rem;">
-        <div style="width: 60px; height: 60px; border-radius: 50%; background-color: rgba(56, 189, 248, 0.15); color: var(--accent-color); display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 1rem;">
-          <i class="fa-solid fa-lock"></i>
-        </div>
-        <h2>Access Passcode Required</h2>
-        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">Please enter the IT technician passcode to unlock tools & downloads.</p>
-      </div>
-
-      <form id="passcode-form" onsubmit="submitPasscode(event)">
-        <div class="form-group">
-          <label for="passcode-input">Passcode / Access Key</label>
-          <input type="password" id="passcode-input" placeholder="Enter passcode..." required autofocus>
-        </div>
-        <div id="passcode-error" style="color: var(--danger-color); font-size: 0.85rem; margin-bottom: 1rem; display: none;"></div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;"><i class="fa-solid fa-key"></i> Unlock Access</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-download"></i> Download IT_Vault_Custom_Repair.bat</button>
       </form>
-    </div>
-  </div>
+    </section>
 
-  <!-- Download Limit Reached Modal -->
-  <div class="modal-overlay" id="download-limit-modal">
-    <div class="modal-card" style="text-align: center;">
-      <div style="width: 60px; height: 60px; border-radius: 50%; background-color: rgba(245, 158, 11, 0.15); color: var(--warning-color); display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1rem;">
-        <i class="fa-solid fa-triangle-exclamation"></i>
+    <!-- Tab 6: CMD Scripts -->
+    <section id="tab-scripts" style="display: none;">
+      <h3 style="margin-bottom: 1.5rem; text-align: left;"><i class="fa-solid fa-terminal" style="color: var(--neon-cyan);"></i> Quick Technician Command Library</h3>
+      <div id="cmd-scripts-container" style="display: flex; flex-direction: column; gap: 1rem; text-align: left;">
+        <!-- Scripts populated via JS -->
       </div>
-      <h2 style="font-size: 1.3rem; margin-bottom: 0.5rem;">Download Limit Reached</h2>
-      <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem;" id="download-limit-msg">
-        Your temporary passcode has reached its maximum download limit. You can continue browsing tools and running network diagnostics, but additional file downloads require a new passcode from your IT administrator.
-      </p>
-      <button class="btn btn-primary" onclick="closeDownloadLimitModal()" style="width: 100%;"><i class="fa-solid fa-check"></i> Got It</button>
-    </div>
-  </div>
+    </section>
+  </main>
 
-  <!-- QR Code Modal -->
-  <div class="modal-overlay" id="qrcode-modal">
-    <div class="modal-card" style="text-align: center;">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-qrcode"></i> Mobile Download QR Code</h3>
-        <button class="btn btn-secondary btn-sm btn-icon" onclick="closeQrModal()"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1rem;" id="qr-tool-name">Scan with mobile phone to download directly onto target device.</p>
-      <div style="background-color: white; padding: 1rem; border-radius: 8px; display: inline-block; margin-bottom: 1rem;" id="qr-image-container">
-        <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-      </div>
-      <div>
-        <button class="btn btn-secondary btn-sm" onclick="closeQrModal()">Close</button>
-      </div>
-    </div>
-  </div>
+  <!-- Notification Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
 
-  <!-- Tool Comments & Feedback Modal -->
-  <div class="modal-overlay" id="comments-modal">
-    <div class="modal-card" style="max-width: 650px; max-height: 88vh; overflow-y: auto; text-align: left;">
-      <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
-        <h3 style="display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-comments" style="color: var(--accent-color);"></i> Technician Feedback & Status</h3>
-        <button class="btn btn-secondary btn-sm btn-icon" onclick="closeCommentsModal()"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-
-      <div style="margin-bottom: 1.25rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.85rem; border-radius: var(--radius); display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <div style="font-weight: 700; font-size: 1rem; color: var(--text-primary);" id="comments-tool-title">Tool Name</div>
-          <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.15rem;" id="comments-health-summary">Checking community feedback...</div>
-        </div>
-        <span class="badge badge-success" id="comments-health-badge" style="font-size: 0.85rem; padding: 0.4rem 0.75rem;">100% Working</span>
-      </div>
-
-      <!-- Submit Feedback Form -->
-      <form id="comment-submit-form" onsubmit="submitToolComment(event)" style="margin-bottom: 1.5rem; background: var(--card-bg); border: 1px solid var(--border-color); padding: 1rem; border-radius: var(--radius);">
-        <input type="hidden" id="comment-file-id">
-        <h4 style="font-size: 0.92rem; margin-bottom: 0.75rem;"><i class="fa-solid fa-pen"></i> Leave Your Feedback for Technicians:</h4>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <div>
-            <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Your Name / Handle (Optional)</label>
-            <input type="text" id="comment-author" placeholder="e.g. Tech John" style="width: 100%; padding: 0.45rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem;">
-          </div>
-          <div>
-            <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Tool Working Status *</label>
-            <select id="comment-status" style="width: 100%; padding: 0.45rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem;">
-              <option value="working">🟢 Working Great / Fix Verified</option>
-              <option value="broken">🔴 Issue Found / Needs Repair</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="margin-bottom: 0.75rem;">
-          <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Comment & Notes (Optional)</label>
-          <textarea id="comment-text" rows="2" placeholder="" style="width: 100%; padding: 0.45rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem; resize: vertical;"></textarea>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-sm" id="comment-submit-btn" style="width: 100%;"><i class="fa-solid fa-paper-plane"></i> Submit Feedback</button>
-      </form>
-
-      <!-- Past Comments List -->
-      <h4 style="font-size: 0.92rem; margin-bottom: 0.75rem;"><i class="fa-solid fa-list-check"></i> Technician Feedback History:</h4>
-      <div id="comments-list-container" style="max-height: 280px; overflow-y: auto; padding-right: 0.35rem;">
-        <div style="text-align: center; color: var(--text-secondary); padding: 1.5rem;">
-          <i class="fa-solid fa-spinner fa-spin"></i> Loading comments...
-        </div>
-      </div>
-
-      <div style="text-align: right; margin-top: 1rem;">
-        <button class="btn btn-secondary btn-sm" onclick="closeCommentsModal()">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="js/app.js?v=3.6"></script>
+  <!-- JavaScript Application Logic -->
+  <script src="js/script.js?v=10.0"></script>
 </body>
 </html>
