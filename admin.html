@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Utility Vault</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/nextgen_style.css?v=21.0">
+  <link rel="stylesheet" href="css/nextgen_style.css?v=22.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -78,7 +78,7 @@
       <div class="tab-navigation" style="margin-bottom: 0;">
         <button class="tab-link active" onclick="showAdminSection('files')"><i class="fa-solid fa-file-lines"></i> File Management</button>
         <button class="tab-link" onclick="showAdminSection('categories')"><i class="fa-solid fa-folder-plus"></i> Folders & Subfolders</button>
-        <button class="tab-link" onclick="showAdminSection('upload')"><i class="fa-solid fa-cloud-arrow-up"></i> Upload & Catalog Sync</button>
+        <button class="tab-link" onclick="showAdminSection('upload')"><i class="fa-solid fa-cloud-arrow-up"></i> Direct File Upload</button>
         <button class="tab-link" onclick="showAdminSection('passcodes')"><i class="fa-solid fa-key"></i> Passcode Manager</button>
         <button class="tab-link" onclick="showAdminSection('security')"><i class="fa-solid fa-user-shield"></i> Security & Passwords</button>
         <button class="tab-link" onclick="showAdminSection('feedback')"><i class="fa-solid fa-comments"></i> Client Feedback</button>
@@ -154,49 +154,29 @@
       </div>
     </section>
 
-    <!-- Section 3: DIRECT GOOGLE DRIVE FILE UPLOAD & CATALOG REGISTRATION -->
+    <!-- Section 3: DIRECT FILE UPLOAD TO GOOGLE DRIVE VAULT -->
     <section id="admin-sec-upload" class="card-item" style="padding: 1.5rem; display: none;">
-      
-      <!-- Direct Google Drive Open Banner -->
-      <div style="background: linear-gradient(135deg, rgba(66,133,244,0.12), rgba(59,130,246,0.05)); border: 1px solid rgba(66,133,244,0.3); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.75rem; text-align: center;">
-        <i class="fa-brands fa-google-drive" style="font-size: 2.8rem; color: #4285F4; margin-bottom: 0.75rem;"></i>
-        <h3 style="font-size: 1.25rem; margin-bottom: 0.35rem; color: var(--text-main);">Upload Files to Your Google Drive Account</h3>
-        <p style="color: var(--text-muted); font-size: 0.88rem; max-width: 600px; margin: 0 auto 1.25rem;">
-          Click below to open Google Drive. Drag & drop your file into your Google Drive, then copy its link or file ID to register it in the Vault catalog below.
-        </p>
-
-        <a href="https://drive.google.com" target="_blank" class="btn-download" style="width: auto; padding: 0.75rem 1.75rem; background: #4285F4; text-decoration: none; font-size: 1rem; margin: 0 auto; display: inline-flex;">
-          <i class="fa-brands fa-google-drive"></i> Open Google Drive Website
-        </a>
-      </div>
-
-      <!-- Step 2: Register Tool in Portal Catalog -->
-      <h3 style="margin-bottom: 0.4rem;"><i class="fa-solid fa-list-check" style="color: var(--primary);"></i> Register & Sync Tool to Catalog</h3>
-      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Enter tool display name, optional Google Drive share link, category, and description.</p>
+      <h3 style="margin-bottom: 0.4rem;"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Direct Resumable Upload to Google Drive Vault</h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Select any file from your computer (.exe, .zip, .iso, .msi, .rar) to upload directly to your Google Drive Vault.</p>
 
       <form id="admin-upload-form" onsubmit="handleResumableDriveFileUpload(event)">
         
-        <div style="margin-bottom: 1.25rem; background: var(--bg-input); border: 2px dashed var(--border-color); padding: 1.25rem; border-radius: 10px; text-align: center;">
-          <i class="fa-solid fa-file-circle-plus" style="font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem;"></i>
-          <label style="display: block; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-main);">Select Local File Reference</label>
-          <input type="file" id="upload-computer-file-input" style="display: block; margin: 0 auto; color: var(--text-muted); font-size: 0.88rem;">
+        <div style="margin-bottom: 1.25rem; background: var(--bg-input); border: 2px dashed var(--border-color); padding: 1.5rem; border-radius: 10px; text-align: center;">
+          <i class="fa-solid fa-file-arrow-up" style="font-size: 2.2rem; color: var(--primary); margin-bottom: 0.75rem;"></i>
+          <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-main);">Choose File from Your Computer</label>
+          <input type="file" id="upload-computer-file-input" required style="display: block; margin: 0 auto; color: var(--text-muted); font-size: 0.9rem;">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
           <div>
             <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">Tool Display Title</label>
-            <input type="text" id="upload-file-title" placeholder="e.g. Epson L3210 Resetter Tool" required style="width: 100%; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.9rem;">
+            <input type="text" id="upload-file-title" placeholder="Auto-filled from filename..." required style="width: 100%; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.9rem;">
           </div>
           <div>
             <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">Target Subfolder / Category</label>
             <select id="upload-file-category" style="width: 100%; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.9rem;" required>
             </select>
           </div>
-        </div>
-
-        <div style="margin-bottom: 1rem;">
-          <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">Google Drive Share Link or File ID (Optional)</label>
-          <input type="text" id="upload-gdrive-link" placeholder="e.g. https://drive.google.com/file/d/1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h/view" style="width: 100%; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.9rem;">
         </div>
 
         <div style="margin-bottom: 1.25rem;">
@@ -207,7 +187,7 @@
         <!-- RESUMABLE PROGRESS BAR CONTAINER -->
         <div id="upload-progress-card" style="display: none; background: var(--bg-input); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1.25rem;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem; font-size: 0.88rem;">
-            <span id="upload-status-text" style="color: var(--primary); font-weight: 600;">Syncing file to Portal Catalog...</span>
+            <span id="upload-status-text" style="color: var(--primary); font-weight: 600;">Uploading file to Google Drive Vault...</span>
             <span id="upload-percentage-text" style="font-weight: 700; color: var(--success);">0%</span>
           </div>
           <div style="background: var(--bg-card); height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 0.4rem;">
@@ -215,12 +195,12 @@
           </div>
           <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between;">
             <span id="upload-transferred-text">0 MB / 0 MB</span>
-            <span id="upload-speed-text">Catalog Sync Active</span>
+            <span id="upload-speed-text">Resumable Stream Engine Active</span>
           </div>
         </div>
 
         <button type="submit" id="upload-submit-btn" class="btn-download" style="background: var(--primary); padding: 0.85rem; font-size: 1rem;">
-          <i class="fa-solid fa-circle-check"></i> Save & Register Tool in Catalog
+          <i class="fa-solid fa-cloud-arrow-up"></i> Upload Direct to Google Drive Vault
         </button>
       </form>
     </section>
@@ -435,6 +415,6 @@
 
   <div id="toast-box" class="toast-box"></div>
 
-  <script src="js/admin_app.js?v=21.0"></script>
+  <script src="js/admin_app.js?v=22.0"></script>
 </body>
 </html>
