@@ -8,10 +8,23 @@ const VERCEL_API_BASE = "https://it-utility-portal.vercel.app";
 let categoriesList = [];
 let adminFilesList = [];
 let passcodesList = [];
+let cmdScriptsList = [];
 let fileCommentsMap = {};
 
 let adminPassword = localStorage.getItem('portal_admin_pass') || 'admin2026';
 let techPasscode = localStorage.getItem('portal_tech_pass') || 'tech2026';
+
+// Default Technician Repair Checklist
+const defaultChecklist = [
+  { id: 1, text: 'Run SFC /SCANNOW & DISM RestoreHealth to verify OS integrity', done: false },
+  { id: 2, text: 'Flush DNS & Reset Winsock stack (ipconfig /flushdns)', done: false },
+  { id: 3, text: 'Clean %temp%, Prefetch, and SoftwareDistribution cache', done: false },
+  { id: 4, text: 'Scan for malware / adware using AdwCleaner & Malwarebytes', done: false },
+  { id: 5, text: 'Update GPU, Network, and Chipset drivers to latest versions', done: false },
+  { id: 6, text: 'Verify Power Options set to High Performance / Ultimate Mode', done: false },
+  { id: 7, text: 'Check Disk Health SMART status using CrystalDiskInfo', done: false }
+];
+let adminChecklist = JSON.parse(localStorage.getItem('portal_checklist') || JSON.stringify(defaultChecklist));
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
@@ -100,7 +113,7 @@ function requestGoogleUserAuthToken() {
 }
 
 function showAdminSection(tabName) {
-  const sections = ['files', 'categories', 'upload', 'passcodes', 'security', 'feedback', 'logs'];
+  const sections = ['files', 'categories', 'upload', 'cmd-checklist', 'passcodes', 'security', 'feedback', 'logs'];
   sections.forEach(s => {
     const el = document.getElementById(`admin-sec-${s}`);
     if (el) el.style.display = 'none';
@@ -119,6 +132,7 @@ function showAdminSection(tabName) {
   if (tabName === 'files') renderAdminFilesTable();
   if (tabName === 'categories') renderAdminCategoriesHierarchy();
   if (tabName === 'upload') populateUploadCategoryDropdown();
+  if (tabName === 'cmd-checklist') { renderAdminCmdScripts(); renderAdminChecklist(); }
   if (tabName === 'passcodes') renderAdminPasscodesTable();
   if (tabName === 'security') populateSecurityInputs();
   if (tabName === 'feedback') renderAdminFeedback();
@@ -137,6 +151,7 @@ async function loadAdminDashboardData() {
       adminFilesList = data.files || [];
       categoriesList = data.categories || [];
       passcodesList = data.passcodes || [];
+      cmdScriptsList = data.cmd_scripts || [];
     }
 
     // Merge saved custom files and categories from localStorage
@@ -154,6 +169,13 @@ async function loadAdminDashboardData() {
       }
     });
 
+    const savedCmds = JSON.parse(localStorage.getItem('portal_cmd_scripts') || '[]');
+    savedCmds.forEach(sc => {
+      if (!cmdScriptsList.some(c => c.id === sc.id)) {
+        cmdScriptsList.unshift(sc);
+      }
+    });
+
     try {
       await syncRealGDriveStructureDirect();
     } catch (gErr) {}
@@ -164,6 +186,8 @@ async function loadAdminDashboardData() {
     renderAdminCategoriesHierarchy();
     renderAdminPasscodesTable();
     renderAdminFeedback();
+    renderAdminCmdScripts();
+    renderAdminChecklist();
     populateUploadCategoryDropdown();
   } catch (err) {
     console.warn('Dashboard data load error:', err);
@@ -237,11 +261,22 @@ async function syncRealGDriveStructureDirect() {
     }
 
     // Fetch Files
-    const filesRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType!='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,size,parents,webViewLink)&pageSize=1000`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const filesData = await filesRes.json();
-    const gFiles = filesData.files || [];
+    let gFiles = [];
+    let pageToken = null;
+
+    while (true) {
+      let filesUrl = `https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType!='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=nextPageToken,files(id,name,size,parents,webViewLink)&pageSize=1000`;
+      if (pageToken) filesUrl += `&pageToken=${pageToken}`;
+
+      const filesRes = await fetch(filesUrl, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const filesData = await filesRes.json();
+      const pageFiles = filesData.files || [];
+      gFiles = gFiles.concat(pageFiles);
+      pageToken = filesData.nextPageToken;
+      if (!pageToken) break;
+    }
 
     gFiles.forEach(gf => {
       if (gf.name.endsWith('.db') || gf.name.endsWith('.json')) return;
@@ -270,6 +305,115 @@ async function syncRealGDriveStructureDirect() {
 
     populateCategoryFilterDropdown();
   } catch (err) {}
+}
+
+// --- CMD SCRIPTS & CHECKLIST ADMIN MANAGEMENT ---
+function renderAdminCmdScripts() {
+  const container = document.getElementById('admin-cmd-list');
+  if (!container) return;
+
+  if (cmdScriptsList.length === 0) {
+    cmdScriptsList = [
+      { id: 1, title: 'SFC & DISM System Repair', type: 'cmd', command: 'sfc /scannow && DISM /Online /Cleanup-Image /RestoreHealth', description: 'Fixes corrupted Windows system files & component store.' },
+      { id: 2, title: 'Network Stack Reset', type: 'cmd', command: 'ipconfig /flushdns && netsh winsock reset && netsh int ip reset', description: 'Flushes DNS resolver cache and resets TCP/IP winsock.' },
+      { id: 3, title: 'Activate High Performance Power Plan', type: 'cmd', command: 'powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61', description: 'Unlocks Windows Ultimate High Performance power scheme.' }
+    ];
+  }
+
+  container.innerHTML = cmdScriptsList.map(s => `
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+        <strong style="color: var(--text-main); font-size: 0.9rem;"><i class="fa-solid fa-terminal" style="color: var(--primary);"></i> ${escapeHtml(s.title)}</strong>
+        <button onclick="deleteCmdScript(${s.id})" class="btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; color: var(--rose); border-color: var(--rose);">
+          <i class="fa-solid fa-trash"></i> Delete
+        </button>
+      </div>
+      <pre style="background: var(--bg-input); padding: 0.45rem; border-radius: 4px; font-family: monospace; font-size: 0.8rem; margin-bottom: 0.35rem; color: var(--text-main); overflow-x: auto;"><code>${escapeHtml(s.command)}</code></pre>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(s.description || '')}</div>
+    </div>
+  `).join('');
+}
+
+function handleCreateCmdScriptSubmit(e) {
+  e.preventDefault();
+  const title = document.getElementById('admin-cmd-title').value.trim();
+  const command = document.getElementById('admin-cmd-code').value.trim();
+  const description = document.getElementById('admin-cmd-desc').value.trim();
+
+  if (!title || !command) return;
+
+  const newCmd = {
+    id: Date.now(),
+    title,
+    command,
+    description,
+    type: 'cmd'
+  };
+
+  cmdScriptsList.unshift(newCmd);
+  localStorage.setItem('portal_cmd_scripts', JSON.stringify(cmdScriptsList));
+
+  document.getElementById('admin-cmd-title').value = '';
+  document.getElementById('admin-cmd-code').value = '';
+  document.getElementById('admin-cmd-desc').value = '';
+
+  renderAdminCmdScripts();
+  showToast('⚡ CMD Terminal Command added!');
+}
+
+function deleteCmdScript(id) {
+  if (confirm('Delete this CMD script from client page?')) {
+    cmdScriptsList = cmdScriptsList.filter(s => s.id !== id);
+    localStorage.setItem('portal_cmd_scripts', JSON.stringify(cmdScriptsList));
+    renderAdminCmdScripts();
+    showToast('🗑️ CMD script deleted.');
+  }
+}
+
+function renderAdminChecklist() {
+  const container = document.getElementById('admin-checklist-list');
+  if (!container) return;
+
+  adminChecklist = JSON.parse(localStorage.getItem('portal_checklist') || JSON.stringify(defaultChecklist));
+
+  container.innerHTML = adminChecklist.map((item, idx) => `
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 0.85rem; color: var(--text-main);"><strong style="color: var(--primary);">#${idx + 1}.</strong> ${escapeHtml(item.text)}</span>
+      <button onclick="deleteChecklistItem(${item.id})" class="btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; color: var(--rose); border-color: var(--rose);">
+        <i class="fa-solid fa-trash"></i>
+      </button>
+    </div>
+  `).join('');
+}
+
+function handleCreateChecklistItemSubmit(e) {
+  e.preventDefault();
+  const textInput = document.getElementById('admin-checklist-text');
+  const text = textInput.value.trim();
+
+  if (!text) return;
+
+  const newItem = {
+    id: Date.now(),
+    text,
+    done: false
+  };
+
+  adminChecklist.push(newItem);
+  localStorage.setItem('portal_checklist', JSON.stringify(adminChecklist));
+  textInput.value = '';
+
+  renderAdminChecklist();
+  showToast('📋 Checklist step added!');
+}
+
+function deleteChecklistItem(id) {
+  if (confirm('Delete this repair step from client checklist?')) {
+    adminChecklist = adminChecklist.filter(i => i.id !== id);
+    localStorage.setItem('portal_checklist', JSON.stringify(adminChecklist));
+    renderAdminChecklist();
+    showToast('🗑️ Checklist step deleted.');
+  }
 }
 
 // --- REAL GOOGLE DRIVE FOLDER CREATION (VERCEL SERVERLESS FUNCTION CALL) ---
