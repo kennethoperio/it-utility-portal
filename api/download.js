@@ -1,5 +1,4 @@
 const https = require('https');
-const http = require('http');
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -14,24 +13,24 @@ module.exports = async (req, res) => {
   const fileName = req.query.fileName || req.query.name || 'software_installer.exe';
 
   if (!fileId) {
-    return res.status(400).json({ error: 'Missing fileId parameter' });
+    return res.status(400).send('Missing fileId');
   }
 
-  const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9_.-]/g, '_');
-  
-  // Set headers for automatic direct browser binary download
+  const cleanName = fileName.replace(/[^a-zA-Z0-9_.-]/g, '_');
+
+  // Direct Google Drive Binary Stream Endpoint
+  const targetUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
+
+  // Force binary attachment download headers to bypass Google virus warning pages
   res.setHeader('Content-Type', 'application/octet-stream');
-  res.setHeader('Content-Disposition', `attachment; filename="${sanitizedFileName}"`);
+  res.setHeader('Content-Disposition', `attachment; filename="${cleanName}"`);
 
-  // Direct binary stream from Google Drive usercontent endpoint
-  const directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&authuser=0`;
-
-  https.get(directUrl, (gRes) => {
+  https.get(targetUrl, (gRes) => {
     if (gRes.headers['content-length']) {
       res.setHeader('Content-Length', gRes.headers['content-length']);
     }
     gRes.pipe(res);
   }).on('error', (err) => {
-    res.status(500).send('Streaming error: ' + err.message);
+    res.status(500).send('Stream error: ' + err.message);
   });
 };
