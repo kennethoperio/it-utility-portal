@@ -695,37 +695,31 @@ async function handleResumableDriveFileUpload(e) {
 
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
-  statusText.innerText = `Connecting to Google Drive Vault...`;
+  statusText.innerText = `Initializing Google Drive Upload Session...`;
   progressBar.style.width = '0%';
   pctText.innerText = '0%';
 
   try {
-    const token = await getGoogleAccessTokenDirect();
-    if (!token) throw new Error('Could not authorize Google Drive API token.');
-
-    statusText.innerText = `Initializing Resumable Upload Session...`;
-
-    // Step 1: Initialize Resumable Upload Session directly with Google Drive API
-    const initRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
+    const initRes = await fetch(`${VERCEL_API_BASE}/api/upload`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json; charset=UTF-8',
-        'X-Upload-Content-Type': selectedFile.type || 'application/octet-stream',
-        'X-Upload-Content-Length': selectedFile.size.toString()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: fileName,
-        parents: [gdriveFolderId]
+        title: fileName,
+        folder_id: gdriveFolderId,
+        size: selectedFile.size,
+        mimeType: selectedFile.type || 'application/octet-stream'
       })
     });
 
-    const locationUrl = initRes.headers.get('Location');
-    if (!locationUrl) throw new Error('Failed to obtain Google Drive upload location URL.');
+    const initData = await initRes.json();
+    if (!initData.success || !initData.location_url) {
+      throw new Error(initData.error || 'Failed to obtain Google Drive resumable upload session');
+    }
 
+    const locationUrl = initData.location_url;
     statusText.innerText = `Streaming ${fileName} directly to Google Drive...`;
 
-    // Step 2: Stream File Chunks with Real-Time Progress Listener
+    // Stream file bytes directly to location_url with real-time progress
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', locationUrl, true);
     xhr.setRequestHeader('Content-Type', selectedFile.type || 'application/octet-stream');
