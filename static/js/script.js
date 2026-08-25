@@ -73,7 +73,7 @@ function clientLogout() {
   showToast('Vault Locked. Logged out successfully.');
 }
 
-// --- AUTOMATIC VERCEL SERVERLESS STREAM DIRECT DOWNLOAD ENGINE ---
+// --- FULL BINARY INVISIBLE STREAM DOWNLOAD ENGINE ---
 function triggerDirectDownload(fileId, fileName) {
   // Increment Download Counter
   const fileObj = allFilesList.find(f => (f.file_key || '').includes(fileId) || f.id == fileId);
@@ -95,7 +95,7 @@ function openDownloadBypassModal(fileId, fileName) {
     document.body.appendChild(modal);
   }
 
-  const mirrorUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+  const gdriveViewUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
 
   modal.innerHTML = `
     <div class="modal-card" style="text-align: center; max-width: 460px; padding: 1.75rem;" onclick="event.stopPropagation()">
@@ -114,13 +114,13 @@ function openDownloadBypassModal(fileId, fileName) {
       <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.35rem;">Download full uncorrupted file directly to your PC.</p>
 
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <!-- Option 1: Automatic Vercel Serverless Stream Download -->
+        <!-- Option 1: Direct Full Binary File Download via Invisible Stream Frame -->
         <button onclick="saveFileImmediately('${fileId}', '${escapeHtml(fileName)}')" class="btn-download" style="background: var(--primary); text-align: center; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">
           <i class="fa-solid fa-download"></i> Click Here to Save File Immediately
         </button>
 
-        <!-- Option 2: Alternative Google Drive Mirror Link on Bottom -->
-        <a href="${mirrorUrl}" target="_blank" class="btn-secondary" style="text-decoration: none; text-align: center; justify-content: center; font-size: 0.85rem; padding: 0.65rem; color: var(--text-muted);">
+        <!-- Option 2: Alternative Google Drive View Link on Bottom -->
+        <a href="${gdriveViewUrl}" target="_blank" class="btn-secondary" style="text-decoration: none; text-align: center; justify-content: center; font-size: 0.85rem; padding: 0.65rem; color: var(--text-muted);">
           <i class="fa-solid fa-folder-open"></i> Alternative Google Mirror Link
         </a>
       </div>
@@ -135,26 +135,20 @@ function closeDownloadBypassModal() {
   if (modal) modal.style.display = 'none';
 }
 
-// Option 1: Automatic Vercel serverless stream download straight to browser download bar
+// Option 1: Direct full binary file download via invisible frame WITHOUT page redirect or CSS breaks
 function saveFileImmediately(fileId, fileName) {
-  showToast(`🚚 Starting automatic download for ${fileName}...`);
+  showToast(`🚚 Direct downloading ${fileName}...`);
 
-  // Direct Vercel Serverless Proxy Stream Endpoint
-  const vercelApiUrl = `/api/download?fileId=${fileId}&fileName=${encodeURIComponent(fileName)}`;
+  const directBinaryUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&authuser=0`;
 
-  // Trigger automatic download stream in current browser session
-  const a = document.createElement('a');
-  a.href = vercelApiUrl;
-  a.download = fileName;
-  a.target = '_self';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => a.remove(), 400);
-
-  // Backup fallback on current window
-  setTimeout(() => {
-    window.location.href = vercelApiUrl;
-  }, 600);
+  let frame = document.getElementById('hidden-download-iframe');
+  if (!frame) {
+    frame = document.createElement('iframe');
+    frame.id = 'hidden-download-iframe';
+    frame.style.display = 'none';
+    document.body.appendChild(frame);
+  }
+  frame.src = directBinaryUrl;
 
   closeDownloadBypassModal();
 }
@@ -487,7 +481,7 @@ function renderCommentsList(fileId) {
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
         <strong style="color: var(--text-main);">${escapeHtml(c.author || 'Technician')}</strong>
         <span class="tag ${c.status === 'solved' ? 'green' : (c.status === 'working' ? 'cyan' : 'rose')}" style="font-size: 0.7rem;">
-          ${c.status === 'solved' ? '✅ Solved' : (c.status === 'working' ? '✅ Working 100%' : '⚠️ Issue Reported')}
+          ${c.status === 'solved' ? '✅ Solved' : (c.status === 'working' ? 'cyan' : 'rose')}
         </span>
       </div>
       <p style="color: var(--text-muted);">${escapeHtml(c.text)}</p>
