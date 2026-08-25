@@ -159,6 +159,7 @@ async function loadAdminDashboardData() {
     } catch (gErr) {}
 
     renderAdminStats();
+    populateCategoryFilterDropdown();
     renderAdminFilesTable();
     renderAdminCategoriesHierarchy();
     renderAdminPasscodesTable();
@@ -167,6 +168,22 @@ async function loadAdminDashboardData() {
   } catch (err) {
     console.warn('Dashboard data load error:', err);
   }
+}
+
+// --- POPULATE ALL CATEGORIES IN ADMIN FILE MANAGEMENT FILTER DROPDOWN ---
+function populateCategoryFilterDropdown() {
+  const filterSelect = document.getElementById('admin-file-category-filter');
+  if (!filterSelect) return;
+  const currentVal = filterSelect.value || 'all';
+
+  let html = `<option value="all" ${currentVal === 'all' ? 'selected' : ''}>🌐 All Categories (${adminFilesList.length} files)</option>`;
+  
+  categoriesList.forEach(c => {
+    const fileCount = adminFilesList.filter(f => f.category_id === c.id).length;
+    html += `<option value="${c.id}" ${currentVal == c.id ? 'selected' : ''}>${escapeHtml(c.main_category || 'General')} ➔ ${escapeHtml(c.subcategory || c.name)} (${fileCount} files)</option>`;
+  });
+
+  filterSelect.innerHTML = html;
 }
 
 // --- FETCH OAUTH TOKEN FROM LIVE VERCEL SERVERLESS FUNCTION BACKEND ---
@@ -251,6 +268,7 @@ async function syncRealGDriveStructureDirect() {
       }
     });
 
+    populateCategoryFilterDropdown();
   } catch (err) {}
 }
 
@@ -312,6 +330,7 @@ async function handleCreateMainCategorySubmit(e) {
   categoriesList.push(newCat);
   localStorage.setItem('portal_custom_categories', JSON.stringify(categoriesList));
 
+  populateCategoryFilterDropdown();
   renderAdminCategoriesHierarchy();
   renderAdminStats();
   populateUploadCategoryDropdown();
@@ -369,6 +388,7 @@ async function handleCreateSubfolderSubmit(e) {
   categoriesList.push(newSubCat);
   localStorage.setItem('portal_custom_categories', JSON.stringify(categoriesList));
 
+  populateCategoryFilterDropdown();
   renderAdminCategoriesHierarchy();
   renderAdminStats();
   populateUploadCategoryDropdown();
@@ -572,6 +592,7 @@ function finalizeUploadSuccess(fileName, gdriveId, catId, fileSize, desc, target
   adminFilesList.unshift(newFile);
   localStorage.setItem('portal_custom_files', JSON.stringify(adminFilesList));
 
+  populateCategoryFilterDropdown();
   renderAdminFilesTable();
   renderAdminStats();
 
@@ -683,7 +704,7 @@ function renderAdminFilesTable() {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="padding: 2rem; text-align: center; color: var(--text-muted);">No vault tools found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="padding: 2rem; text-align: center; color: var(--text-muted);">No vault tools found matching selected category filter.</td></tr>`;
     return;
   }
 
