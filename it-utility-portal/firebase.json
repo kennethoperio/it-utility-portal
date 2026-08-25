@@ -10,6 +10,30 @@
       {
         "source": "/admin",
         "destination": "/admin.html"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css|html)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=0, null, no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "vault_manifest.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=60, s-maxage=60"
+          }
+        ]
       }
     ]
   }
