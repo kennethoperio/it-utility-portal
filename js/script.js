@@ -229,14 +229,14 @@ async function loadVaultDataStaleWhileRevalidate() {
     });
   } catch (err) {}
 
-  try {
-    await syncRealGDriveStructureClient();
-  } catch (gErr) {}
-
   renderLeftSidebar();
   renderToolsGrid();
   renderFavoritesGrid();
   renderCmdScripts();
+
+  try {
+    await syncRealGDriveStructureClient();
+  } catch (gErr) {}
 }
 
 // --- REAL-TIME LIVE GOOGLE DRIVE CLIENT SCANNER ---
@@ -281,12 +281,24 @@ async function syncRealGDriveStructureClient() {
     }
 
     // Fetch Files
-    const filesRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType!='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,size,parents,webViewLink)&pageSize=1000`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const filesData = await filesRes.json();
-    const gFiles = filesData.files || [];
+    let gFiles = [];
+    let pageToken = null;
 
+    while (true) {
+      let filesUrl = `https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType!='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=nextPageToken,files(id,name,size,parents,webViewLink)&pageSize=1000`;
+      if (pageToken) filesUrl += `&pageToken=${pageToken}`;
+
+      const filesRes = await fetch(filesUrl, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const filesData = await filesRes.json();
+      const pageFiles = filesData.files || [];
+      gFiles = gFiles.concat(pageFiles);
+      pageToken = filesData.nextPageToken;
+      if (!pageToken) break;
+    }
+
+    let newlyAdded = 0;
     gFiles.forEach(gf => {
       if (gf.name.endsWith('.db') || gf.name.endsWith('.json')) return;
 
@@ -304,8 +316,14 @@ async function syncRealGDriveStructureClient() {
           description: `Google Drive Vault File (${gf.name})`,
           download_count: 0
         });
+        newlyAdded++;
       }
     });
+
+    // RE-RENDER SIDEBAR & GRID SO CLIENT PAGE IS 100% SYNCHRONIZED WITH ADMIN PAGE
+    renderLeftSidebar();
+    renderToolsGrid();
+    updateCategoryBannerLabel(activeMainCategory === 'all' ? 'All Vault Tools' : activeMainCategory, getActiveCategoryFilesCount());
 
   } catch (err) {}
 }
