@@ -1,6 +1,6 @@
 {
-  "version": "11.0",
-  "generated_at": "2026-08-25T21:59:57.454279",
+  "version": "12.0",
+  "generated_at": "2026-08-25T22:04:13.483060",
   "categories": [
     {
       "id": 46,
@@ -8,7 +8,8 @@
       "subcategory": "Tools & Installers",
       "name": "Tools & Installers",
       "icon": "folder",
-      "display_order": 2
+      "display_order": 2,
+      "gdrive_folder_id": "1kjtQMXb8S1ms6a8S7IIHd7B8jRcjDQvm"
     },
     {
       "id": 47,
@@ -16,7 +17,8 @@
       "subcategory": "Windows Repair",
       "name": "Windows Repair",
       "icon": "compact-disc",
-      "display_order": 3
+      "display_order": 3,
+      "gdrive_folder_id": "1VnMkwHidlVzigzWS0uR4DIx70p2VPcN8"
     },
     {
       "id": 48,
@@ -24,15 +26,17 @@
       "subcategory": "Resetters",
       "name": "Resetters",
       "icon": "print",
-      "display_order": 4
+      "display_order": 4,
+      "gdrive_folder_id": "15zchrxSA9OVpb6QNJDZVkJ1inexB1zpA"
     },
     {
       "id": 49,
       "main_category": "Microsoft Office",
       "subcategory": "Microsoft Office",
       "name": "Microsoft Office",
-      "icon": "file-word",
-      "display_order": 5
+      "icon": "folder",
+      "display_order": 5,
+      "gdrive_folder_id": "1mDMkI_0W-6AAZr46uKcfv2zPb8_3542J"
     },
     {
       "id": 50,
@@ -40,7 +44,8 @@
       "subcategory": "Brother L2550DW",
       "name": "Brother L2550DW",
       "icon": "print",
-      "display_order": 6
+      "display_order": 6,
+      "gdrive_folder_id": "1KlNNqP7Q7BGKp9MhIrArtnS8bYp71xyV"
     },
     {
       "id": 51,
@@ -48,7 +53,8 @@
       "subcategory": "Brother MF240 Series",
       "name": "Brother MF240 Series",
       "icon": "print",
-      "display_order": 7
+      "display_order": 7,
+      "gdrive_folder_id": "1a4iwxcIn5Q2Ww7nhxh2N3k-GWg-ZVw0R"
     },
     {
       "id": 52,
@@ -56,7 +62,8 @@
       "subcategory": "Canon LBP2900",
       "name": "Canon LBP2900",
       "icon": "print",
-      "display_order": 8
+      "display_order": 8,
+      "gdrive_folder_id": "1LxGVcl2nb5aN69LhMIh04cfwMb5BkeQz"
     },
     {
       "id": 53,
@@ -64,7 +71,8 @@
       "subcategory": "Canon LBP6000",
       "name": "Canon LBP6000",
       "icon": "print",
-      "display_order": 9
+      "display_order": 9,
+      "gdrive_folder_id": "1rTBz0uo8rEIZ8BwB4p2U7rVFlaLcAHeG"
     },
     {
       "id": 54,
@@ -72,7 +80,8 @@
       "subcategory": "Epson L120",
       "name": "Epson L120",
       "icon": "print",
-      "display_order": 10
+      "display_order": 10,
+      "gdrive_folder_id": "13rfwdFLXbAErWnEoARNDdKOOUXPA676L"
     },
     {
       "id": 55,
@@ -80,7 +89,8 @@
       "subcategory": "Epson L210",
       "name": "Epson L210",
       "icon": "print",
-      "display_order": 11
+      "display_order": 11,
+      "gdrive_folder_id": "16kbm0rd66gB8mRO1uKG0OlA6k3QjBwZi"
     },
     {
       "id": 56,
@@ -88,7 +98,8 @@
       "subcategory": "Epson L220",
       "name": "Epson L220",
       "icon": "print",
-      "display_order": 12
+      "display_order": 12,
+      "gdrive_folder_id": "1MvlYo2RhzttW-QErZEzIMS4a2_Fj32M2"
     },
     {
       "id": 57,
@@ -96,7 +107,8 @@
       "subcategory": "Epson L3110",
       "name": "Epson L3110",
       "icon": "print",
-      "display_order": 13
+      "display_order": 13,
+      "gdrive_folder_id": "10kz5_8S7SyvyeeQyrrTwQ01-ofa-D7zO"
     },
     {
       "id": 58,
@@ -104,7 +116,8 @@
       "subcategory": "Epson L360",
       "name": "Epson L360",
       "icon": "print",
-      "display_order": 14
+      "display_order": 14,
+      "gdrive_folder_id": "1bn1IAETThmztfXnnTL56tGjPIwyqiQ3H"
     },
     {
       "id": 59,
@@ -112,7 +125,8 @@
       "subcategory": "Epson L405",
       "name": "Epson L405",
       "icon": "print",
-      "display_order": 15
+      "display_order": 15,
+      "gdrive_folder_id": "1GOCxUEtosk_V-MEZrWsU29Aj1AKq-Ip7"
     },
     {
       "id": 60,
@@ -120,7 +134,8 @@
       "subcategory": "Epson LX300",
       "name": "Epson LX300",
       "icon": "print",
-      "display_order": 16
+      "display_order": 16,
+      "gdrive_folder_id": "1d1UB16uVSzgbEipjlpSK8_kjsTBhG5oQ"
     },
     {
       "id": 61,
@@ -128,7 +143,8 @@
       "subcategory": "Epson LX310",
       "name": "Epson LX310",
       "icon": "print",
-      "display_order": 17
+      "display_order": 17,
+      "gdrive_folder_id": "1lAlyv0b7i-3dRGuHRj-acA4q6fvI53Ox"
     },
     {
       "id": 62,
@@ -136,7 +152,8 @@
       "subcategory": "HP LaserJet Pro P1100, P1560, P1600 Series",
       "name": "HP LaserJet Pro P1100, P1560, P1600 Series",
       "icon": "print",
-      "display_order": 18
+      "display_order": 18,
+      "gdrive_folder_id": "1QbmImBiUVumW8T_UWp0-fLL1Pu5iy55B"
     },
     {
       "id": 63,
@@ -144,7 +161,8 @@
       "subcategory": "SATO Printer",
       "name": "SATO Printer",
       "icon": "print",
-      "display_order": 19
+      "display_order": 19,
+      "gdrive_folder_id": "1RSs5yeYRg56xUzsRyVzBt8H0tLwN7SoC"
     },
     {
       "id": 64,
@@ -152,7 +170,8 @@
       "subcategory": "Recovery Tools",
       "name": "Recovery Tools",
       "icon": "folder",
-      "display_order": 20
+      "display_order": 20,
+      "gdrive_folder_id": "14jbZTrTT7wFO47DhY2A7qlQGkqw8Phi5"
     },
     {
       "id": 65,
@@ -160,15 +179,17 @@
       "subcategory": "Activators & License Tools",
       "name": "Activators & License Tools",
       "icon": "key",
-      "display_order": 21
+      "display_order": 21,
+      "gdrive_folder_id": "1IRDgdf-5c9x_LwWHDW8p-9iyRDR3V2-F"
     },
     {
       "id": 66,
       "main_category": "Network & Connectivity",
       "subcategory": "Network & Connectivity",
       "name": "Network & Connectivity",
-      "icon": "network-wired",
-      "display_order": 22
+      "icon": "folder",
+      "display_order": 22,
+      "gdrive_folder_id": "1w5OFCOSg-mJ2gbuNff9rusIDekmSOwuW"
     },
     {
       "id": 67,
@@ -176,7 +197,8 @@
       "subcategory": "Windows ISO Image",
       "name": "Windows ISO Image",
       "icon": "compact-disc",
-      "display_order": 23
+      "display_order": 23,
+      "gdrive_folder_id": "1tisAx6ttQj2jRINXUZgniSiTbxDejunR"
     },
     {
       "id": 68,
@@ -184,7 +206,8 @@
       "subcategory": "Hardware Diagnostics",
       "name": "Hardware Diagnostics",
       "icon": "microchip",
-      "display_order": 24
+      "display_order": 24,
+      "gdrive_folder_id": "1mu5ilcNWTbr3S2Njq8r6Yl3e_y4py0WC"
     },
     {
       "id": 69,
@@ -192,7 +215,8 @@
       "subcategory": "Epson L8050",
       "name": "Epson L8050",
       "icon": "print",
-      "display_order": 25
+      "display_order": 25,
+      "gdrive_folder_id": "1sv6QKlEZ-DK7aHSCVRev1r23YAa1Zo9y"
     },
     {
       "id": 70,
@@ -200,7 +224,8 @@
       "subcategory": "Antivirus & Malware Removal",
       "name": "Antivirus & Malware Removal",
       "icon": "folder",
-      "display_order": 26
+      "display_order": 26,
+      "gdrive_folder_id": "1ALnmdWip4zZU0BGRZShFTheJJXGeYbJ4"
     },
     {
       "id": 71,
@@ -208,7 +233,8 @@
       "subcategory": "Epson L3210",
       "name": "Epson L3210",
       "icon": "print",
-      "display_order": 27
+      "display_order": 27,
+      "gdrive_folder_id": "1-9IOW-tKl1eirfLZm2zMYf9ItzUBJjoH"
     }
   ],
   "files": [
@@ -219,10 +245,10 @@
       "category_id": 46,
       "file_size": 3820168,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 137,
@@ -231,10 +257,10 @@
       "category_id": 46,
       "file_size": 8044472,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (AnyDesk.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 136,
@@ -243,10 +269,10 @@
       "category_id": 71,
       "file_size": 70498432,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (L3210_64bit_v38000_2.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 135,
@@ -255,10 +281,10 @@
       "category_id": 71,
       "file_size": 69616192,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (EpsonScan2_L3210_67810_41_Signed.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 134,
@@ -267,10 +293,10 @@
       "category_id": 64,
       "file_size": 26480456,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (rcsetup154.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 133,
@@ -279,10 +305,10 @@
       "category_id": 70,
       "file_size": 2886560,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (MBSetup-7.7.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 132,
@@ -291,10 +317,10 @@
       "category_id": 69,
       "file_size": 2536512,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (Epson_L8050_Series_EM_50_Web.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 131,
@@ -303,10 +329,10 @@
       "category_id": 68,
       "file_size": 42872636,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 130,
@@ -315,10 +341,10 @@
       "category_id": 68,
       "file_size": 1577599,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (Victoria537.zip)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 129,
@@ -327,10 +353,10 @@
       "category_id": 68,
       "file_size": 4523144,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (CrystalDiskMark9_0_3.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 128,
@@ -339,10 +365,10 @@
       "category_id": 68,
       "file_size": 6203224,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (CrystalDiskInfo9_9_2.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 127,
@@ -351,10 +377,10 @@
       "category_id": 68,
       "file_size": 3253544,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (MemTest64.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 126,
@@ -363,10 +389,10 @@
       "category_id": 68,
       "file_size": 3631600,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (hwmonitor_1.67.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 125,
@@ -375,10 +401,10 @@
       "category_id": 68,
       "file_size": 4847776,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (cpu-z_2.21-en.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 124,
@@ -390,7 +416,7 @@
       "description": "Windows Operating System Installation ISO Image",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 123,
@@ -399,10 +425,10 @@
       "category_id": 46,
       "file_size": 6898288,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (npp.8.9.6.2.Installer.x64.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 122,
@@ -411,10 +437,10 @@
       "category_id": 46,
       "file_size": 643759,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (CareUEyes_Lite.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 121,
@@ -426,7 +452,7 @@
       "description": "Windows Operating System Installation ISO Image",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 120,
@@ -435,10 +461,10 @@
       "category_id": 46,
       "file_size": 176005576,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (ZoomInstallerFull.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 119,
@@ -447,10 +473,10 @@
       "category_id": 46,
       "file_size": 83284592,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (TeamViewer_Setup_x64.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 118,
@@ -459,10 +485,10 @@
       "category_id": 46,
       "file_size": 1277280,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (BraveBrowserSetup-BRV090.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 117,
@@ -471,10 +497,10 @@
       "category_id": 46,
       "file_size": 504208,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (Firefox_Installer.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 116,
@@ -483,10 +509,10 @@
       "category_id": 66,
       "file_size": 10859792,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (netlimiter-5.3.24.0.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 115,
@@ -495,10 +521,10 @@
       "category_id": 65,
       "file_size": 57018262,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (KMS_Tools_by_Ratiborus_v2021.10.08_LaCe12_PASSWORD_lace12.7z)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 114,
@@ -507,10 +533,10 @@
       "category_id": 46,
       "file_size": 116137008,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (ChromeStandaloneSetup64.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 113,
@@ -519,10 +545,10 @@
       "category_id": 64,
       "file_size": 27282284,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (AOMEI_Partition_Assistant_9.2.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 112,
@@ -531,10 +557,10 @@
       "category_id": 64,
       "file_size": 316096239,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (AOMEI_Backupper_4.1.0.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 111,
@@ -543,10 +569,10 @@
       "category_id": 63,
       "file_size": 21580059,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (SATO.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 110,
@@ -555,10 +581,10 @@
       "category_id": 62,
       "file_size": 179265980,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 109,
@@ -567,10 +593,10 @@
       "category_id": 61,
       "file_size": 4773720,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (EPSON_LX310.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 108,
@@ -579,10 +605,10 @@
       "category_id": 60,
       "file_size": 255380720,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (LX_300.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 107,
@@ -591,10 +617,10 @@
       "category_id": 59,
       "file_size": 99814348,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (Epson_L405.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 106,
@@ -603,10 +629,10 @@
       "category_id": 58,
       "file_size": 53237347,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (Epson_L360.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 105,
@@ -615,10 +641,10 @@
       "category_id": 57,
       "file_size": 96099381,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (EPSON_L3110.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 104,
@@ -627,10 +653,10 @@
       "category_id": 56,
       "file_size": 54434581,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (Epson_L220.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 103,
@@ -639,10 +665,10 @@
       "category_id": 55,
       "file_size": 208518184,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (Epson_L210.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 102,
@@ -651,10 +677,10 @@
       "category_id": 54,
       "file_size": 32233808,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (L120_x64_212UsHomeExportAsiaML.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 101,
@@ -663,10 +689,10 @@
       "category_id": 53,
       "file_size": 36822797,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (Canon_LBP_6000.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 100,
@@ -675,10 +701,10 @@
       "category_id": 52,
       "file_size": 10005813,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (CANON_LBP_2900.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 99,
@@ -687,10 +713,10 @@
       "category_id": 51,
       "file_size": 227496122,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 98,
@@ -699,10 +725,10 @@
       "category_id": 50,
       "file_size": 481083344,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (Brother_L2550DW_installer.EXE)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 97,
@@ -711,10 +737,10 @@
       "category_id": 49,
       "file_size": 1351226507,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (Office_2010.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 96,
@@ -723,10 +749,10 @@
       "category_id": 46,
       "file_size": 178675760,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (Acrobat_Reader_DC_-_Win10.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 95,
@@ -735,10 +761,10 @@
       "category_id": 48,
       "file_size": 1084270,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (Epson_L120.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 94,
@@ -747,10 +773,10 @@
       "category_id": 48,
       "file_size": 813874,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (Epson_L110-L210-L300-L350-L355.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 93,
@@ -759,10 +785,10 @@
       "category_id": 48,
       "file_size": 1323492,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (Epson-L3110-Resetter.zip)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 92,
@@ -771,10 +797,10 @@
       "category_id": 48,
       "file_size": 55399196,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Direct download from Google Drive (EPSON_Resetter_V2_2019.04.15.rar)",
+      "description": "Compressed Archive Utility / Resetter Package",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 91,
@@ -783,10 +809,10 @@
       "category_id": 46,
       "file_size": 1944424,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (rufus-4.12.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 90,
@@ -795,10 +821,10 @@
       "category_id": 47,
       "file_size": 295320,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (dxwebsetup.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 89,
@@ -807,10 +833,10 @@
       "category_id": 46,
       "file_size": 33350664,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (driver_booster_setup.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 88,
@@ -819,10 +845,10 @@
       "category_id": 47,
       "file_size": 242885528,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (dotnetfx35.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 87,
@@ -831,10 +857,10 @@
       "category_id": 46,
       "file_size": 10752440,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (ChromeSetup.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 86,
@@ -843,10 +869,10 @@
       "category_id": 46,
       "file_size": 45948080,
       "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "description": "Software Driver / Utility Installer",
+      "description": "Direct download from Google Drive (vlc-3.0.23-win64.exe)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     },
     {
       "id": 85,
@@ -858,7 +884,7 @@
       "description": "Direct download from Google Drive (node-v24.19.0-x64.msi)",
       "version": "1.0",
       "download_count": 0,
-      "created_at": "2026-08-25 13:59:57"
+      "created_at": "2026-08-25 14:04:13"
     }
   ],
   "cmd_scripts": [
