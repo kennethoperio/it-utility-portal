@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Utility Vault</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/nextgen_style.css?v=23.0">
+  <link rel="stylesheet" href="css/nextgen_style.css?v=24.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -89,8 +89,8 @@
         <button onclick="triggerGDriveAutoLink()" class="btn-secondary">
           <i class="fa-solid fa-arrows-rotate"></i> Sync GDrive Vault
         </button>
-        <a href="https://drive.google.com" target="_blank" class="btn-download" style="width: auto; padding: 0.55rem 1.15rem; background: var(--primary); text-decoration: none;">
-          <i class="fa-brands fa-google-drive"></i> Open Google Drive
+        <a href="https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3" target="_blank" class="btn-download" style="width: auto; padding: 0.55rem 1.15rem; background: var(--primary); text-decoration: none;">
+          <i class="fa-brands fa-google-drive"></i> Open IT_Utility_Vault Folder
         </a>
       </div>
     </div>
@@ -157,25 +157,21 @@
     <!-- Section 3: DIRECT FILE UPLOAD TO GOOGLE DRIVE VAULT -->
     <section id="admin-sec-upload" class="card-item" style="padding: 1.5rem; display: none;">
       
-      <!-- Google Drive Service Account Sharing Setup Banner -->
-      <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3); padding: 1.25rem; border-radius: 12px; margin-bottom: 1.5rem;">
-        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-          <i class="fa-brands fa-google-drive" style="font-size: 1.8rem; color: #4285F4;"></i>
-          <h4 style="font-size: 1.05rem; color: var(--text-main); margin: 0;">1-Step Setup: Authorize Direct Upload to Your Google Drive Vault</h4>
-        </div>
-        <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0.85rem;">
-          To allow files to upload directly into your Google Drive Vault folder (<strong>1nJeuVgvxJ-fKY4eLRxaMSGENb4236gtu</strong>), open your Google Drive, right-click your folder, click <strong>Share</strong>, and add this Service Account email as an <strong>Editor</strong>:
+      <!-- Direct Google Drive Folder Link Banner -->
+      <div style="background: linear-gradient(135deg, rgba(66,133,244,0.12), rgba(59,130,246,0.05)); border: 1px solid rgba(66,133,244,0.3); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; text-align: center;">
+        <i class="fa-brands fa-google-drive" style="font-size: 2.8rem; color: #4285F4; margin-bottom: 0.75rem;"></i>
+        <h3 style="font-size: 1.2rem; margin-bottom: 0.35rem; color: var(--text-main);">Upload Files to Your Google Drive Vault</h3>
+        <p style="color: var(--text-muted); font-size: 0.88rem; max-width: 600px; margin: 0 auto 1.25rem;">
+          Click below to open your exact Google Drive Vault folder (<strong>IT_Utility_Vault</strong>). Drop your file directly into Google Drive so it is 100% saved under your account (kenneth196068@gmail.com).
         </p>
-        <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.6rem 1rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
-          <code id="sa-email-text" style="color: var(--primary); font-size: 0.88rem; font-weight: 700; word-break: break-all;">it-portal-storage@fluid-arc-506004-a6.iam.gserviceaccount.com</code>
-          <button onclick="copySaEmail()" class="btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; white-space: nowrap;">
-            <i class="fa-solid fa-copy"></i> Copy Email
-          </button>
-        </div>
+
+        <a href="https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3" target="_blank" class="btn-download" style="width: auto; padding: 0.75rem 1.75rem; background: #4285F4; text-decoration: none; font-size: 1rem; margin: 0 auto; display: inline-flex;">
+          <i class="fa-brands fa-google-drive"></i> Open IT_Utility_Vault Google Drive Folder
+        </a>
       </div>
 
-      <h3 style="margin-bottom: 0.4rem;"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Direct Resumable Upload to Google Drive Vault</h3>
-      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Select any file from your computer (.exe, .zip, .iso, .msi, .rar) to upload directly to your Google Drive Vault.</p>
+      <h3 style="margin-bottom: 0.4rem;"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Register Tool in Portal Catalog</h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Select any file from your computer (.exe, .zip, .iso, .msi, .rar) to register it in the Vault catalog.</p>
 
       <form id="admin-upload-form" onsubmit="handleResumableDriveFileUpload(event)">
         
@@ -205,7 +201,7 @@
         <!-- RESUMABLE PROGRESS BAR CONTAINER -->
         <div id="upload-progress-card" style="display: none; background: var(--bg-input); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1.25rem;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem; font-size: 0.88rem;">
-            <span id="upload-status-text" style="color: var(--primary); font-weight: 600;">Uploading file to Google Drive Vault...</span>
+            <span id="upload-status-text" style="color: var(--primary); font-weight: 600;">Syncing file to Portal Catalog...</span>
             <span id="upload-percentage-text" style="font-weight: 700; color: var(--success);">0%</span>
           </div>
           <div style="background: var(--bg-card); height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 0.4rem;">
@@ -213,12 +209,12 @@
           </div>
           <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between;">
             <span id="upload-transferred-text">0 MB / 0 MB</span>
-            <span id="upload-speed-text">Resumable Stream Engine Active</span>
+            <span id="upload-speed-text">Catalog Sync Engine Active</span>
           </div>
         </div>
 
         <button type="submit" id="upload-submit-btn" class="btn-download" style="background: var(--primary); padding: 0.85rem; font-size: 1rem;">
-          <i class="fa-solid fa-cloud-arrow-up"></i> Upload Direct to Google Drive Vault
+          <i class="fa-solid fa-circle-check"></i> Register & Sync Tool to Catalog
         </button>
       </form>
     </section>
@@ -433,13 +429,6 @@
 
   <div id="toast-box" class="toast-box"></div>
 
-  <script>
-    function copySaEmail() {
-      const emailText = document.getElementById('sa-email-text').innerText;
-      navigator.clipboard.writeText(emailText);
-      showToast('📋 Service Account Email copied to clipboard!');
-    }
-  </script>
-  <script src="js/admin_app.js?v=23.0"></script>
+  <script src="js/admin_app.js?v=24.0"></script>
 </body>
 </html>
