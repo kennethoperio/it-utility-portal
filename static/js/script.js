@@ -1,5 +1,7 @@
 // IT Utility Portal - Client Application Logic
 const API_BASE = (window.location.pathname.includes('it-utility-portal') || window.location.hostname.includes('github.io')) ? 'static/api' : 'api';
+const DEFAULT_VAULT_FOLDER_ID = "15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3";
+const VERCEL_API_BASE = "https://it-utility-portal.vercel.app";
 
 let categoriesList = [];
 let allFilesList = [];
@@ -75,14 +77,12 @@ function clientLogout() {
 
 // --- VERCEL SERVERLESS PROXY AUTOMATIC DIRECT DOWNLOAD ENGINE ---
 function triggerDirectDownload(fileId, fileName) {
-  // Increment Download Counter
   const fileObj = allFilesList.find(f => (f.file_key || '').includes(fileId) || f.id == fileId);
   if (fileObj) {
     fileObj.download_count = (fileObj.download_count || 0) + 1;
     renderToolsGrid();
   }
 
-  // Open Direct Download Modal Popup
   openDownloadBypassModal(fileId, fileName);
 }
 
@@ -114,12 +114,10 @@ function openDownloadBypassModal(fileId, fileName) {
       <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.35rem;">Download full uncorrupted file directly to your PC.</p>
 
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <!-- Option 1: Vercel Serverless Stream Download -->
         <button onclick="saveFileImmediately('${fileId}', '${escapeHtml(fileName)}')" class="btn-download" style="background: var(--primary); text-align: center; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">
           <i class="fa-solid fa-download"></i> Click Here to Save File Immediately
         </button>
 
-        <!-- Option 2: Alternative Google Drive View Link on Bottom -->
         <a href="${gdriveViewUrl}" target="_blank" class="btn-secondary" style="text-decoration: none; text-align: center; justify-content: center; font-size: 0.85rem; padding: 0.65rem; color: var(--text-muted);">
           <i class="fa-solid fa-folder-open"></i> Alternative Google Mirror Link
         </a>
@@ -138,7 +136,7 @@ function closeDownloadBypassModal() {
 function saveFileImmediately(fileId, fileName) {
   showToast(`🚚 Starting direct download for ${fileName}...`);
 
-  const vercelStreamUrl = `https://it-utility-portal.vercel.app/api/download?fileId=${fileId}&fileName=${encodeURIComponent(fileName)}`;
+  const vercelStreamUrl = `${VERCEL_API_BASE}/api/download?fileId=${fileId}&fileName=${encodeURIComponent(fileName)}`;
 
   const a = document.createElement('a');
   a.style.display = 'none';
@@ -199,7 +197,7 @@ async function validateAndLoadVault(passcode) {
   return false;
 }
 
-// --- Data Loader (MERGES MANIFEST & LOCAL STORAGE UPLOADED FILES) ---
+// --- Data Loader (MERGES MANIFEST, LOCAL STORAGE & LIVE GOOGLE DRIVE API FILES) ---
 async function loadVaultDataStaleWhileRevalidate() {
   try {
     const res = await fetch(`vault_manifest.json?_t=${Date.now()}`);
@@ -214,7 +212,7 @@ async function loadVaultDataStaleWhileRevalidate() {
     console.warn('Manifest load error:', e);
   }
 
-  // MERGE RECENTLY UPLOADED FILES & CATEGORIES FROM LOCAL STORAGE
+  // Merge local storage saved custom files
   try {
     const savedCustomFiles = JSON.parse(localStorage.getItem('portal_custom_files') || '[]');
     savedCustomFiles.forEach(sf => {
@@ -231,10 +229,85 @@ async function loadVaultDataStaleWhileRevalidate() {
     });
   } catch (err) {}
 
+  try {
+    await syncRealGDriveStructureClient();
+  } catch (gErr) {}
+
   renderLeftSidebar();
   renderToolsGrid();
   renderFavoritesGrid();
   renderCmdScripts();
+}
+
+// --- REAL-TIME LIVE GOOGLE DRIVE CLIENT SCANNER ---
+async function syncRealGDriveStructureClient() {
+  try {
+    const tokenRes = await fetch(`${VERCEL_API_BASE}/api/create-folder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get_token' })
+    });
+    if (!tokenRes.ok) return;
+    const tokenData = await tokenRes.json();
+    const token = tokenData.access_token;
+    if (!token) return;
+
+    // Fetch Folders
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,parents,webViewLink)&pageSize=100`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    const gFolders = data.files || [];
+
+    if (gFolders.length > 0) {
+      gFolders.forEach(gf => {
+        const existing = categoriesList.find(c => (c.name || '').toLowerCase() === gf.name.toLowerCase() || (c.subcategory || '').toLowerCase() === gf.name.toLowerCase());
+        if (existing) {
+          existing.gdrive_folder_id = gf.id;
+          existing.gdrive_link = gf.webViewLink || `https://drive.google.com/drive/folders/${gf.id}`;
+        } else {
+          categoriesList.push({
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            main_category: gf.name,
+            subcategory: gf.name,
+            name: gf.name,
+            icon: 'folder',
+            display_order: categoriesList.length + 1,
+            gdrive_folder_id: gf.id,
+            gdrive_link: gf.webViewLink || `https://drive.google.com/drive/folders/${gf.id}`
+          });
+        }
+      });
+    }
+
+    // Fetch Files
+    const filesRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType!='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,size,parents,webViewLink)&pageSize=100`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const filesData = await filesRes.json();
+    const gFiles = filesData.files || [];
+
+    gFiles.forEach(gf => {
+      if (gf.name.endsWith('.db') || gf.name.endsWith('.json')) return;
+
+      const parentId = (gf.parents && gf.parents[0]) ? gf.parents[0] : DEFAULT_VAULT_FOLDER_ID;
+      const matchingCat = categoriesList.find(c => c.gdrive_folder_id === parentId);
+      const catId = matchingCat ? matchingCat.id : 1;
+
+      if (!allFilesList.some(f => (f.file_key || '').includes(gf.id) || f.original_name === gf.name)) {
+        allFilesList.unshift({
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          original_name: gf.name,
+          file_key: `gdrive:${gf.id}`,
+          category_id: catId,
+          file_size: gf.size ? parseInt(gf.size) : 180 * 1024 * 1024,
+          description: `Google Drive Vault File (${gf.name})`,
+          download_count: 0
+        });
+      }
+    });
+
+  } catch (err) {}
 }
 
 // --- Left Navigation Sidebar Explorer ---
