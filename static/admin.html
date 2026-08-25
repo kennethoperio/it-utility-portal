@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Utility Vault</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/nextgen_style.css?v=17.0">
+  <link rel="stylesheet" href="css/nextgen_style.css?v=18.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -33,18 +33,18 @@
   <!-- Login Modal -->
   <div id="admin-login-modal" class="modal-overlay" style="display: none;">
     <div class="modal-card" style="text-align: center; max-width: 440px;">
-      <div class="card-icon" style="margin: 0 auto 1.25rem; width: 56px; height: 56px; font-size: 1.5rem;">
-        <i class="fa-solid fa-user-gear"></i>
+      <div class="card-icon" style="margin: 0 auto 1.25rem; width: 56px; height: 56px; font-size: 1.5rem; color: var(--primary); background: rgba(59, 130, 246, 0.12);">
+        <i class="fa-solid fa-user-lock"></i>
       </div>
-      <h2 style="margin-bottom: 0.5rem; font-size: 1.4rem;">Technician Admin Access</h2>
-      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.35rem;">Enter administrator passcode to access control panel.</p>
+      <h2 style="margin-bottom: 0.5rem; font-size: 1.4rem;">Master Admin Access</h2>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.35rem;">Enter administrator password to access control panel.</p>
       
       <form id="admin-login-form">
         <div class="search-box" style="margin-bottom: 1rem;">
           <i class="fa-solid fa-key"></i>
-          <input type="password" id="admin-passcode-input" placeholder="Enter Admin Passcode..." required style="padding-left: 2.75rem; text-align: center; letter-spacing: 2px;">
+          <input type="password" id="admin-passcode-input" placeholder="Enter Admin Password..." required style="padding-left: 2.75rem; text-align: center; letter-spacing: 2px;">
         </div>
-        <button type="submit" class="btn-download" style="background: var(--primary);"><i class="fa-solid fa-right-to-bracket"></i> Login to Admin</button>
+        <button type="submit" class="btn-download" style="background: var(--primary);"><i class="fa-solid fa-right-to-bracket"></i> Login to Admin Dashboard</button>
       </form>
       <div id="admin-login-error" style="color: var(--rose); margin-top: 1rem; font-size: 0.85rem; display: none;"></div>
     </div>
@@ -80,6 +80,7 @@
         <button class="tab-link" onclick="showAdminSection('categories')"><i class="fa-solid fa-folder-plus"></i> Folders & Subfolders</button>
         <button class="tab-link" onclick="showAdminSection('upload')"><i class="fa-solid fa-cloud-arrow-up"></i> Direct File Upload</button>
         <button class="tab-link" onclick="showAdminSection('passcodes')"><i class="fa-solid fa-key"></i> Passcode Manager</button>
+        <button class="tab-link" onclick="showAdminSection('security')"><i class="fa-solid fa-user-shield"></i> Security & Passwords</button>
         <button class="tab-link" onclick="showAdminSection('feedback')"><i class="fa-solid fa-comments"></i> Client Feedback</button>
         <button class="tab-link" onclick="showAdminSection('logs')"><i class="fa-solid fa-list-ul"></i> Audit Logs</button>
       </div>
@@ -254,7 +255,45 @@
       </div>
     </section>
 
-    <!-- Section 5: Client Feedback -->
+    <!-- Section 5: Security & Passwords Settings -->
+    <section id="admin-sec-security" class="card-item" style="padding: 1.5rem; display: none;">
+      <h3 style="margin-bottom: 0.4rem;"><i class="fa-solid fa-user-shield" style="color: var(--primary);"></i> Security & Passcode Configuration</h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Configure separate passwords for Admin Dashboard login vs Client Portal access.</p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+        
+        <!-- Form 1: Master Admin Password -->
+        <div style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 1.25rem; border-radius: 12px;">
+          <h4 style="font-size: 1.05rem; color: var(--primary); margin-bottom: 0.5rem;"><i class="fa-solid fa-lock"></i> Master Admin Dashboard Password</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">Used exclusively to login to this Admin Dashboard (`/admin`).</p>
+          
+          <form onsubmit="handleUpdateAdminPasswordSubmit(event)">
+            <div style="margin-bottom: 1rem;">
+              <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">New Admin Password</label>
+              <input type="password" id="setting-admin-pass" placeholder="Enter new Admin Password..." required style="width: 100%; padding: 0.65rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.9rem;">
+            </div>
+            <button type="submit" class="btn-download" style="background: var(--primary); font-size: 0.88rem; padding: 0.65rem;"><i class="fa-solid fa-floppy-disk"></i> Update Admin Password</button>
+          </form>
+        </div>
+
+        <!-- Form 2: Master Technician Passcode (for Client Portal) -->
+        <div style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 1.25rem; border-radius: 12px;">
+          <h4 style="font-size: 1.05rem; color: var(--success); margin-bottom: 0.5rem;"><i class="fa-solid fa-key"></i> Master Technician Access Passcode</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">Used on the Client Portal (`/`) to grant full technician access (default: `tech2026`).</p>
+          
+          <form onsubmit="handleUpdateTechPasscodeSubmit(event)">
+            <div style="margin-bottom: 1rem;">
+              <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">New Technician Access Passcode</label>
+              <input type="text" id="setting-tech-pass" placeholder="e.g. tech2026" required style="width: 100%; padding: 0.65rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.9rem;">
+            </div>
+            <button type="submit" class="btn-download" style="background: var(--success); font-size: 0.88rem; padding: 0.65rem;"><i class="fa-solid fa-floppy-disk"></i> Update Technician Passcode</button>
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Section 6: Client Feedback -->
     <section id="admin-sec-feedback" class="card-item" style="padding: 1.5rem; display: none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
         <h3 style="font-size: 1.2rem;"><i class="fa-solid fa-comments" style="color: var(--primary);"></i> Client & Technician Feedback Manager</h3>
@@ -270,7 +309,7 @@
       </div>
     </section>
 
-    <!-- Section 6: Audit Logs -->
+    <!-- Section 7: Audit Logs -->
     <section id="admin-sec-logs" class="card-item" style="padding: 1.5rem; display: none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
         <h3><i class="fa-solid fa-shield-cat" style="color: var(--primary);"></i> Activity Audit Logs</h3>
@@ -376,6 +415,6 @@
 
   <div id="toast-box" class="toast-box"></div>
 
-  <script src="js/admin_app.js?v=17.0"></script>
+  <script src="js/admin_app.js?v=18.0"></script>
 </body>
 </html>
