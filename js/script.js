@@ -249,11 +249,13 @@ function renderLeftSidebar() {
 
       let icon = 'folder';
       const nl = mainName.toLowerCase();
-      if (nl.includes('printer') || nl.includes('driver')) icon = 'print';
-      else if (nl.includes('photo') || nl.includes('graphic') || nl.includes('design')) icon = 'palette';
-      else if (nl.includes('video')) icon = 'film';
-      else if (nl.includes('diagnostic') || nl.includes('hardware')) icon = 'microchip';
-      else if (nl.includes('iso') || nl.includes('windows')) icon = 'compact-disc';
+      if (nl.includes('printer') || nl.includes('epson') || nl.includes('canon') || nl.includes('brother') || nl.includes('driver')) icon = 'print';
+      else if (nl.includes('photo') || nl.includes('graphic') || nl.includes('design') || nl.includes('adobe')) icon = 'palette';
+      else if (nl.includes('video') || nl.includes('media')) icon = 'film';
+      else if (nl.includes('diagnostic') || nl.includes('hardware') || nl.includes('cpu')) icon = 'microchip';
+      else if (nl.includes('iso') || nl.includes('windows') || nl.includes('os')) icon = 'compact-disc';
+      else if (nl.includes('security') || nl.includes('antivirus')) icon = 'shield-halved';
+      else if (nl.includes('network') || nl.includes('wifi') || nl.includes('dns')) icon = 'network-wired';
 
       html += `
         <div>
@@ -272,9 +274,16 @@ function renderLeftSidebar() {
           const subCount = allFilesList.filter(f => f.category_id === cat.id).length;
           if (subCount > 0) {
             const isSubActive = activeSubcategory == cat.id;
+
+            let subIcon = 'folder';
+            const sl = (cat.subcategory || cat.name).toLowerCase();
+            if (sl.includes('epson') || sl.includes('canon') || sl.includes('printer') || sl.includes('resetter')) subIcon = 'print';
+            else if (sl.includes('windows') || sl.includes('w10') || sl.includes('w11')) subIcon = 'compact-disc';
+            else if (sl.includes('hardware') || sl.includes('diag')) subIcon = 'microchip';
+
             html += `
               <div class="subfolder-item ${isSubActive ? 'active' : ''}" onclick="selectSubcategory('${escapeHtml(mainName)}', ${cat.id}, event)">
-                <span><i class="fa-solid fa-${cat.icon || 'folder'}" style="margin-right: 0.4rem; font-size: 0.75rem;"></i> ${escapeHtml(cat.subcategory || cat.name)}</span>
+                <span><i class="fa-solid fa-${subIcon}" style="margin-right: 0.4rem; font-size: 0.8rem; color: var(--primary);"></i> ${escapeHtml(cat.subcategory || cat.name)}</span>
                 <span>(${subCount})</span>
               </div>
             `;
@@ -396,25 +405,27 @@ function createToolCardHtml(f) {
   const cat = categoriesList.find(c => c.id === f.category_id);
   const catName = cat ? (cat.subcategory || cat.name) : 'Utility';
   const mainCatName = cat ? (cat.main_category || '').toLowerCase() : '';
+  const toolNameLower = f.original_name.toLowerCase();
 
   let customIcon = 'file-zipper';
   let iconColor = 'var(--primary)';
-  if (mainCatName.includes('printer') || catName.toLowerCase().includes('epson') || catName.toLowerCase().includes('canon') || catName.toLowerCase().includes('brother')) {
+
+  if (toolNameLower.includes('epson') || toolNameLower.includes('canon') || toolNameLower.includes('brother') || mainCatName.includes('printer') || catName.toLowerCase().includes('printer')) {
     customIcon = 'print';
     iconColor = '#06b6d4';
-  } else if (mainCatName.includes('graphic') || mainCatName.includes('photo') || mainCatName.includes('design')) {
-    customIcon = 'palette';
-    iconColor = '#a855f7';
-  } else if (mainCatName.includes('video')) {
-    customIcon = 'film';
-    iconColor = '#ec4899';
-  } else if (mainCatName.includes('diagnostic') || mainCatName.includes('hardware')) {
-    customIcon = 'microchip';
-    iconColor = '#10b981';
-  } else if (mainCatName.includes('iso') || mainCatName.includes('windows')) {
+  } else if (toolNameLower.includes('w10') || toolNameLower.includes('w11') || toolNameLower.includes('iso') || toolNameLower.includes('windows') || mainCatName.includes('iso')) {
     customIcon = 'compact-disc';
     iconColor = '#3b82f6';
-  } else if (mainCatName.includes('resetter') || mainCatName.includes('activator')) {
+  } else if (toolNameLower.includes('photo') || toolNameLower.includes('adobe') || toolNameLower.includes('photoshop') || mainCatName.includes('graphic')) {
+    customIcon = 'palette';
+    iconColor = '#a855f7';
+  } else if (toolNameLower.includes('video') || toolNameLower.includes('filmora') || toolNameLower.includes('premiere')) {
+    customIcon = 'film';
+    iconColor = '#ec4899';
+  } else if (toolNameLower.includes('diag') || toolNameLower.includes('crystaldisk') || toolNameLower.includes('cpu-z') || mainCatName.includes('diagnostic')) {
+    customIcon = 'microchip';
+    iconColor = '#10b981';
+  } else if (toolNameLower.includes('resetter') || toolNameLower.includes('activator') || toolNameLower.includes('key')) {
     customIcon = 'key';
     iconColor = '#f59e0b';
   }
@@ -440,7 +451,7 @@ function createToolCardHtml(f) {
 
       <div>
         <div class="card-tags">
-          <span class="tag cyan"><i class="fa-solid fa-folder"></i> ${escapeHtml(catName)}</span>
+          <span class="tag cyan"><i class="fa-solid fa-${customIcon}"></i> ${escapeHtml(catName)}</span>
           <span class="tag green"><i class="fa-solid fa-hard-drive"></i> ${formattedSize}</span>
           <span class="tag" title="Total Times Downloaded"><i class="fa-solid fa-download" style="color: var(--primary);"></i> ${downloadsCount} Downloads</span>
           <button onclick="openCommentsModal(${f.id}, '${escapeHtml(f.original_name)}')" class="tag" style="cursor: pointer; background: var(--bg-card-hover);">
