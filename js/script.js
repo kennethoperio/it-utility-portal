@@ -73,7 +73,7 @@ function clientLogout() {
   showToast('Vault Locked. Logged out successfully.');
 }
 
-// --- 100% UNBLOCKED DIRECT DOWNLOAD ENGINE FOR EXECUTABLES & ZIP FILES ---
+// --- ZERO-NEW-TAB DIRECT FILE DOWNLOAD ENGINE ---
 function triggerDirectDownload(fileId, fileName) {
   showToast(`🚚 Starting direct download for ${fileName}...`);
 
@@ -85,62 +85,20 @@ function triggerDirectDownload(fileId, fileName) {
   }
 
   const directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&authuser=0`;
-  const gdriveUcUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
 
-  // Trigger hidden iframe download attempt
-  let frame = document.getElementById('hidden-download-iframe');
-  if (!frame) {
-    frame = document.createElement('iframe');
-    frame.id = 'hidden-download-iframe';
-    frame.style.display = 'none';
-    document.body.appendChild(frame);
-  }
-  frame.src = gdriveUcUrl;
+  // Trigger download directly on current page WITHOUT opening any new browser tab or page
+  const a = document.createElement('a');
+  a.href = directUrl;
+  a.download = fileName;
+  a.target = '_self';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 400);
 
-  // Open Direct Download Bypass Dialog so user is NEVER stuck on a Google warning page
-  openDownloadBypassModal(fileId, fileName, directUrl, gdriveUcUrl);
-}
-
-function openDownloadBypassModal(fileId, fileName, directUrl, gdriveUcUrl) {
-  let modal = document.getElementById('download-bypass-modal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'download-bypass-modal';
-    modal.className = 'modal-overlay';
-    document.body.appendChild(modal);
-  }
-
-  modal.innerHTML = `
-    <div class="modal-card" style="text-align: center; max-width: 480px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h3 style="font-size: 1.15rem; color: var(--text-main);"><i class="fa-solid fa-cloud-arrow-down" style="color: var(--primary);"></i> Direct Download File</h3>
-        <button onclick="closeDownloadBypassModal()" class="btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 1.1rem; border: none;">&times;</button>
-      </div>
-
-      <div class="card-icon" style="margin: 0 auto 1rem; width: 56px; height: 56px; font-size: 1.5rem; color: var(--success); background: rgba(16, 185, 129, 0.1);">
-        <i class="fa-solid fa-file-zipper"></i>
-      </div>
-
-      <h4 style="margin-bottom: 0.35rem; color: var(--text-main);">${escapeHtml(fileName)}</h4>
-      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">Download should start automatically in your browser.</p>
-
-      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <a href="${directUrl}" target="_blank" class="btn-download" style="background: var(--primary); text-decoration: none; text-align: center; display: block;">
-          <i class="fa-solid fa-download"></i> Click Here to Save File Immediately
-        </a>
-        <a href="${gdriveUcUrl}" target="_blank" class="btn-secondary" style="text-decoration: none; text-align: center; font-size: 0.85rem;">
-          <i class="fa-solid fa-shield-virus"></i> Alternative Google Mirror Link
-        </a>
-      </div>
-    </div>
-  `;
-
-  modal.style.display = 'flex';
-}
-
-function closeDownloadBypassModal() {
-  const modal = document.getElementById('download-bypass-modal');
-  if (modal) modal.style.display = 'none';
+  // Backup fallback on current window after 800ms
+  setTimeout(() => {
+    window.location.href = directUrl;
+  }, 800);
 }
 
 // --- Passcode Authorization Logic ---
