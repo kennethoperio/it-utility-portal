@@ -114,7 +114,7 @@ function openDownloadBypassModal(fileId, fileName) {
       <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.35rem;">Download full uncorrupted file directly to your PC.</p>
 
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <!-- Option 1: Vercel Serverless Stream Download (BYPASSES GOOGLE VIRUS SCAN PAGE 100%) -->
+        <!-- Option 1: Vercel Serverless Stream Download -->
         <button onclick="saveFileImmediately('${fileId}', '${escapeHtml(fileName)}')" class="btn-download" style="background: var(--primary); text-align: center; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">
           <i class="fa-solid fa-download"></i> Click Here to Save File Immediately
         </button>
@@ -135,14 +135,11 @@ function closeDownloadBypassModal() {
   if (modal) modal.style.display = 'none';
 }
 
-// Option 1: Vercel serverless stream proxy download (Zero Google warning pages, direct to PC!)
 function saveFileImmediately(fileId, fileName) {
   showToast(`🚚 Starting direct download for ${fileName}...`);
 
-  // Direct Vercel proxy stream URL that streams binary file with Content-Disposition: attachment
   const vercelStreamUrl = `https://it-utility-portal.vercel.app/api/download?fileId=${fileId}&fileName=${encodeURIComponent(fileName)}`;
 
-  // Trigger automatic download in current browser session
   const a = document.createElement('a');
   a.style.display = 'none';
   a.href = vercelStreamUrl;
@@ -202,7 +199,7 @@ async function validateAndLoadVault(passcode) {
   return false;
 }
 
-// --- Data Loader ---
+// --- Data Loader (MERGES MANIFEST & LOCAL STORAGE UPLOADED FILES) ---
 async function loadVaultDataStaleWhileRevalidate() {
   try {
     const res = await fetch(`vault_manifest.json?_t=${Date.now()}`);
@@ -212,15 +209,32 @@ async function loadVaultDataStaleWhileRevalidate() {
       allFilesList = data.files || [];
       cmdScriptsList = data.cmd_scripts || [];
       passcodesList = data.passcodes || [];
-      
-      renderLeftSidebar();
-      renderToolsGrid();
-      renderFavoritesGrid();
-      renderCmdScripts();
     }
   } catch (e) {
     console.warn('Manifest load error:', e);
   }
+
+  // MERGE RECENTLY UPLOADED FILES & CATEGORIES FROM LOCAL STORAGE
+  try {
+    const savedCustomFiles = JSON.parse(localStorage.getItem('portal_custom_files') || '[]');
+    savedCustomFiles.forEach(sf => {
+      if (!allFilesList.some(f => f.id === sf.id || f.original_name === sf.original_name)) {
+        allFilesList.unshift(sf);
+      }
+    });
+
+    const savedCustomCats = JSON.parse(localStorage.getItem('portal_custom_categories') || '[]');
+    savedCustomCats.forEach(sc => {
+      if (!categoriesList.some(c => c.id === sc.id)) {
+        categoriesList.push(sc);
+      }
+    });
+  } catch (err) {}
+
+  renderLeftSidebar();
+  renderToolsGrid();
+  renderFavoritesGrid();
+  renderCmdScripts();
 }
 
 // --- Left Navigation Sidebar Explorer ---
