@@ -139,6 +139,21 @@ async function loadAdminDashboardData() {
       passcodesList = data.passcodes || [];
     }
 
+    // Merge saved custom files and categories from localStorage
+    const savedCustomFiles = JSON.parse(localStorage.getItem('portal_custom_files') || '[]');
+    savedCustomFiles.forEach(sf => {
+      if (!adminFilesList.some(f => f.id === sf.id || f.original_name === sf.original_name)) {
+        adminFilesList.unshift(sf);
+      }
+    });
+
+    const savedCustomCats = JSON.parse(localStorage.getItem('portal_custom_categories') || '[]');
+    savedCustomCats.forEach(sc => {
+      if (!categoriesList.some(c => c.id === sc.id)) {
+        categoriesList.push(sc);
+      }
+    });
+
     try {
       await syncRealGDriveStructureDirect();
     } catch (gErr) {}
@@ -261,6 +276,8 @@ async function handleCreateMainCategorySubmit(e) {
   };
 
   categoriesList.push(newCat);
+  localStorage.setItem('portal_custom_categories', JSON.stringify(categoriesList));
+
   renderAdminCategoriesHierarchy();
   renderAdminStats();
   populateUploadCategoryDropdown();
@@ -316,6 +333,8 @@ async function handleCreateSubfolderSubmit(e) {
   };
 
   categoriesList.push(newSubCat);
+  localStorage.setItem('portal_custom_categories', JSON.stringify(categoriesList));
+
   renderAdminCategoriesHierarchy();
   renderAdminStats();
   populateUploadCategoryDropdown();
@@ -517,6 +536,8 @@ function finalizeUploadSuccess(fileName, gdriveId, catId, fileSize, desc, target
   };
 
   adminFilesList.unshift(newFile);
+  localStorage.setItem('portal_custom_files', JSON.stringify(adminFilesList));
+
   renderAdminFilesTable();
   renderAdminStats();
 
@@ -692,6 +713,7 @@ function handleEditFileSubmit(e) {
   if (fileObj) {
     fileObj.original_name = newTitle;
     fileObj.description = newDesc;
+    localStorage.setItem('portal_custom_files', JSON.stringify(adminFilesList));
     renderAdminFilesTable();
     showToast('✏️ Tool description & details updated!');
   }
@@ -722,7 +744,10 @@ function handleMoveFileSubmit(e) {
   const targetCatId = document.getElementById('move-file-target-category').value;
 
   const fileItem = adminFilesList.find(f => f.id == fileId);
-  if (fileItem) fileItem.category_id = parseInt(targetCatId);
+  if (fileItem) {
+    fileItem.category_id = parseInt(targetCatId);
+    localStorage.setItem('portal_custom_files', JSON.stringify(adminFilesList));
+  }
 
   renderAdminFilesTable();
   closeMoveFileModal();
