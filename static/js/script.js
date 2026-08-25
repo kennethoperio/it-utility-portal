@@ -73,9 +73,9 @@ function clientLogout() {
   showToast('Vault Locked. Logged out successfully.');
 }
 
-// --- 100% RELIABLE DIRECT DOWNLOAD ENGINE FOR ALL BROWSERS ---
+// --- DIRECT DOWNLOAD ENGINE WITH VIRUS SCAN WARNING BYPASS (CONFIRM=T) ---
 function triggerDirectDownload(fileId, fileName) {
-  showToast(`🚚 Starting direct download for ${fileName}...`);
+  showToast(`🚚 Direct downloading ${fileName}...`);
 
   // 1. Increment Download Counter
   const fileObj = allFilesList.find(f => (f.file_key || '').includes(fileId) || f.id == fileId);
@@ -84,21 +84,33 @@ function triggerDirectDownload(fileId, fileName) {
     renderToolsGrid();
   }
 
-  // 2. Direct Download Link
-  const directUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
-  
-  // Create direct download anchor
-  const a = document.createElement('a');
-  a.href = directUrl;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  
-  setTimeout(() => {
-    a.remove();
-    // Fallback if browser blocked anchor click
-    window.location.href = directUrl;
-  }, 300);
+  // 2. Direct Bypass Download URL with confirm=t
+  const directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&authuser=0`;
+
+  // Create form to trigger instant download bypass
+  const form = document.createElement('form');
+  form.action = directUrl;
+  form.method = 'GET';
+  form.style.display = 'none';
+
+  const inputId = document.createElement('input');
+  inputId.name = 'id';
+  inputId.value = fileId;
+  form.appendChild(inputId);
+
+  const inputExport = document.createElement('input');
+  inputExport.name = 'export';
+  inputExport.value = 'download';
+  form.appendChild(inputExport);
+
+  const inputConfirm = document.createElement('input');
+  inputConfirm.name = 'confirm';
+  inputConfirm.value = 't';
+  form.appendChild(inputConfirm);
+
+  document.body.appendChild(form);
+  form.submit();
+  setTimeout(() => form.remove(), 1000);
 }
 
 // --- Passcode Authorization Logic ---
@@ -168,7 +180,7 @@ async function loadVaultDataStaleWhileRevalidate() {
   }
 }
 
-// --- Left Navigation Sidebar Explorer ---
+// --- Left Navigation Sidebar Explorer (SUPPORTS SUBFOLDERS ON SUBFOLDERS) ---
 function renderLeftSidebar() {
   const container = document.getElementById('sidebar-categories-menu');
   if (!container) return;
@@ -295,7 +307,7 @@ function switchTab(tabId) {
   if (tabId === 'favorites') renderFavoritesGrid();
 }
 
-// --- Tools Grid Rendering with Custom Category Icons & Download Counter ---
+// --- Tools Grid Rendering ---
 function renderToolsGrid() {
   const grid = document.getElementById('tools-grid');
   if (!grid) return;
@@ -347,22 +359,22 @@ function createToolCardHtml(f) {
   let iconColor = 'var(--primary)';
   if (mainCatName.includes('printer') || catName.toLowerCase().includes('epson') || catName.toLowerCase().includes('canon') || catName.toLowerCase().includes('brother')) {
     customIcon = 'print';
-    iconColor = '#06b6d4'; // Cyan
+    iconColor = '#06b6d4';
   } else if (mainCatName.includes('graphic') || mainCatName.includes('photo') || mainCatName.includes('design')) {
     customIcon = 'palette';
-    iconColor = '#a855f7'; // Purple
+    iconColor = '#a855f7';
   } else if (mainCatName.includes('video')) {
     customIcon = 'film';
-    iconColor = '#ec4899'; // Pink
+    iconColor = '#ec4899';
   } else if (mainCatName.includes('diagnostic') || mainCatName.includes('hardware')) {
     customIcon = 'microchip';
-    iconColor = '#10b981'; // Emerald
+    iconColor = '#10b981';
   } else if (mainCatName.includes('iso') || mainCatName.includes('windows')) {
     customIcon = 'compact-disc';
-    iconColor = '#3b82f6'; // Blue
+    iconColor = '#3b82f6';
   } else if (mainCatName.includes('resetter') || mainCatName.includes('activator')) {
     customIcon = 'key';
-    iconColor = '#f59e0b'; // Amber
+    iconColor = '#f59e0b';
   }
 
   const comments = fileCommentsMap[f.id] || [];
@@ -645,7 +657,7 @@ function showToast(msg) {
 }
 
 function formatBytes(bytes) {
-  if (bytes === 0) return '0 B';
+  if (!bytes || bytes === 0) return '0 B';
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
