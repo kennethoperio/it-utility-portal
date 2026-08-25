@@ -264,7 +264,7 @@ function renderAdminCategoriesHierarchy() {
   }).join('');
 }
 
-// --- DIRECT RESUMABLE GOOGLE DRIVE FILE UPLOAD ENGINE WITH SUCCESS MODAL ---
+// --- INSTANT GOOGLE DRIVE FILE UPLOADER & POPUP RESET ENGINE ---
 function populateUploadCategoryDropdown() {
   const select = document.getElementById('upload-file-category');
   if (!select) return;
@@ -282,7 +282,7 @@ async function handleResumableDriveFileUpload(e) {
   const descInput = document.getElementById('upload-file-desc');
   
   const title = titleInput.value.trim();
-  const catId = parseInt(catSelect.value);
+  const catId = parseInt(catSelect.value || 1);
   const desc = descInput.value.trim();
 
   const submitBtn = document.getElementById('upload-submit-btn');
@@ -298,13 +298,14 @@ async function handleResumableDriveFileUpload(e) {
   }
 
   const file = fileInput.files[0];
+  const fileName = title || file.name;
   const totalBytes = file.size || 52428800;
 
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
 
   let uploadedBytes = 0;
-  const chunkSize = Math.ceil(totalBytes / 20);
+  const chunkSize = Math.ceil(totalBytes / 10);
 
   const interval = setInterval(() => {
     uploadedBytes += chunkSize;
@@ -317,10 +318,10 @@ async function handleResumableDriveFileUpload(e) {
       transferredText.innerText = `${formatBytes(totalBytes)} / ${formatBytes(totalBytes)}`;
       statusText.innerText = '✅ File uploaded & synced to Google Drive!';
 
-      // Create new file entry
+      // Add to file catalog immediately
       const newFile = {
         id: Date.now(),
-        original_name: title || file.name,
+        original_name: fileName,
         file_key: 'gdrive:1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h',
         category_id: catId,
         file_size: totalBytes,
@@ -332,30 +333,28 @@ async function handleResumableDriveFileUpload(e) {
       renderAdminFilesTable();
       renderAdminStats();
 
-      // Show Upload Success Modal & Reset Form Fresh
-      setTimeout(() => {
-        submitBtn.disabled = false;
-        progressCard.style.display = 'none';
-        progressBar.style.width = '0%';
+      // Reset upload form immediately to fresh state
+      submitBtn.disabled = false;
+      progressCard.style.display = 'none';
+      progressBar.style.width = '0%';
 
-        // Reset form to fresh state
-        fileInput.value = '';
-        titleInput.value = '';
-        descInput.value = '';
+      fileInput.value = '';
+      titleInput.value = '';
+      descInput.value = '';
 
-        showUploadSuccessModal(title || file.name);
-      }, 400);
+      // Immediately show Upload Success Modal Popup over screen
+      showUploadSuccessModal(fileName);
     } else {
       const pct = Math.round((uploadedBytes / totalBytes) * 100);
       progressBar.style.width = `${pct}%`;
       pctText.innerText = `${pct}%`;
       transferredText.innerText = `${formatBytes(uploadedBytes)} / ${formatBytes(totalBytes)}`;
-      statusText.innerText = `Uploading ${file.name} to Google Drive IT_Utility_Vault (${pct}%)...`;
+      statusText.innerText = `Uploading ${file.name} to Google Drive (${pct}%)...`;
     }
-  }, 100);
+  }, 80);
 }
 
-// Upload Success Modal Popup
+// Upload Success Modal Popup (high z-index & fixed position)
 function showUploadSuccessModal(fileName) {
   let modal = document.getElementById('upload-success-modal');
   if (!modal) {
@@ -366,8 +365,8 @@ function showUploadSuccessModal(fileName) {
   }
 
   modal.innerHTML = `
-    <div class="modal-card" style="text-align: center; max-width: 440px; padding: 2rem;">
-      <div class="card-icon" style="margin: 0 auto 1.25rem; width: 64px; height: 64px; font-size: 2rem; color: #10b981; background: rgba(16, 185, 129, 0.12);">
+    <div class="modal-card" style="text-align: center; max-width: 440px; padding: 2rem; background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);" onclick="event.stopPropagation()">
+      <div class="card-icon" style="margin: 0 auto 1.25rem; width: 64px; height: 64px; font-size: 2rem; color: #10b981; background: rgba(16, 185, 129, 0.12); display: flex; align-items: center; justify-content: center; border-radius: 50%;">
         <i class="fa-solid fa-circle-check"></i>
       </div>
 
@@ -376,13 +375,23 @@ function showUploadSuccessModal(fileName) {
         <strong>${escapeHtml(fileName)}</strong> has been uploaded to your Google Drive folder and added to the Vault catalog.
       </p>
 
-      <button onclick="closeUploadSuccessModal()" class="btn-download" style="background: var(--primary); font-size: 1rem; padding: 0.75rem;">
+      <button onclick="closeUploadSuccessModal()" class="btn-download" style="background: var(--primary); font-size: 1rem; padding: 0.75rem; width: 100%; border-radius: 10px; cursor: pointer; border: none; color: white; font-weight: 700;">
         <i class="fa-solid fa-plus"></i> Upload Another File
       </button>
     </div>
   `;
 
   modal.style.display = 'flex';
+  modal.style.position = 'fixed';
+  modal.style.top = '0';
+  modal.style.left = '0';
+  modal.style.width = '100vw';
+  modal.style.height = '100vh';
+  modal.style.zIndex = '99999';
+  modal.style.background = 'rgba(0, 0, 0, 0.75)';
+  modal.style.backdropFilter = 'blur(6px)';
+  modal.style.justifyContent = 'center';
+  modal.style.alignItems = 'center';
 }
 
 function closeUploadSuccessModal() {
