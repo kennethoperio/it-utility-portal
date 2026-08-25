@@ -73,7 +73,7 @@ function clientLogout() {
   showToast('Vault Locked. Logged out successfully.');
 }
 
-// --- ZERO NEW TAB DIRECT BINARY DOWNLOAD ENGINE ---
+// --- BACKGROUND FETCH BLOB AUTOMATIC DOWNLOAD ENGINE ---
 function triggerDirectDownload(fileId, fileName) {
   // Increment Download Counter
   const fileObj = allFilesList.find(f => (f.file_key || '').includes(fileId) || f.id == fileId);
@@ -114,7 +114,7 @@ function openDownloadBypassModal(fileId, fileName) {
       <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.35rem;">Download full uncorrupted file directly to your PC.</p>
 
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <!-- Option 1: Direct Binary Stream Download (NO NEW TAB, AUTOMATIC DOWNLOAD IN CURRENT PAGE) -->
+        <!-- Option 1: Automatic Background Fetch Blob Download (ZERO GOOGLE NAVIGATION) -->
         <button onclick="saveFileImmediately('${fileId}', '${escapeHtml(fileName)}')" class="btn-download" style="background: var(--primary); text-align: center; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">
           <i class="fa-solid fa-download"></i> Click Here to Save File Immediately
         </button>
@@ -135,19 +135,44 @@ function closeDownloadBypassModal() {
   if (modal) modal.style.display = 'none';
 }
 
-// Option 1: Direct full binary stream download (NO NEW TABS, AUTOMATIC DOWNLOAD IN BROWSER BAR)
-function saveFileImmediately(fileId, fileName) {
+// Option 1: Background Fetch Blob stream download (ZERO page navigation to Google URLs)
+async function saveFileImmediately(fileId, fileName) {
   showToast(`🚚 Starting direct download for ${fileName}...`);
 
   const directBinaryUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&authuser=0`;
 
-  // Trigger browser binary attachment download in current page without opening any new tab or window
-  const a = document.createElement('a');
-  a.href = directBinaryUrl;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => a.remove(), 400);
+  try {
+    // Background stream fetch (does NOT navigate browser to Google Drive URL!)
+    const response = await fetch(directBinaryUrl);
+    if (!response.ok) throw new Error('Binary stream failed');
+
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    // Save binary blob to user download bar directly
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = blobUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      a.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    }, 1000);
+
+    showToast(`✅ Download complete!`);
+  } catch (err) {
+    // Fallback: direct anchor trigger without opening new tab
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = directBinaryUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 400);
+  }
 
   closeDownloadBypassModal();
 }
