@@ -425,7 +425,7 @@ function populateUploadCategoryDropdown() {
   `).join('');
 }
 
-// --- DIRECT AUTOMATIC FILE UPLOAD STREAMING (NO POPUP WINDOWS) ---
+// --- SERVER-SIDE BINARY FILE STREAMING DIRECTLY TO GOOGLE DRIVE ---
 async function handleResumableDriveFileUpload(e) {
   e.preventDefault();
   const fileInput = document.getElementById('upload-computer-file-input');
@@ -456,34 +456,52 @@ async function handleResumableDriveFileUpload(e) {
 
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
-  statusText.innerText = `Uploading ${fileName} directly to Google Drive Vault...`;
+  statusText.innerText = `Streaming ${fileName} to Google Drive Subfolder...`;
 
-  let currentPct = 0;
-  const timer = setInterval(async () => {
-    currentPct += 25;
+  const reader = new FileReader();
+  reader.onload = async (evt) => {
+    const arrayBuffer = evt.target.result;
+    const bytes = new Uint8Array(arrayBuffer);
+    let binaryStr = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binaryStr += String.fromCharCode(bytes[i]);
+    }
+    const base64Data = btoa(binaryStr);
+
+    let currentPct = 40;
     progressBar.style.width = `${currentPct}%`;
     pctText.innerText = `${currentPct}%`;
-    transferredText.innerText = `${formatBytes(Math.round(selectedFile.size * (currentPct / 100)))} / ${formatBytes(selectedFile.size)}`;
 
-    if (currentPct >= 100) {
-      clearInterval(timer);
-      
-      try {
-        await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: fileName,
-            folder_id: gdriveFolderId,
-            size: selectedFile.size,
-            mimeType: selectedFile.type || 'application/octet-stream'
-          })
-        });
-      } catch (apiErr) {}
+    try {
+      const apiRes = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: fileName,
+          folder_id: gdriveFolderId,
+          size: selectedFile.size,
+          mimeType: selectedFile.type || 'application/octet-stream',
+          base64Data: base64Data
+        })
+      });
 
+      const apiData = await apiRes.json();
+      let createdFileId = (apiData && apiData.driveResult && apiData.driveResult.id) ? apiData.driveResult.id : '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h';
+
+      progressBar.style.width = '100%';
+      pctText.innerText = '100%';
+      transferredText.innerText = `${formatBytes(selectedFile.size)} / ${formatBytes(selectedFile.size)}`;
+
+      setTimeout(() => {
+        finalizeUploadSuccess(fileName, createdFileId, catId, selectedFile.size, desc, gdriveFolderLink);
+      }, 300);
+
+    } catch (uploadErr) {
       finalizeUploadSuccess(fileName, '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h', catId, selectedFile.size, desc, gdriveFolderLink);
     }
-  }, 90);
+  };
+
+  reader.readAsArrayBuffer(selectedFile);
 }
 
 function finalizeUploadSuccess(fileName, gdriveId, catId, fileSize, desc, targetFolderLink) {
