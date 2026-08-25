@@ -1,5 +1,5 @@
 // IT Utility Portal - Client Application Logic
-const VERCEL_API_BASE = 'https://it-utility-portal.vercel.app/api';
+const API_BASE = (window.location.pathname.includes('it-utility-portal') || window.location.hostname.includes('github.io')) ? 'static/api' : 'api';
 
 let categoriesList = [];
 let allFilesList = [];
@@ -73,7 +73,7 @@ function clientLogout() {
   showToast('Vault Locked. Logged out successfully.');
 }
 
-// --- EXACT DOWNLOAD MODAL FLOW WITH VERCEL SERVERLESS PROXY ---
+// --- FULL BINARY FILE DIRECT DOWNLOAD ENGINE ---
 function triggerDirectDownload(fileId, fileName) {
   // Increment Download Counter
   const fileObj = allFilesList.find(f => (f.file_key || '').includes(fileId) || f.id == fileId);
@@ -95,7 +95,7 @@ function openDownloadBypassModal(fileId, fileName) {
     document.body.appendChild(modal);
   }
 
-  const mirrorUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&authuser=0`;
+  const gdriveViewUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
 
   modal.innerHTML = `
     <div class="modal-card" style="text-align: center; max-width: 460px; padding: 1.75rem;" onclick="event.stopPropagation()">
@@ -111,17 +111,17 @@ function openDownloadBypassModal(fileId, fileName) {
       </div>
 
       <h4 style="margin-bottom: 0.25rem; color: var(--text-main); font-size: 1.05rem;">${escapeHtml(fileName)}</h4>
-      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.35rem;">Download should start automatically in your browser.</p>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.35rem;">Download full uncorrupted file directly to your PC.</p>
 
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <!-- Option 1: Direct Vercel Serverless Stream Download (NO DRIVE USERCONTENT TABS!) -->
+        <!-- Option 1: Direct Full Binary File Download -->
         <button onclick="saveFileImmediately('${fileId}', '${escapeHtml(fileName)}')" class="btn-download" style="background: var(--primary); text-align: center; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">
           <i class="fa-solid fa-download"></i> Click Here to Save File Immediately
         </button>
 
-        <!-- Option 2: Alternative Google Mirror Link (Opens usercontent page) -->
-        <a href="${mirrorUrl}" target="_blank" class="btn-secondary" style="text-decoration: none; text-align: center; justify-content: center; font-size: 0.85rem; padding: 0.65rem; color: var(--text-muted);">
-          <i class="fa-solid fa-shield-virus"></i> Alternative Google Mirror Link
+        <!-- Option 2: Alternative Google Drive View Link -->
+        <a href="${gdriveViewUrl}" target="_blank" class="btn-secondary" style="text-decoration: none; text-align: center; justify-content: center; font-size: 0.85rem; padding: 0.65rem; color: var(--text-muted);">
+          <i class="fa-solid fa-folder-open"></i> Open in Google Drive
         </a>
       </div>
     </div>
@@ -135,29 +135,26 @@ function closeDownloadBypassModal() {
   if (modal) modal.style.display = 'none';
 }
 
-// Option 1: Trigger Vercel Serverless Direct Download Stream
+// Option 1: Direct full binary file download without HTML truncation
 function saveFileImmediately(fileId, fileName) {
-  showToast(`🚚 Direct streaming ${fileName} to PC...`);
+  showToast(`🚚 Downloading ${fileName} directly...`);
 
-  // Direct Vercel Serverless Proxy Download Link
-  const vercelDownloadUrl = `/api/download?fileId=${fileId}&fileName=${encodeURIComponent(fileName)}`;
+  // Direct download link with confirm=t parameter to stream FULL binary file
+  const fullBinaryUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&authuser=0`;
 
-  let frame = document.getElementById('hidden-download-iframe');
-  if (!frame) {
-    frame = document.createElement('iframe');
-    frame.id = 'hidden-download-iframe';
-    frame.style.display = 'none';
-    document.body.appendChild(frame);
-  }
-  frame.src = vercelDownloadUrl;
-
+  // Trigger browser download stream
   const a = document.createElement('a');
-  a.href = vercelDownloadUrl;
+  a.href = fullBinaryUrl;
   a.download = fileName;
   a.target = '_self';
   document.body.appendChild(a);
   a.click();
   setTimeout(() => a.remove(), 400);
+
+  // Backup fallback
+  setTimeout(() => {
+    window.location.href = fullBinaryUrl;
+  }, 600);
 
   closeDownloadBypassModal();
 }
