@@ -185,14 +185,14 @@ async function getGoogleAccessTokenDirect() {
   return null;
 }
 
-// --- DYNAMICALLY PULL ALL REAL GOOGLE DRIVE SUBFOLDERS & FILES FROM GOOGLE DRIVE API ---
+// --- DYNAMICALLY PULL ALL REAL GOOGLE DRIVE SUBFOLDERS & ALL FILES (.rar, .zip, .iso, .exe, .7z) ---
 async function syncRealGDriveStructureDirect() {
   try {
     const token = await getGoogleAccessTokenDirect();
     if (!token) return;
 
     // Fetch Folders
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,parents,webViewLink)&pageSize=100`, {
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,parents,webViewLink)&pageSize=1000`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -220,7 +220,7 @@ async function syncRealGDriveStructureDirect() {
     }
 
     // Fetch Files
-    const filesRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType!='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,size,parents,webViewLink)&pageSize=100`, {
+    const filesRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType!='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,size,parents,webViewLink)&pageSize=1000`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const filesData = await filesRes.json();
@@ -234,13 +234,18 @@ async function syncRealGDriveStructureDirect() {
       const catId = matchingCat ? matchingCat.id : 1;
 
       if (!adminFilesList.some(f => (f.file_key || '').includes(gf.id) || f.original_name === gf.name)) {
+        let desc = `Google Drive Vault File (${gf.name})`;
+        const nl = gf.name.toLowerCase();
+        if (nl.endsWith('.rar') || nl.endsWith('.zip') || nl.endsWith('.7z')) desc = 'Compressed Archive Utility / Resetter Package';
+        else if (nl.endsWith('.iso')) desc = 'Windows Installation ISO Image';
+
         adminFilesList.unshift({
           id: Date.now() + Math.floor(Math.random() * 1000),
           original_name: gf.name,
           file_key: `gdrive:${gf.id}`,
           category_id: catId,
           file_size: gf.size ? parseInt(gf.size) : 180 * 1024 * 1024,
-          description: `Google Drive Vault File (${gf.name})`,
+          description: desc,
           download_count: 0
         });
       }
@@ -689,10 +694,12 @@ function renderAdminFilesTable() {
     const toolNameLower = f.original_name.toLowerCase();
 
     let customIcon = 'file-zipper';
-    if (toolNameLower.includes('epson') || toolNameLower.includes('canon') || toolNameLower.includes('brother') || mainCatName.toLowerCase().includes('printer')) {
-      customIcon = 'print';
-    } else if (toolNameLower.includes('iso') || toolNameLower.includes('windows')) {
+    if (toolNameLower.endsWith('.rar') || toolNameLower.endsWith('.zip') || toolNameLower.endsWith('.7z')) {
+      customIcon = 'file-zipper';
+    } else if (toolNameLower.endsWith('.iso')) {
       customIcon = 'compact-disc';
+    } else if (toolNameLower.includes('epson') || toolNameLower.includes('canon') || toolNameLower.includes('brother') || mainCatName.toLowerCase().includes('printer')) {
+      customIcon = 'print';
     }
 
     return `
