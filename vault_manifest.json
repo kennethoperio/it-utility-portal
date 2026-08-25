@@ -1,7 +1,215 @@
 {
   "version": "10.0",
-  "generated_at": "2026-08-25T13:45:44.724618",
+  "generated_at": "2026-08-25T14:08:32.675237",
   "categories": [
+    {
+      "id": 31,
+      "name": "Brother L2550DW",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Brother L2550DW",
+      "display_order": 0
+    },
+    {
+      "id": 32,
+      "name": "Brother MF240 Series",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Brother MF240 Series",
+      "display_order": 0
+    },
+    {
+      "id": 29,
+      "name": "Canon LBP2900",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Canon LBP2900",
+      "display_order": 0
+    },
+    {
+      "id": 30,
+      "name": "Canon LBP6000",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Canon LBP6000",
+      "display_order": 0
+    },
+    {
+      "id": 21,
+      "name": "Epson L120",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Epson L120",
+      "display_order": 0
+    },
+    {
+      "id": 22,
+      "name": "Epson L210",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Epson L210",
+      "display_order": 0
+    },
+    {
+      "id": 23,
+      "name": "Epson L220",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Epson L220",
+      "display_order": 0
+    },
+    {
+      "id": 26,
+      "name": "Epson L3110",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Epson L3110",
+      "display_order": 0
+    },
+    {
+      "id": 17,
+      "name": "Epson L3210",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Epson L3210 Drivers",
+      "display_order": 0
+    },
+    {
+      "id": 24,
+      "name": "Epson L360",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Epson L360",
+      "display_order": 0
+    },
+    {
+      "id": 25,
+      "name": "Epson L405",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Epson L405",
+      "display_order": 0
+    },
+    {
+      "id": 44,
+      "name": "Epson L8050",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Epson L8050",
+      "display_order": 0
+    },
+    {
+      "id": 45,
+      "name": "Epson L8050",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Epson L8050",
+      "display_order": 0
+    },
+    {
+      "id": 28,
+      "name": "Epson LX300",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Epson LX300",
+      "display_order": 0
+    },
+    {
+      "id": 27,
+      "name": "Epson LX310",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "Epson LX310",
+      "display_order": 0
+    },
+    {
+      "id": 36,
+      "name": "Graphic Design Softwares",
+      "parent_id": null,
+      "icon": "desktop",
+      "description": "Graphic Design Softwares",
+      "display_order": 0
+    },
+    {
+      "id": 33,
+      "name": "HP LaserJet Pro P1100, P1560, P1600 Series",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "HP LaserJet Pro P1100, P1560, P1600 Series",
+      "display_order": 0
+    },
+    {
+      "id": 20,
+      "name": "Microsoft Office",
+      "parent_id": null,
+      "icon": "auto",
+      "description": "Microsoft Office \u2013 A productivity software suite that includes applications such as Microsoft Word, Excel, PowerPoint, Outlook, and OneNote. It is commonly used for creating documents, spreadsheets, presentations, emails, and other office-related tasks.",
+      "display_order": 0
+    },
+    {
+      "id": 38,
+      "name": "Photo Editing",
+      "parent_id": 36,
+      "icon": "folder",
+      "description": "Photo Editing",
+      "display_order": 0
+    },
+    {
+      "id": 18,
+      "name": "Recovery Tools",
+      "parent_id": null,
+      "icon": "life-ring",
+      "description": "Recovery Tools are software utilities used to diagnose, repair, and recover computer systems, files, and data. They can help restore deleted or corrupted files, fix startup problems, recover lost partitions, and troubleshoot system errors.",
+      "display_order": 0
+    },
+    {
+      "id": 34,
+      "name": "SATO Printer",
+      "parent_id": 8,
+      "icon": "print",
+      "description": "SATO Printer",
+      "display_order": 0
+    },
+    {
+      "id": 16,
+      "name": "Tools & Installers",
+      "parent_id": null,
+      "icon": "toolbox",
+      "description": "Installers and useful tools",
+      "display_order": 0
+    },
+    {
+      "id": 37,
+      "name": "Video Editing",
+      "parent_id": 36,
+      "icon": "folder",
+      "description": "Video Editing",
+      "display_order": 0
+    },
+    {
+      "id": 19,
+      "name": "Windows ISO Image",
+      "parent_id": null,
+      "icon": "auto",
+      "description": "Windows ISO Image is a disk image file containing the installation files for a Windows operating system. It can be used to create bootable USB drives, install or reinstall Windows, and perform system repairs or upgrades.",
+      "display_order": 0
+    },
+    {
+      "id": 35,
+      "name": "Windows Server ISO Image",
+      "parent_id": null,
+      "icon": "auto",
+      "description": "Windows Server ISO",
+      "display_order": 0
+    },
+    {
+      "id": 43,
+      "name": "epson",
+      "parent_id": null,
+      "icon": "auto",
+      "description": "",
+      "display_order": 0
+    },
     {
       "id": 7,
       "name": "Resetters",
@@ -65,17 +273,886 @@
       "icon": "microchip",
       "description": "RAM, HDD/SSD, CPU test tools, and spec gatherers",
       "display_order": 6
+    },
+    {
+      "id": 40,
+      "name": "Drone Shot",
+      "parent_id": null,
+      "icon": "folder",
+      "description": "Folder: Drone Shot",
+      "display_order": 10
+    },
+    {
+      "id": 39,
+      "name": "IT_Utility_Vault",
+      "parent_id": null,
+      "icon": "folder",
+      "description": "Folder: IT_Utility_Vault",
+      "display_order": 10
+    },
+    {
+      "id": 41,
+      "name": "My Files",
+      "parent_id": null,
+      "icon": "folder",
+      "description": "Folder: My Files",
+      "display_order": 10
+    },
+    {
+      "id": 42,
+      "name": "YT VANCED",
+      "parent_id": null,
+      "icon": "folder",
+      "description": "Folder: YT VANCED",
+      "display_order": 10
     }
   ],
-  "files": [],
+  "files": [
+    {
+      "id": 86,
+      "original_name": "Epson_L8050_Series_EM_50_Web.exe",
+      "file_key": "gdrive:1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h",
+      "category_id": 45,
+      "file_size": 2536512,
+      "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "description": "Google Drive Vault utility tool (Epson_L8050_Series_EM_50_Web.exe)",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-25 06:08:32"
+    },
+    {
+      "id": 85,
+      "original_name": "it_vault.db",
+      "file_key": "gdrive:1PAAweKsfddx4WdnrNXx25IlZyKPhKOzq",
+      "category_id": 39,
+      "file_size": 147456,
+      "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "description": "Google Drive Vault utility tool (it_vault.db)",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-25 06:08:32"
+    },
+    {
+      "id": 60,
+      "original_name": "Classroom_Spy_Professional_4.8.19.rar",
+      "file_key": "gdrive:1YlmvTp6clyBOJKVpXNer78QISDXsu7Th",
+      "category_id": 16,
+      "file_size": 97982792,
+      "sha256_hash": "hash_2f820facf3f4",
+      "description": "Classroom Spy is a classroom monitoring and management software that allows teachers or administrators to monitor computers connected to the same network. It can typically be used to view student screens, track computer activity, manage applications, and assist with classroom instruction and supervision.",
+      "version": "1.0",
+      "download_count": 6,
+      "created_at": "2026-08-20 04:16:50"
+    },
+    {
+      "id": 59,
+      "original_name": "hdsentinel_pro_setup.zip",
+      "file_key": "gdrive:1ndmqUci5z7qG85-_-E0OnZCIdn4jMnIp",
+      "category_id": 6,
+      "file_size": 42872636,
+      "sha256_hash": "hash_9a14424e4c83",
+      "description": "Hard Disk Sentinel (HDD Sentinel) is a hard drive and SSD monitoring and diagnostic utility. It checks the health, temperature, performance, and SMART status of storage devices and can detect potential problems before data loss occurs. It is useful for monitoring drive reliability and diagnosing storage issues.",
+      "version": "1.0",
+      "download_count": 7,
+      "created_at": "2026-08-20 02:45:52"
+    },
+    {
+      "id": 58,
+      "original_name": "Victoria537.zip",
+      "file_key": "gdrive:1Fi_kytm0EM0fI0d_xxZiMmQigzTQq5U5",
+      "category_id": 6,
+      "file_size": 1577599,
+      "sha256_hash": "hash_d2b2f3ac1b78",
+      "description": "Victoria HDD is a hard drive diagnostic and testing utility used to check the health and performance of HDDs and SSDs. It can scan drives for bad sectors, test read/write performance, monitor SMART information, and help identify storage problems.",
+      "version": "1.0",
+      "download_count": 4,
+      "created_at": "2026-08-20 02:45:21"
+    },
+    {
+      "id": 57,
+      "original_name": "CrystalDiskMark9_0_3.exe",
+      "file_key": "gdrive:1ozweRzhdIk0BkKCcqoqC579iaj_omWEa",
+      "category_id": 6,
+      "file_size": 4523144,
+      "sha256_hash": "hash_47fe8b4b859a",
+      "description": "CrystalDiskMark is a disk benchmarking utility used to measure the read and write performance of HDDs, SSDs, and other storage devices. It helps determine storage speed and compare the performance of different drives.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-20 02:45:02"
+    },
+    {
+      "id": 56,
+      "original_name": "CrystalDiskInfo9_9_2.exe",
+      "file_key": "gdrive:10SMu1eJ5pnvANrjEWZya5bSAg1Qa_nrd",
+      "category_id": 6,
+      "file_size": 6203224,
+      "sha256_hash": "hash_5832c22ed5c0",
+      "description": "CrystalDiskInfo is a disk monitoring and diagnostic utility that provides detailed information about HDDs and SSDs. It displays drive health status, temperature, firmware, interface, power-on hours, and SMART data. It is useful for checking storage drive condition and detecting potential disk problems.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-20 02:44:42"
+    },
+    {
+      "id": 55,
+      "original_name": "MemTest64.exe",
+      "file_key": "gdrive:1ARzPgvGwnyus1ja6yZDIRfJ9Rmd80KH1",
+      "category_id": 6,
+      "file_size": 3253544,
+      "sha256_hash": "hash_e0ae653b6c65",
+      "description": "MemTest64 is a memory testing utility used to check a computer\u2019s RAM for errors and stability problems. It performs tests on system memory to help identify faulty or unstable RAM that may cause crashes, freezes, blue screens, or other system issues.",
+      "version": "1.0",
+      "download_count": 1,
+      "created_at": "2026-08-20 02:44:19"
+    },
+    {
+      "id": 54,
+      "original_name": "hwmonitor_1.67.exe",
+      "file_key": "gdrive:1HsNkAE96sPIXd0DXRrv6tjiR6S8lPAgo",
+      "category_id": 6,
+      "file_size": 3631600,
+      "sha256_hash": "hash_f7930e233a76",
+      "description": "HWMonitor is a hardware monitoring utility that displays real-time information about a computer\u2019s temperatures, voltages, fan speeds, power consumption, and CPU/GPU performance. It is useful for checking system health, detecting overheating, and monitoring hardware conditions.",
+      "version": "1.0",
+      "download_count": 1,
+      "created_at": "2026-08-20 02:43:59"
+    },
+    {
+      "id": 53,
+      "original_name": "cpu-z_2.21-en.exe",
+      "file_key": "gdrive:1fVBjnUxTmIICGquLcFKsTHdNTYbWTHKC",
+      "category_id": 6,
+      "file_size": 4847776,
+      "sha256_hash": "hash_bd3d986ce2f2",
+      "description": "CPU-Z is a free system information utility that displays detailed information about a computer\u2019s hardware. It can show the processor (CPU), motherboard, RAM, cache, and other system specifications. It is useful for checking hardware details, verifying component configurations, and troubleshooting or monitoring a PC.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-20 02:43:31"
+    },
+    {
+      "id": 52,
+      "original_name": "Windows 10.iso",
+      "file_key": "gdrive:1rfYDBDSfpuIJ1ei79uwvHAcH0LAgRTwY",
+      "category_id": 19,
+      "file_size": 4893900800,
+      "sha256_hash": "hash_171d44ddf018",
+      "description": "Windows 10 is an operating system developed by Microsoft for computers and laptops. It provides a user-friendly interface and supports a wide range of applications, hardware, security features, networking, and multimedia functions. Windows 10 is commonly used for everyday tasks such as browsing the internet, creating documents, gaming, video editing, and managing files.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-20 02:42:51"
+    },
+    {
+      "id": 51,
+      "original_name": "npp.8.9.6.2.Installer.x64.exe",
+      "file_key": "gdrive:1Aje0XoyYKycFZx24sHJfJamF878-7Rhm",
+      "category_id": 16,
+      "file_size": 6898288,
+      "sha256_hash": "7c243203265ce8fdac76c839bf744ae35dcf620760eb97c2ea279af498560e45",
+      "description": "Notepad++ is a free, lightweight text and source-code editor for Windows. It supports many programming and scripting languages and provides features such as syntax highlighting, search and replace, tabs, and code editing tools.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 09:46:06"
+    },
+    {
+      "id": 50,
+      "original_name": "CareUEyes_Lite.exe",
+      "file_key": "gdrive:13JZHB3Szv8K2-5NvJlA2WZiYBHUALHuQ",
+      "category_id": 16,
+      "file_size": 643759,
+      "sha256_hash": "2101806d0f862dbdf4725a356e8ace7082f197f2cb7012917053a417810045a1",
+      "description": "CareUEyes Lite is an eye-care and screen-protection program that helps reduce eye strain by adjusting screen settings and reminding users to take regular breaks.",
+      "version": "1.0",
+      "download_count": 1,
+      "created_at": "2026-08-19 09:45:10"
+    },
+    {
+      "id": 49,
+      "original_name": "utorrent_installer.exe",
+      "file_key": "gdrive:1832ThZZ8BtcuUnqbupcfZCEHRScmtPpx",
+      "category_id": 16,
+      "file_size": 1777248,
+      "sha256_hash": "bc425c157085ce88e709cb37feaae0ac6de38e6ad9940bcb3db122e6c0c62131",
+      "description": "uTorrent is a BitTorrent client used to download and share files through the peer-to-peer (P2P) network. It allows users to download large files in smaller pieces from multiple peers simultaneously, which can improve download speed.",
+      "version": "1.0",
+      "download_count": 4,
+      "created_at": "2026-08-19 09:44:10"
+    },
+    {
+      "id": 48,
+      "original_name": "W10_Ultralight_Gamer_19045_3633_Phrankie.iso",
+      "file_key": "gdrive:1nd5b7tkKtYDGz_A-S-TnqtOCWpO1jgVr",
+      "category_id": 19,
+      "file_size": 1255473152,
+      "sha256_hash": "d4a91093e0a34476869939e154ffb01f3555dd42986fe8395714baa821d2d47e",
+      "description": "W10_Ultralight_Gamer_19045_3633_Phrankie",
+      "version": "1.0",
+      "download_count": 1,
+      "created_at": "2026-08-19 09:42:35"
+    },
+    {
+      "id": 47,
+      "original_name": "ZoomInstallerFull.exe",
+      "file_key": "gdrive:1rB4Fu19hzJYIcJRnzC16B5b6w5zR9Yfi",
+      "category_id": 16,
+      "file_size": 176005576,
+      "sha256_hash": "77c161702500cde913c5b5281e9c8e790c27c80d87423b20807db9e14dc4b67a",
+      "description": "Zoom \u2013 A video conferencing and online communication platform used for virtual meetings, video calls, webinars, screen sharing, chat, and collaboration. It is commonly used for remote meetings, training sessions, online classes, and business communication.",
+      "version": "1.0",
+      "download_count": 1,
+      "created_at": "2026-08-19 09:35:48"
+    },
+    {
+      "id": 46,
+      "original_name": "TeamViewer_Setup_x64.exe",
+      "file_key": "gdrive:1YypJ63ZeK2Oixv81rI_4x8VjgMwKuMMa",
+      "category_id": 16,
+      "file_size": 83284592,
+      "sha256_hash": "a94f28bd309f37898721ce179665c2bf20adfaff8971bc8a24a813af3564c418",
+      "description": "TeamViewer \u2013 A remote access and support software that allows IT personnel to remotely connect to and control computers and other devices. It is commonly used for technical support, troubleshooting, file transfer, remote administration, and accessing computers from another location.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 09:34:59"
+    },
+    {
+      "id": 45,
+      "original_name": "BraveBrowserSetup-BRV090.exe",
+      "file_key": "gdrive:1iABtsCbiUUTaYdOcYbjVRWGh4-uEvb-X",
+      "category_id": 16,
+      "file_size": 1277280,
+      "sha256_hash": "58b850e386e4c9b5fa396b45ff96a902a58ad26fa69e902f7233a00598f67ea6",
+      "description": "Brave Browser \u2013 A privacy-focused web browser based on Chromium that allows users to browse websites and use web applications while providing built-in protection against ads, trackers, and malicious content. It supports extensions, private browsing, bookmarks, password management, and other modern browser features.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 09:28:25"
+    },
+    {
+      "id": 44,
+      "original_name": "Firefox_Installer.exe",
+      "file_key": "gdrive:1GZ2PDrEYCcLmlF-7OvXZqH2t6FFOnBD9",
+      "category_id": 16,
+      "file_size": 504208,
+      "sha256_hash": "b410b848adc7934e99259ae150df601319f1a3a43d0c9051db0cb764547ab754",
+      "description": "Mozilla Firefox \u2013 A web browser developed by Mozilla that allows users to access websites, web applications, online services, and internet resources. It provides features such as private browsing, tabbed browsing, bookmarks, extensions, password management, and enhanced privacy and security controls.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 09:27:59"
+    },
+    {
+      "id": 43,
+      "original_name": "netlimiter-5.3.24.0.exe",
+      "file_key": "gdrive:1QHgy874ofoSWvS5gRuoMLQdod_Op15Ri",
+      "category_id": 4,
+      "file_size": 10859792,
+      "sha256_hash": "946977c9fd2a2ed95d86efc8b01134300a95f00b39dbda1fe2dc750dc5232fa3",
+      "description": "NetLimiter \u2013 A network traffic monitoring and management software that allows users to monitor internet usage, control bandwidth, set download and upload speed limits, and manage network access for individual applications.",
+      "version": "1.0",
+      "download_count": 15,
+      "created_at": "2026-08-19 08:03:19"
+    },
+    {
+      "id": 42,
+      "original_name": "KMS_Tools_by_Ratiborus_v2021.10.08_LaCe12_PASSWORD_lace12.7z",
+      "file_key": "gdrive:1knyG53iVhr5ls6PO3c3riFou73ZEpUL0",
+      "category_id": 3,
+      "file_size": 57018262,
+      "sha256_hash": "016753f9ba99da6b85816b27dcad6233f17a1b7cef32c6103a9637503c973379",
+      "description": "KMS Activator \u2013 A software activation tool commonly associated with activating Microsoft Windows or Microsoft Office products through Key Management Service (KMS). KMS activation is intended for authorized volume-licensed environments, such as organizations with Microsoft volume licensing.",
+      "version": "1.0",
+      "download_count": 2,
+      "created_at": "2026-08-19 08:02:10"
+    },
+    {
+      "id": 41,
+      "original_name": "ChromeStandaloneSetup64.exe",
+      "file_key": "gdrive:1RwUvY2VpbQFyEq3RYfqRiOAGc3yPvhn9",
+      "category_id": 16,
+      "file_size": 116137008,
+      "sha256_hash": "8f2497126575b546546dd8ad5156f00d6e8dee61e91f6f83700b498c2ed38833",
+      "description": "Google Chrome Standalone \u2013 An offline installer package for Google Chrome that allows the browser to be installed on a computer without requiring an active internet connection during installation. It is useful for deploying Chrome on multiple computers or systems with limited internet access.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 08:01:19"
+    },
+    {
+      "id": 40,
+      "original_name": "AOMEI_Partition_Assistant_9.2.rar",
+      "file_key": "gdrive:1dAzw1dCk1HeNhA4tQYCcaGALgOi-tEVV",
+      "category_id": 18,
+      "file_size": 27282284,
+      "sha256_hash": "e3de7e9a30d7741aec301cd53c590aa8f7e8ce0244cc5e99963056c902dae147",
+      "description": "AOMEI Partition Assistant \u2013 A disk partition management software used to create, resize, move, merge, split, format, and delete disk partitions. It also supports disk cloning, partition conversion, and storage management to help optimize and organize hard drives and SSDs.",
+      "version": "1.0",
+      "download_count": 2,
+      "created_at": "2026-08-19 07:57:34"
+    },
+    {
+      "id": 39,
+      "original_name": "AOMEI_Backupper_4.1.0.rar",
+      "file_key": "gdrive:1ax05A0e2diZiFa8LuBl4-GdzrOJuxicK",
+      "category_id": 18,
+      "file_size": 316096239,
+      "sha256_hash": "ea2c54c0b00fc7616c9c09a09df8fbc0ffabfca0cd98c659a3250803640ee130",
+      "description": "AOMEI Backupper \u2013 A backup and data recovery software used to protect and manage computer data. It supports system, disk, partition, file, and scheduled backups, as well as disk cloning and restoration for recovering data or migrating to a new drive.",
+      "version": "1.0",
+      "download_count": 1,
+      "created_at": "2026-08-19 07:56:02"
+    },
+    {
+      "id": 38,
+      "original_name": "SATO.rar",
+      "file_key": "gdrive:1PJuzXXgfj71kpjVNVxexPTV7BJuD_cZf",
+      "category_id": 34,
+      "file_size": 21580059,
+      "sha256_hash": "8b35459c3dd1ec9e78960f0281b6a236049e678667404baddfeb7e57f6fa19ed",
+      "description": "SATO Printer Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:53:13"
+    },
+    {
+      "id": 37,
+      "original_name": "HP_LaserJet_Pro_P1100_P1560_P1600_Series_Full_Feature_Software_and_Driver.rar",
+      "file_key": "gdrive:1B8Vsvsm5D-3I9rVFOYgksPVlC36eFP9c",
+      "category_id": 33,
+      "file_size": 179265980,
+      "sha256_hash": "31301091ca01b43238db4a1ff49bae50cd5246a5fe60b55d84977ff3a6c583ed",
+      "description": "HP LaserJet Pro P1100, P1560, P1600 Series Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:51:07"
+    },
+    {
+      "id": 36,
+      "original_name": "EPSON_LX310.rar",
+      "file_key": "gdrive:1UdnPW8q7neIW_-VBcJVZVrnfWF7TYrxA",
+      "category_id": 27,
+      "file_size": 4773720,
+      "sha256_hash": "537065f6c6c0670480b3fff793a929e84ea2d82a0c45f2a5c41c9f9b2e37c5fd",
+      "description": "Epson LX310 Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:49:50"
+    },
+    {
+      "id": 35,
+      "original_name": "LX_300.rar",
+      "file_key": "gdrive:1w2M_RwNz5Z1QmKFRgDe2Wwfvb1_it6Ba",
+      "category_id": 28,
+      "file_size": 255380720,
+      "sha256_hash": "47473dacbf5c236cb48df2f9bb1a2aeeaad414d8a2624ecd953ed97b203aca61",
+      "description": "Epson LX300 Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:49:11"
+    },
+    {
+      "id": 34,
+      "original_name": "Epson_L405.rar",
+      "file_key": "gdrive:1Fz_4zdDEHh6V2vqjt1o8sKerJdgxfWQM",
+      "category_id": 25,
+      "file_size": 99814348,
+      "sha256_hash": "4024fbeabaf4f46f62ab0c5bf8bf366eae79b3f72b81bbaf2351b4b313057afe",
+      "description": "Epson L405 Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:47:36"
+    },
+    {
+      "id": 33,
+      "original_name": "Epson_L360.rar",
+      "file_key": "gdrive:1nta-uVwd0vxGNTDjppsRh9CfsAhqelID",
+      "category_id": 24,
+      "file_size": 53237347,
+      "sha256_hash": "57611f78cff3d376f5538cd28f265d2379877bd295666be73dfe676d4c3bb139",
+      "description": "Epson L360 Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:46:40"
+    },
+    {
+      "id": 32,
+      "original_name": "EPSON_L3110.rar",
+      "file_key": "gdrive:14THZDUNUJv2YuPcR9JID8YX6eu6DR6aF",
+      "category_id": 26,
+      "file_size": 96099381,
+      "sha256_hash": "de65154a972afe5d31da495d32079f71feb0064cfc29789d59bd0e5396fb9887",
+      "description": "Epson L3110 Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:45:16"
+    },
+    {
+      "id": 31,
+      "original_name": "Epson_L220.rar",
+      "file_key": "gdrive:1J4MdbHHFRr-oRolepwzeC0aG4sS0K2x4",
+      "category_id": 23,
+      "file_size": 54434581,
+      "sha256_hash": "03c4ce008b593f50daa755734f2c8347b556cffb1375446bd46a9c28b7418a2b",
+      "description": "Epson L220 Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:44:02"
+    },
+    {
+      "id": 30,
+      "original_name": "Epson_L210.rar",
+      "file_key": "gdrive:1uqBif4UbCyqgoxNSoZ2Ee1UxAd3ed3Je",
+      "category_id": 22,
+      "file_size": 208518184,
+      "sha256_hash": "f64a27103eeacdebce627ba3eaa89c149a83a54a34a013b4ebeb14fbae706b39",
+      "description": "Epson L210 Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:43:01"
+    },
+    {
+      "id": 29,
+      "original_name": "L120_x64_212UsHomeExportAsiaML.exe",
+      "file_key": "gdrive:1kw-VRRNI1yKfeCFFFX9bQS6UIkMqpusp",
+      "category_id": 21,
+      "file_size": 32233808,
+      "sha256_hash": "87243cf12442f314b1b2523aadbd63e6d6926fbe5f64ec332bf0f0bec2075e8a",
+      "description": "Epson L120 Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:41:45"
+    },
+    {
+      "id": 28,
+      "original_name": "Canon_LBP_6000.rar",
+      "file_key": "gdrive:1gHXuabnMbFN4uaUk4EEppPEdRr267u8N",
+      "category_id": 30,
+      "file_size": 36822797,
+      "sha256_hash": "1e18a239f904e16890063d76dcf5665e251bd2d577d32631c18058d4efc1ed36",
+      "description": "Canon LBP6000",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:41:08"
+    },
+    {
+      "id": 27,
+      "original_name": "CANON_LBP_2900.rar",
+      "file_key": "gdrive:1bkUfL0hry_OjKhZElryBrJDQAC17QNOa",
+      "category_id": 29,
+      "file_size": 10005813,
+      "sha256_hash": "352f1fe8bf851ea557abb09bf4f63b62f654df8a3c1c678a042d2c4822d3dfd5",
+      "description": "Canon LBP2900 Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:40:34"
+    },
+    {
+      "id": 26,
+      "original_name": "MF240SeriesMFDriverV520WPEN_1.rar",
+      "file_key": "gdrive:1HcPRe2LVR0Xd6Veo-KfVc_Vdl_xrlQaO",
+      "category_id": 32,
+      "file_size": 227496122,
+      "sha256_hash": "4df58bbf7625d0f741bb8aab6ff6fda7acfb1ccc03815049ebfa47e414e3913b",
+      "description": "Brother MF240 Series Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:39:59"
+    },
+    {
+      "id": 25,
+      "original_name": "Brother_L2550DW_installer.EXE",
+      "file_key": "gdrive:1FandRDKqiTmtiMFVY62lVGQ3WNaT8ws6",
+      "category_id": 31,
+      "file_size": 481083344,
+      "sha256_hash": "3481a5c2551dfb016b4238a60c405276f383af5f9b05ddba5c80b6d125773d9e",
+      "description": "Brother L2550DW Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:37:13"
+    },
+    {
+      "id": 23,
+      "original_name": "Office_2010.rar",
+      "file_key": "gdrive:1yx0UeTwDthGju-_GYQVvGPSfgWjwTJM0",
+      "category_id": 20,
+      "file_size": 1351226507,
+      "sha256_hash": "936a2c4469008ea569726112806c8d825658fceb1cf0da9d6e0e6bf2110ac844",
+      "description": "Microsoft Office \u2013 A productivity software suite that includes applications such as Microsoft Word, Excel, PowerPoint, Outlook, and OneNote. It is commonly used for creating documents, spreadsheets, presentations, emails, and other office-related tasks.",
+      "version": "1.0",
+      "download_count": 3,
+      "created_at": "2026-08-19 07:21:46"
+    },
+    {
+      "id": 22,
+      "original_name": "Acrobat_Reader_DC_-_Win10.exe",
+      "file_key": "gdrive:1pSRy-ZH9s0RRds5pGtnC7Ggp8FCOYkje",
+      "category_id": 16,
+      "file_size": 178675760,
+      "sha256_hash": "b49f6b49f28712735098836bb7d9bf2ff12568ed166936b7b90c87bc847b2c68",
+      "description": "Adobe Acrobat \u2013 A PDF software application used to view, create, edit, convert, sign, print, and manage PDF documents. It also provides tools for adding comments, filling out forms, combining files, and protecting PDF documents.",
+      "version": "1.0",
+      "download_count": 2,
+      "created_at": "2026-08-19 07:14:17"
+    },
+    {
+      "id": 21,
+      "original_name": "Internet_Download_Manager_6.42_Build_3_Patch.7z",
+      "file_key": "gdrive:1NbochkuOlL8YGcvODoWzLn2WqBQh3doo",
+      "category_id": 16,
+      "file_size": 12049662,
+      "sha256_hash": "839eb2f0b9d0bbdc1811123a6f97137d3d384408c54df1480dc720e46e5f819a",
+      "description": "Internet Download Manager (IDM) \u2013 A download management software that helps users download files faster and more efficiently. It supports pause/resume, download scheduling, browser integration, and recovery of interrupted or failed downloads.",
+      "version": "1.0",
+      "download_count": 9,
+      "created_at": "2026-08-19 07:06:36"
+    },
+    {
+      "id": 20,
+      "original_name": "Epson_L130-220-310-360-365.rar",
+      "file_key": "gdrive:1MjB0LYuaJUJBHT1sYMoJsEgvTRFbhlzM",
+      "category_id": 7,
+      "file_size": 2268350,
+      "sha256_hash": "788c81dd84c48023cff31730cdcb37aec4f6aeebc16faca74ec9934abe8111fc",
+      "description": "Epson Resetter \u2013 A utility designed to reset the waste ink pad counter on compatible Epson printers. It can help resolve service-related errors caused when the printer reaches its programmed waste ink pad limit. The tool is model-specific, so compatibility should be checked before use.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:05:50"
+    },
+    {
+      "id": 19,
+      "original_name": "Epson_L120.rar",
+      "file_key": "gdrive:1kj5Y61E01j99Ewty_iTxg_5jwu3Ruy7T",
+      "category_id": 7,
+      "file_size": 1084270,
+      "sha256_hash": "8b5473e5a6de2fbc8d15c231e727e82f982aef9c5fb6113b380af0d68a776de9",
+      "description": "Epson Resetter \u2013 A utility designed to reset the waste ink pad counter on compatible Epson printers. It can help resolve service-related errors caused when the printer reaches its programmed waste ink pad limit. The tool is model-specific, so compatibility should be checked before use.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:05:30"
+    },
+    {
+      "id": 18,
+      "original_name": "Epson_L110-L210-L300-L350-L355.rar",
+      "file_key": "gdrive:163ZuSIwY-UCNM5B50__9K0pGD6IFzvO9",
+      "category_id": 7,
+      "file_size": 813874,
+      "sha256_hash": "742c777b6561e0bc98d7611b0d5d4d36a775aead32916691c5825a9df604a819",
+      "description": "Epson Resetter \u2013 A utility designed to reset the waste ink pad counter on compatible Epson printers. It can help resolve service-related errors caused when the printer reaches its programmed waste ink pad limit. The tool is model-specific, so compatibility should be checked before use.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:05:10"
+    },
+    {
+      "id": 17,
+      "original_name": "Epson_L1210-L3210-L3250-L3251-L3260-L5290.rar",
+      "file_key": "gdrive:16DxrzEFDCBQrVFBMa1SXrWEMr9wI7meG",
+      "category_id": 7,
+      "file_size": 2623581,
+      "sha256_hash": "8051319c5df373324d1dbe4baa0c9bb155d6f5be84fbe2e1231491921dc4edb0",
+      "description": "Epson Resetter \u2013 A utility designed to reset the waste ink pad counter on compatible Epson printers. It can help resolve service-related errors caused when the printer reaches its programmed waste ink pad limit. The tool is model-specific, so compatibility should be checked before use.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:04:06"
+    },
+    {
+      "id": 16,
+      "original_name": "Epson-L3110-Resetter.zip",
+      "file_key": "gdrive:1vWktHWlYJDO9zUCdJLmRjsFJ0l76RWNR",
+      "category_id": 7,
+      "file_size": 1323492,
+      "sha256_hash": "281a68e428f118de1489c3bcfd96cb66770818aff3e62025bc6a379eecde29f2",
+      "description": "Epson Resetter \u2013 A utility designed to reset the waste ink pad counter on compatible Epson printers. It can help resolve service-related errors caused when the printer reaches its programmed waste ink pad limit. The tool is model-specific, so compatibility should be checked before use.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 07:03:33"
+    },
+    {
+      "id": 15,
+      "original_name": "EPSON_Resetter_V2_2019.04.15.rar",
+      "file_key": "gdrive:1szUqXvd12QRzKsay-xMoY6v8ysZoTaC9",
+      "category_id": 7,
+      "file_size": 55399196,
+      "sha256_hash": "6084fd37732a4b497c09480a75791622162ba3e8617e4bd9197237f1629ae813",
+      "description": "Epson Resetter \u2013 A utility designed to reset the waste ink pad counter on compatible Epson printers. It can help resolve service-related errors caused when the printer reaches its programmed waste ink pad limit. The tool is model-specific, so compatibility should be checked before use.",
+      "version": "1.0",
+      "download_count": 1,
+      "created_at": "2026-08-19 07:03:14"
+    },
+    {
+      "id": 14,
+      "original_name": "rufus-4.12.exe",
+      "file_key": "gdrive:1pMGPWbeq8REXjAki1zhUuvG_pmcRVDFv",
+      "category_id": 16,
+      "file_size": 1944424,
+      "sha256_hash": "c19e9aea0e944dcd36bcde3d5bebb60772de4afd844c6ae7cb7f5c5ad5742ae0",
+      "description": "Rufus is a free utility used to create bootable USB drives. It is commonly used to install or repair operating systems, create Windows installation media, and boot computers from ISO image files.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 05:31:48"
+    },
+    {
+      "id": 13,
+      "original_name": "dxwebsetup.exe",
+      "file_key": "gdrive:1mJUKN1ZwCZEfNhOS1fhKlDnmprNXKOOd",
+      "category_id": 1,
+      "file_size": 295320,
+      "sha256_hash": "2cf71d098c608c56e07f4655855a886c3102553f648df88458df616b26fd612f",
+      "description": "DirectX Web Setup (dxwebsetup) is a Microsoft installer used to download and install required DirectX components for Windows. It helps ensure that games and multimedia applications have the necessary DirectX files to run properly.",
+      "version": "1.0",
+      "download_count": 1,
+      "created_at": "2026-08-19 05:31:09"
+    },
+    {
+      "id": 12,
+      "original_name": "driver_booster_setup.exe",
+      "file_key": "gdrive:1TVBG14nDc84XMRK4xq8qGV2Di_KGWBfl",
+      "category_id": 16,
+      "file_size": 33350664,
+      "sha256_hash": "91a9735e36152b1a0e2e1718bf3e0d8aca3d0b7ad461a33ba1f670cff5ee6004",
+      "description": "Driver Booster is a driver management utility designed to scan a computer for outdated, missing, or faulty hardware drivers. It helps users download, install, and update drivers to improve hardware compatibility, performance, and system stability.",
+      "version": "1.0",
+      "download_count": 2,
+      "created_at": "2026-08-19 05:30:37"
+    },
+    {
+      "id": 11,
+      "original_name": "dotnetfx35.exe",
+      "file_key": "gdrive:1V0MimeoJaEbeMnyVLdRV2CjjteQ0Z_AC",
+      "category_id": 1,
+      "file_size": 242885528,
+      "sha256_hash": "3887bb41eda48915268a9431041eb9f6dde06e52e411b49074b6ac60411b9ebe",
+      "description": ".NET Framework 3.5 (dotnetfx35) is a Microsoft software framework required by many older Windows applications and programs. It provides the necessary libraries and components for running applications developed using .NET Framework versions 2.0, 3.0, and 3.5.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 05:29:47"
+    },
+    {
+      "id": 10,
+      "original_name": "ChromeSetup.exe",
+      "file_key": "gdrive:1eP_0XV7O-3mwJqJ4Lj5HJEJctcFbrcu_",
+      "category_id": 16,
+      "file_size": 10752440,
+      "sha256_hash": "0a92103d2b931092b2db1ef8dc45a3acafcb90c1c930fe886f439ca27a63166c",
+      "description": "Google Chrome is a fast and widely used web browser developed by Google. It allows users to browse websites, access web applications, stream media, download files, and securely manage online accounts and passwords.",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-19 05:27:58"
+    },
+    {
+      "id": 9,
+      "original_name": "vlc-3.0.23-win64.exe",
+      "file_key": "gdrive:18FxTydyvCYTWJ8Fue1Dgkb_niXCT82NB",
+      "category_id": 16,
+      "file_size": 45948080,
+      "sha256_hash": "20ad191348684b470ddc4e05204316f3d8e39655f412b3e392a0eef97639daaf",
+      "description": "VLC Media Player is a free, open-source multimedia player that supports a wide range of video and audio formats. It can play local media files, DVDs, network streams, and online content without requiring additional codec installations.",
+      "version": "1.0",
+      "download_count": 12,
+      "created_at": "2026-08-19 04:56:55"
+    },
+    {
+      "id": 8,
+      "original_name": "MBSetup-7.7.exe",
+      "file_key": "gdrive:16fbLOhYPFdO-yPGO0dvk95bseiltdjip",
+      "category_id": 5,
+      "file_size": 2886560,
+      "sha256_hash": "918a02c8513e819b011ea79ffb5f0a87ddcf1ab108a37efd5959c350fe0e68e4",
+      "description": "Malwarebytes is an anti-malware and cybersecurity software designed to detect, block, and remove malware, viruses, ransomware, spyware, and other online threats. It provides real-time protection and scanning tools to help keep computers and personal data safe.",
+      "version": "1.0",
+      "download_count": 4,
+      "created_at": "2026-08-19 03:42:44"
+    },
+    {
+      "id": 7,
+      "original_name": "rcsetup154.exe",
+      "file_key": "gdrive:1qb5dXS05vxpEI6qZgPEaWMGnx6SnOZ3P",
+      "category_id": 18,
+      "file_size": 26480456,
+      "sha256_hash": "dbf0895d886b428c8465ee57aea56a7e7b6e4c003efd04ca00d216a2d821eac9",
+      "description": "Recuva is a file recovery tool that helps users recover accidentally deleted files from hard drives, USB drives, memory cards, and other storage devices. It can recover documents, photos, videos, and other file types, including files that have been emptied from the Recycle Bin.",
+      "version": "1.0",
+      "download_count": 5,
+      "created_at": "2026-08-18 18:34:32"
+    },
+    {
+      "id": 6,
+      "original_name": "EpsonScan2_L3210_67810_41_Signed.exe",
+      "file_key": "gdrive:1nbbe-GVGI9hrcA4xF-KKlPTYejYYc0z-",
+      "category_id": 17,
+      "file_size": 69616192,
+      "sha256_hash": "60b90c5ff9d0af94bc525cb5288246c823f4adc30c328f10d84684a285e9d8bc",
+      "description": "Epson L3210 Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-18 18:10:26"
+    },
+    {
+      "id": 5,
+      "original_name": "L3210_64bit_v38000_2.exe",
+      "file_key": "gdrive:1MYYeMjNkK0nRlUhh-cx02J245NBCfQfN",
+      "category_id": 17,
+      "file_size": 70498432,
+      "sha256_hash": "975da06ef55e020b34205bb8814c6ff6c4a5d8e524dac079f696d314fe0528b5",
+      "description": "Epson L3210 Drivers",
+      "version": "1.0",
+      "download_count": 0,
+      "created_at": "2026-08-18 18:09:25"
+    },
+    {
+      "id": 4,
+      "original_name": "AnyDesk.exe",
+      "file_key": "gdrive:1HAHE_1RBIYt97hCaRyNf0fZ0Tg_Vrkgp",
+      "category_id": 16,
+      "file_size": 8044472,
+      "sha256_hash": "bfc1675ee1e358db8356f515aaded7962923e426aa0a0a1c0eddfc4dab053f89",
+      "description": "AnyDesk is a remote desktop application that allows users to securely access and control computers from anywhere. It is commonly used for remote technical support, troubleshooting, file transfers, and accessing computers remotely.",
+      "version": "1.0",
+      "download_count": 9,
+      "created_at": "2026-08-18 17:59:32"
+    },
+    {
+      "id": 3,
+      "original_name": "winrar-x64-720.exe",
+      "file_key": "gdrive:1nJeuVgvxJ-fKY4eLRxaMSGEnb4236gtu",
+      "category_id": 16,
+      "file_size": 3820168,
+      "sha256_hash": "cfca124c2141b4171cebad48cc286751910b408aec69767db2bc3af38f277a06",
+      "description": "WinRAR is a powerful file compression and archive management tool that lets users compress, extract, organize, and protect files. It supports popular archive formats such as RAR and ZIP and can reduce file sizes for easier storage and sharing.",
+      "version": "1.0",
+      "download_count": 8,
+      "created_at": "2026-08-18 17:34:03"
+    }
+  ],
   "cmd_scripts": [
+    {
+      "id": 22,
+      "title": "Check Domain / Workgroup",
+      "type": "PowerShell / CMD",
+      "command": "systeminfo | findstr /B /C:\"Domain\"",
+      "description": "Displays the domain or workgroup associated with the computer. Useful for diagnosing Active Directory and domain-join issues.",
+      "created_at": "2026-08-19 09:19:17"
+    },
+    {
+      "id": 21,
+      "title": "Check Windows Edition",
+      "type": "PowerShell",
+      "command": "Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,BuildNumber",
+      "description": "Displays the Windows edition, version, and build number. On newer Windows versions, PowerShell is preferred because WMIC is deprecated.",
+      "created_at": "2026-08-19 09:18:52"
+    },
+    {
+      "id": 20,
+      "title": "Windows Firewall Status",
+      "type": "PowerShell / CMD",
+      "command": "netsh advfirewall show allprofiles",
+      "description": "Displays Windows Firewall status and configuration for the Domain, Private, and Public network profiles.  Useful when troubleshooting blocked network connections.",
+      "created_at": "2026-08-19 09:18:10"
+    },
+    {
+      "id": 19,
+      "title": "Temporary File Cleanup",
+      "type": "PowerShell / CMD",
+      "command": "del /q /f /s \"%TEMP%\\*\" 2>nul",
+      "description": "Attempts to remove files from the current user's temporary directory. Useful for freeing some disk space and cleaning temporary files.  Note: Files currently being used by applications may not be deleted.",
+      "created_at": "2026-08-19 09:17:52"
+    },
+    {
+      "id": 18,
+      "title": "Trace Network Route",
+      "type": "PowerShell / CMD",
+      "command": "tracert google.com",
+      "description": "Displays the network hops between the computer and the destination. Useful for identifying routing problems, high latency, or where connectivity is failing.",
+      "created_at": "2026-08-19 09:17:27"
+    },
+    {
+      "id": 17,
+      "title": "DNS Troubleshooting",
+      "type": "PowerShell / CMD",
+      "command": "nslookup google.com",
+      "description": "Tests DNS resolution and shows which DNS server is being used to resolve a domain name.",
+      "created_at": "2026-08-19 09:17:11"
+    },
+    {
+      "id": 16,
+      "title": "Show Listening Ports",
+      "type": "PowerShell / CMD",
+      "command": "netstat -ano | findstr LISTENING",
+      "description": "Shows network ports currently listening for incoming connections.",
+      "created_at": "2026-08-19 09:16:54"
+    },
+    {
+      "id": 15,
+      "title": "Network Connections",
+      "type": "PowerShell / CMD",
+      "command": "netstat -ano",
+      "description": "Displays active network connections, listening ports, local/remote addresses, and process IDs (PIDs).  Useful for network troubleshooting and identifying which processes are using network connections.",
+      "created_at": "2026-08-19 09:16:16"
+    },
+    {
+      "id": 14,
+      "title": "Check Disk Space",
+      "type": "PowerShell",
+      "command": "Get-PSDrive -PSProvider FileSystem",
+      "description": "Displays available and used storage on Windows drives. Useful for identifying drives that are almost full.",
+      "created_at": "2026-08-19 09:15:51"
+    },
+    {
+      "id": 13,
+      "title": "Clear Stuck Print Queue",
+      "type": "PowerShell / CMD",
+      "command": "net stop spooler\ndel /Q /F \"%systemroot%\\System32\\spool\\PRINTERS\\*\"\nnet start spooler",
+      "description": "Stops the Print Spooler, removes pending print jobs, and starts the service again. Useful when documents are permanently stuck in the print queue.",
+      "created_at": "2026-08-19 09:15:30"
+    },
+    {
+      "id": 12,
+      "title": "Restart Print Spooler",
+      "type": "PowerShell / CMD",
+      "command": "net stop spooler\nnet start spooler",
+      "description": "Restarts the Windows Print Spooler service. Useful when printers are stuck, print jobs aren't processing, or Windows cannot communicate properly with the printer.",
+      "created_at": "2026-08-19 09:15:08"
+    },
+    {
+      "id": 11,
+      "title": "Check Disk Repair",
+      "type": "PowerShell / CMD",
+      "command": "chkdsk C: /f",
+      "description": "Checks a drive for file-system errors and, when requested, attempts to repair them. Useful for diagnosing disk and file-system problems.",
+      "created_at": "2026-08-19 09:14:10"
+    },
+    {
+      "id": 9,
+      "title": "Repair Windows Component Store",
+      "type": "PowerShell / CMD",
+      "command": "DISM /Online /Cleanup-Image /RestoreHealth",
+      "description": "Repairs the Windows component store that SFC depends on. Useful when SFC reports that it cannot repair some corrupted files.",
+      "created_at": "2026-08-19 09:12:49"
+    },
+    {
+      "id": 8,
+      "title": "Check Windows System Files",
+      "type": "PowerShell / CMD",
+      "command": "sfc /scannow",
+      "description": "Scans Windows system files for corruption and automatically repairs damaged protected system files when possible.",
+      "created_at": "2026-08-19 09:12:21"
+    },
+    {
+      "id": 7,
+      "title": "Check IP / Network Configuration",
+      "type": "PowerShell / CMD",
+      "command": "ipconfig /all",
+      "description": "Displays detailed network configuration, including IP address, subnet mask, gateway, DNS servers, and MAC address. Useful for diagnosing network and DHCP problems.",
+      "created_at": "2026-08-19 09:11:30"
+    },
+    {
+      "id": 6,
+      "title": "Massgrave Activator (Windows and Office)",
+      "type": "PowerShell",
+      "command": "irm https://get.activated.win | iex",
+      "description": "Massgrave Activator \u2013 A community-developed activation toolkit associated with Microsoft Windows and Office activation. It provides various activation methods and system utilities, and is primarily used for managing activation in supported Windows and Office environments.",
+      "created_at": "2026-08-19 09:10:08"
+    },
     {
       "id": 5,
       "title": "Export Detailed System Specs to Desktop",
       "type": "PowerShell",
       "command": "Get-ComputerInfo | Out-File -FilePath \"$env:USERPROFILE\\Desktop\\SystemSpecs.txt\"",
       "description": "Exports full hardware, OS, BIOS, and memory specifications into a text file.",
-      "created_at": "2026-08-19 05:20:03"
+      "created_at": "2026-08-18 17:40:32"
     },
     {
       "id": 4,
@@ -83,7 +1160,7 @@
       "type": "CMD",
       "command": "slmgr.vbs /dli && slmgr.vbs /xpr",
       "description": "Displays detailed Windows activation license status and expiration info.",
-      "created_at": "2026-08-19 05:20:03"
+      "created_at": "2026-08-18 17:40:32"
     },
     {
       "id": 3,
@@ -91,7 +1168,7 @@
       "type": "PowerShell / CMD",
       "command": "ipconfig /flushdns && ipconfig /release && ipconfig /renew && netsh winsock reset && netsh int ip reset",
       "description": "Flushes DNS resolver cache, releases/renews DHCP IP lease, and resets Winsock catalog.",
-      "created_at": "2026-08-19 05:20:03"
+      "created_at": "2026-08-18 17:40:32"
     },
     {
       "id": 2,
@@ -99,7 +1176,7 @@
       "type": "PowerShell / CMD",
       "command": "net stop spooler && del /Q /F /S \"%systemroot%\\System32\\Spool\\Printers\\*.*\" && net start spooler",
       "description": "Stops printer spooler, deletes stuck print jobs in queue, and restarts service.",
-      "created_at": "2026-08-19 05:20:03"
+      "created_at": "2026-08-18 17:40:32"
     },
     {
       "id": 1,
@@ -107,14 +1184,51 @@
       "type": "PowerShell / CMD",
       "command": "sfc /scannow && DISM /Online /Cleanup-Image /RestoreHealth",
       "description": "Scans and repairs corrupted Windows system files and system image.",
-      "created_at": "2026-08-19 05:20:03"
+      "created_at": "2026-08-18 17:40:32"
     }
   ],
-  "passcodes": [],
+  "passcodes": [
+    {
+      "id": 5,
+      "passcode": "TECH-16F90D",
+      "label": "PHCORNER",
+      "max_uses": 0,
+      "current_uses": 62,
+      "expires_at": "2026-08-26 09:23:02",
+      "created_at": "2026-08-19 09:23:02"
+    },
+    {
+      "id": 4,
+      "passcode": "TECH-34F0E0",
+      "label": "testing",
+      "max_uses": 100,
+      "current_uses": 16,
+      "expires_at": "2026-08-26 04:58:58",
+      "created_at": "2026-08-19 04:58:58"
+    },
+    {
+      "id": 3,
+      "passcode": "TECH-DCE7E1",
+      "label": "Kenneth",
+      "max_uses": 2,
+      "current_uses": 2,
+      "expires_at": "2026-08-19 18:19:10",
+      "created_at": "2026-08-18 18:19:10"
+    },
+    {
+      "id": 2,
+      "passcode": "TECH-C0434A",
+      "label": "June",
+      "max_uses": 1,
+      "current_uses": 1,
+      "expires_at": "2026-08-19 18:19:01",
+      "created_at": "2026-08-18 18:19:01"
+    }
+  ],
   "settings": {
-    "access_passcode": "tech2026",
+    "theme": "dark",
     "site_title": "IT Troubleshooting Utility Hub",
     "announcement": "Authorized IT Technicians Portal - Fast 1-Click Utility Downloads",
-    "theme": "dark"
+    "access_passcode": "tech2026"
   }
 }
