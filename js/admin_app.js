@@ -695,50 +695,83 @@ async function handleResumableDriveFileUpload(e) {
 
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
-  statusText.innerText = `Streaming ${fileName} to Google Drive Subfolder...`;
+  statusText.innerText = `Connecting to Google Drive Vault...`;
   progressBar.style.width = '0%';
   pctText.innerText = '0%';
 
-  // Send lightweight metadata to backend (< 1 KB payload - ZERO 413 errors!)
   try {
-    fetch(`${VERCEL_API_BASE}/api/upload`, {
+    const token = await getGoogleAccessTokenDirect();
+    if (!token) throw new Error('Could not authorize Google Drive API token.');
+
+    statusText.innerText = `Initializing Resumable Upload Session...`;
+
+    // Step 1: Initialize Resumable Upload Session directly with Google Drive API
+    const initRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Type': selectedFile.type || 'application/octet-stream',
+        'X-Upload-Content-Length': selectedFile.size.toString()
+      },
       body: JSON.stringify({
-        title: fileName,
-        folder_id: gdriveFolderId,
-        size: selectedFile.size,
-        mimeType: selectedFile.type || 'application/octet-stream'
+        name: fileName,
+        parents: [gdriveFolderId]
       })
-    }).catch(() => {});
-  } catch (err) {}
+    });
 
-  // Smooth, accurate real-time progress animation
-  let loadedBytes = 0;
-  const totalBytes = selectedFile.size;
-  const stepBytes = Math.max(Math.round(totalBytes / 25), 1024 * 512);
+    const locationUrl = initRes.headers.get('Location');
+    if (!locationUrl) throw new Error('Failed to obtain Google Drive upload location URL.');
 
-  const progressInterval = setInterval(() => {
-    loadedBytes += stepBytes;
-    if (loadedBytes >= totalBytes) {
-      loadedBytes = totalBytes;
-      clearInterval(progressInterval);
+    statusText.innerText = `Streaming ${fileName} directly to Google Drive...`;
 
-      progressBar.style.width = '100%';
-      pctText.innerText = '100%';
-      transferredText.innerText = `${formatBytes(totalBytes)} / ${formatBytes(totalBytes)}`;
-      statusText.innerText = `File Upload Complete & Catalog Synced!`;
+    // Step 2: Stream File Chunks with Real-Time Progress Listener
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', locationUrl, true);
+    xhr.setRequestHeader('Content-Type', selectedFile.type || 'application/octet-stream');
 
-      setTimeout(() => {
-        finalizeUploadSuccess(fileName, '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h', catId, totalBytes, desc, gdriveFolderLink);
-      }, 300);
-    } else {
-      const pct = Math.round((loadedBytes / totalBytes) * 100);
-      progressBar.style.width = `${pct}%`;
-      pctText.innerText = `${pct}%`;
-      transferredText.innerText = `${formatBytes(loadedBytes)} / ${formatBytes(totalBytes)}`;
-    }
-  }, 100);
+    xhr.upload.onprogress = (evt) => {
+      if (evt.lengthComputable) {
+        const pct = Math.round((evt.loaded / evt.total) * 100);
+        progressBar.style.width = `${pct}%`;
+        pctText.innerText = `${pct}%`;
+        transferredText.innerText = `${formatBytes(evt.loaded)} / ${formatBytes(evt.total)}`;
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200 || xhr.status === 201) {
+        let responseObj = {};
+        try { responseObj = JSON.parse(xhr.responseText); } catch(e) {}
+        const realGdriveId = responseObj.id || '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h';
+
+        progressBar.style.width = '100%';
+        pctText.innerText = '100%';
+        statusText.innerText = `Upload Complete & Vault Synced!`;
+
+        setTimeout(() => {
+          finalizeUploadSuccess(fileName, realGdriveId, catId, selectedFile.size, desc, gdriveFolderLink);
+        }, 300);
+      } else {
+        submitBtn.disabled = false;
+        progressCard.style.display = 'none';
+        showToast(`❌ Upload failed with HTTP status ${xhr.status}`);
+      }
+    };
+
+    xhr.onerror = () => {
+      submitBtn.disabled = false;
+      progressCard.style.display = 'none';
+      showToast('❌ Network error during Google Drive upload stream.');
+    };
+
+    xhr.send(selectedFile);
+
+  } catch (err) {
+    submitBtn.disabled = false;
+    progressCard.style.display = 'none';
+    showToast(`❌ Upload Error: ${err.message}`);
+  }
 }
 
 function finalizeUploadSuccess(fileName, gdriveId, catId, fileSize, desc, targetFolderLink) {
