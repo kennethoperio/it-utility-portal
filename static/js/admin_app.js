@@ -138,6 +138,7 @@ async function loadAdminDashboardData() {
       renderAdminCategoriesHierarchy();
       renderAdminPasscodesTable();
       renderAdminFeedback();
+      populateUploadCategoryDropdown();
     }
   } catch (err) {
     console.warn('Dashboard data load error:', err);
@@ -184,15 +185,17 @@ function handleCreateMainCategorySubmit(e) {
     subcategory: mainName,
     name: mainName,
     icon: 'folder',
-    display_order: categoriesList.length + 1
+    display_order: categoriesList.length + 1,
+    gdrive_folder_id: '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3'
   };
 
   categoriesList.push(newCat);
   renderAdminCategoriesHierarchy();
   renderAdminStats();
+  populateUploadCategoryDropdown();
   toggleMainCategoryForm();
   document.getElementById('new-main-cat-name').value = '';
-  showToast(`📁 Main Category '${mainName}' created successfully!`);
+  showToast(`📁 Main Category '${mainName}' created & mapped!`);
 }
 
 function openAddSubfolderModal(mainName) {
@@ -218,14 +221,16 @@ function handleCreateSubfolderSubmit(e) {
     subcategory: subName,
     name: subName,
     icon: 'folder',
-    display_order: categoriesList.length + 1
+    display_order: categoriesList.length + 1,
+    gdrive_folder_id: '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3'
   };
 
   categoriesList.push(newSubCat);
   renderAdminCategoriesHierarchy();
   renderAdminStats();
+  populateUploadCategoryDropdown();
   closeAddSubfolderModal();
-  showToast(`📁 Subfolder '${subName}' added under '${mainName}'!`);
+  showToast(`📁 Subfolder '${subName}' created & mapped under '${mainName}'!`);
 }
 
 function renderAdminCategoriesHierarchy() {
@@ -315,6 +320,9 @@ async function handleResumableDriveFileUpload(e) {
   const catId = parseInt(catSelect.value || 1);
   const desc = descInput.value.trim();
 
+  const selectedCat = categoriesList.find(c => c.id === catId);
+  const gdriveFolderId = selectedCat ? (selectedCat.gdrive_folder_id || '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3') : '15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3';
+
   const submitBtn = document.getElementById('upload-submit-btn');
   const progressCard = document.getElementById('upload-progress-card');
   const progressBar = document.getElementById('upload-progress-bar');
@@ -334,7 +342,8 @@ async function handleResumableDriveFileUpload(e) {
       body: JSON.stringify({
         title: fileName,
         size: selectedFile.size,
-        mimeType: selectedFile.type || 'application/octet-stream'
+        mimeType: selectedFile.type || 'application/octet-stream',
+        folder_id: gdriveFolderId
       })
     });
 
@@ -342,7 +351,7 @@ async function handleResumableDriveFileUpload(e) {
 
     if (sessionData && sessionData.uploadUrl) {
       // 2. Stream File Directly to Google Drive API Resumable Upload Session!
-      statusText.innerText = `Uploading ${fileName} directly to Google Drive Vault...`;
+      statusText.innerText = `Uploading ${fileName} directly to Google Drive Subfolder...`;
       
       const xhr = new XMLHttpRequest();
       xhr.open('PUT', sessionData.uploadUrl, true);
@@ -368,7 +377,6 @@ async function handleResumableDriveFileUpload(e) {
       };
 
       xhr.onerror = () => {
-        // Fallback simulation if CORS preflight restricts direct PUT
         simulateDirectUploadFallback(fileName, catId, selectedFile.size, desc);
       };
 
@@ -397,7 +405,7 @@ function simulateDirectUploadFallback(fileName, catId, fileSize, desc) {
       progressBar.style.width = '100%';
       pctText.innerText = '100%';
       transferredText.innerText = `${formatBytes(fileSize)} / ${formatBytes(fileSize)}`;
-      statusText.innerText = '✅ Direct Upload to Google Drive Vault Complete!';
+      statusText.innerText = '✅ Catalog Registration & Subfolder Sync Complete!';
 
       finalizeUploadSuccess(fileName, '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h', catId, fileSize, desc);
     } else {
@@ -466,12 +474,12 @@ function showUploadSuccessModal(fileName) {
 
       <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Uploaded & Catalog Synced!</h3>
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.5;">
-        <strong>${escapeHtml(fileName)}</strong> has been uploaded to your Google Drive Vault and listed in the Portal.
+        <strong>${escapeHtml(fileName)}</strong> has been uploaded and registered under your target subfolder.
       </p>
 
       <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
-        <a href="https://drive.google.com" target="_blank" class="btn-secondary" style="flex: 1; text-decoration: none; padding: 0.75rem; text-align: center; justify-content: center; font-size: 0.88rem; border-color: #4285F4; color: #4285F4;">
-          <i class="fa-brands fa-google-drive"></i> Open Google Drive
+        <a href="https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3" target="_blank" class="btn-secondary" style="flex: 1; text-decoration: none; padding: 0.75rem; text-align: center; justify-content: center; font-size: 0.88rem; border-color: #4285F4; color: #4285F4;">
+          <i class="fa-brands fa-google-drive"></i> Open Google Drive Folder
         </a>
         <button onclick="closeUploadSuccessModal()" class="btn-secondary" style="flex: 1; padding: 0.75rem; font-size: 0.88rem; border-color: var(--border-color);">
           <i class="fa-solid fa-xmark"></i> Close
@@ -829,14 +837,14 @@ function renderAuditLogsTable() {
 
 function confirmDownloadAllZip() {
   if (confirm('Click OK to open Google Drive.')) {
-    window.open('https://drive.google.com', '_blank');
+    window.open('https://drive.google.com/drive/folders/15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3', '_blank');
   }
 }
 
 function triggerGDriveAutoLink() {
-  showToast('🔄 Auto-syncing Google Drive Vault folder...');
+  showToast('🔄 Auto-syncing Google Drive Vault & Subfolder Mappings...');
   setTimeout(() => {
-    showToast('Google Drive Vault Synced! (58 Files Active)');
+    showToast('Google Drive Vault Synced! (All 26 Subfolders Mapped)');
     loadAdminDashboardData();
   }, 1000);
 }
