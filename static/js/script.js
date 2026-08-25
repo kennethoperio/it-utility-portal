@@ -1,4 +1,4 @@
-// IT Utility Portal - Client Application Logic
+// IT Utility Portal - Friendly Client Application Logic
 const API_BASE = (window.location.pathname.includes('it-utility-portal') || window.location.hostname.includes('github.io')) ? 'static/api' : 'api';
 
 let categoriesList = [];
@@ -8,7 +8,7 @@ let passcodesList = [];
 let starredFileIds = JSON.parse(localStorage.getItem('portal_starred_ids') || '[]');
 let activeCategoryFilter = 'all';
 
-// Default Technician Onsite Checklist
+// Default Technician Onsite Repair Checklist
 const defaultChecklist = [
   { id: 1, text: 'Run SFC /SCANNOW & DISM RestoreHealth to verify OS integrity', done: false },
   { id: 2, text: 'Flush DNS & Reset Winsock stack (ipconfig /flushdns)', done: false },
@@ -29,6 +29,31 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('passcode-form')?.addEventListener('submit', handlePasscodeSubmit);
 });
 
+// --- Direct Download Without Opening New Tab ---
+function triggerDirectDownload(fileId, fileName) {
+  showToast(`🚚 Starting direct download: ${fileName}...`);
+  
+  let iframe = document.getElementById('hidden-download-frame');
+  if (!iframe) {
+    iframe = document.createElement('iframe');
+    iframe.id = 'hidden-download-frame';
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+  }
+
+  // Primary direct download URL from Google Drive
+  const directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
+  iframe.src = directUrl;
+
+  // Backup fallback after 3 seconds if needed
+  setTimeout(() => {
+    if (!iframe.src || iframe.src === 'about:blank') {
+      const fallbackUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
+      iframe.src = fallbackUrl;
+    }
+  }, 3000);
+}
+
 // --- Passcode Authorization Logic ---
 function initPasscodeCheck() {
   const savedPasscode = sessionStorage.getItem('vault_passcode') || localStorage.getItem('vault_passcode');
@@ -47,15 +72,13 @@ async function handlePasscodeSubmit(e) {
 
   const isValid = await validateAndLoadVault(inputVal);
   if (!isValid) {
-    errorEl.innerText = 'Invalid or expired passcode. Please enter a valid passcode.';
+    errorEl.innerText = 'Invalid passcode. Please enter tech2026 or a valid guest passcode.';
     errorEl.style.display = 'block';
   }
 }
 
 async function validateAndLoadVault(passcode) {
   const cleanCode = passcode.trim();
-
-  // Load manifest data to check custom guest passcodes
   await loadVaultDataStaleWhileRevalidate();
 
   const isMasterTech = cleanCode.toLowerCase() === 'tech2026';
@@ -70,14 +93,14 @@ async function validateAndLoadVault(passcode) {
     const label = document.getElementById('active-passcode-label');
     if (pill && label) {
       pill.style.display = 'inline-flex';
-      label.innerText = isMasterTech ? 'Master Tech Active' : `Guest (${cleanCode.toUpperCase()})`;
+      label.innerText = isMasterTech ? 'Master Tech' : `Guest (${cleanCode.toUpperCase()})`;
     }
     return true;
   }
   return false;
 }
 
-// --- Stale-While-Revalidate Data Loader ---
+// --- Data Loader ---
 async function loadVaultDataStaleWhileRevalidate() {
   try {
     const res = await fetch(`vault_manifest.json?_t=${Date.now()}`);
@@ -112,7 +135,7 @@ function switchTab(tabId) {
   if (tabId === 'favorites') renderFavoritesGrid();
 }
 
-// --- Category Pills & Rendering ---
+// --- Category Pills Bar ---
 function renderCategoryPills() {
   const container = document.getElementById('category-pills');
   if (!container) return;
@@ -156,7 +179,7 @@ function renderToolsGrid() {
   if (filtered.length === 0) {
     grid.innerHTML = `<div class="card-item" style="grid-column: 1/-1; padding: 3rem; text-align: center; color: var(--text-muted);">
       <i class="fa-solid fa-folder-open" style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--text-dim);"></i>
-      <p>No utility tools found matching your search query.</p>
+      <p>No tools found matching your filter criteria.</p>
     </div>`;
     return;
   }
@@ -168,13 +191,7 @@ function createToolCardHtml(f) {
   const isStarred = starredFileIds.includes(f.id);
   const formattedSize = formatBytes(f.file_size || 0);
 
-  // Direct Google Drive download URL
-  let downloadUrl = `#`;
-  if (f.file_key && f.file_key.startsWith && f.file_key.startsWith('gdrive:')) {
-    const gId = f.file_key.replace('gdrive:', '');
-    downloadUrl = `https://drive.google.com/uc?export=download&id=${gId}&confirm=t`;
-  }
-
+  const gId = (f.file_key || '').replace('gdrive:', '');
   const cat = categoriesList.find(c => c.id === f.category_id);
   const catName = cat ? cat.name : 'Utility';
 
@@ -191,25 +208,24 @@ function createToolCardHtml(f) {
         </div>
 
         <div class="card-title">${escapeHtml(f.original_name)}</div>
-        <div class="card-desc">${escapeHtml(f.description || 'Google Drive Vault Utility Tool')}</div>
+        <div class="card-desc">${escapeHtml(f.description || 'Google Drive Software Utility')}</div>
       </div>
 
       <div>
         <div class="card-tags">
           <span class="tag cyan"><i class="fa-solid fa-folder"></i> ${escapeHtml(catName)}</span>
-          <span class="tag"><i class="fa-brands fa-windows"></i> Win 10/11</span>
-          <span class="tag"><i class="fa-solid fa-hard-drive"></i> ${formattedSize}</span>
+          <span class="tag green"><i class="fa-solid fa-hard-drive"></i> ${formattedSize}</span>
         </div>
 
-        <a href="${downloadUrl}" target="_blank" class="btn-action" onclick="showToast('🚚 Starting 1-click direct download...')">
+        <button class="btn-download" onclick="triggerDirectDownload('${gId}', '${escapeHtml(f.original_name)}')">
           <i class="fa-solid fa-download"></i> Direct Download
-        </a>
+        </button>
       </div>
     </div>
   `;
 }
 
-// --- Favorites Management ---
+// --- Favorites ---
 function toggleStar(fileId) {
   if (starredFileIds.includes(fileId)) {
     starredFileIds = starredFileIds.filter(id => id !== fileId);
@@ -234,7 +250,7 @@ function renderFavoritesGrid() {
   if (starredFiles.length === 0) {
     grid.innerHTML = `<div class="card-item" style="grid-column: 1/-1; padding: 3rem; text-align: center; color: var(--text-muted);">
       <i class="fa-solid fa-star" style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--text-dim);"></i>
-      <p>No starred favorites yet. Click the ⭐ star icon on any tool card to pin it here for quick 1-click access!</p>
+      <p>No starred favorites yet. Click the ⭐ star icon on any tool card to pin it here!</p>
     </div>`;
     return;
   }
@@ -249,8 +265,8 @@ function renderChecklist() {
 
   container.innerHTML = currentChecklist.map(item => `
     <label class="card-item" style="padding: 0.9rem 1.1rem; display: flex; gap: 1rem; align-items: center; cursor: pointer; text-decoration: ${item.done ? 'line-through' : 'none'}; opacity: ${item.done ? '0.6' : '1'}; flex-direction: row;">
-      <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleChecklistItem(${item.id})" style="width: 18px; height: 18px; accent-color: var(--cyan-accent);">
-      <span style="font-size: 0.92rem; font-weight: 500;">${escapeHtml(item.text)}</span>
+      <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleChecklistItem(${item.id})" style="width: 18px; height: 18px; accent-color: var(--primary-accent);">
+      <span style="font-size: 0.95rem; font-weight: 500;">${escapeHtml(item.text)}</span>
     </label>
   `).join('');
 }
@@ -271,7 +287,7 @@ function resetChecklist() {
   showToast('Checklist reset to default steps.');
 }
 
-// --- System & Network Diagnostic Panel ---
+// --- System Diagnostics ---
 function renderDiagnostics() {
   const userAgent = navigator.userAgent;
   let os = 'Windows PC';
@@ -318,7 +334,7 @@ function renderCmdScripts() {
         <button class="tab-link" onclick="copyCommand('${escapeHtml(s.command)}')" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;"><i class="fa-solid fa-copy"></i> Copy Code</button>
       </div>
       <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">${escapeHtml(s.description || '')}</p>
-      <pre style="background: #090d16; padding: 0.75rem; border-radius: 6px; font-family: monospace; font-size: 0.85rem; color: #a7f3d0; overflow-x: auto; border: 1px solid var(--border-color);"><code>${escapeHtml(s.command)}</code></pre>
+      <pre style="background: #0d1117; padding: 0.75rem; border-radius: 6px; font-family: monospace; font-size: 0.85rem; color: #a7f3d0; overflow-x: auto; border: 1px solid var(--border-color);"><code>${escapeHtml(s.command)}</code></pre>
     </div>
   `).join('');
 }
