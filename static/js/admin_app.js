@@ -307,6 +307,17 @@ async function syncRealGDriveStructureDirect() {
   } catch (err) {}
 }
 
+// --- AUTOMATED GDRIVE SYNC BUTTON HANDLER ---
+async function triggerAutomatedGDriveSync() {
+  showToast('🔄 Auto-scanning Google Drive Vault for new files and subfolders...');
+  await syncRealGDriveStructureDirect();
+  populateCategoryFilterDropdown();
+  renderAdminFilesTable();
+  renderAdminCategoriesHierarchy();
+  renderAdminStats();
+  showToast(`🎉 Vault Auto-Sync Complete! Showing all ${adminFilesList.length} files across ${categoriesList.length} categories.`);
+}
+
 // --- CMD SCRIPTS & CHECKLIST ADMIN MANAGEMENT ---
 function renderAdminCmdScripts() {
   const container = document.getElementById('admin-cmd-list');
