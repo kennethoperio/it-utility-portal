@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IT Troubleshooting Utility Vault | Software & Driver Repository</title>
   <meta name="description" content="Professional IT Repair Software Vault, Drivers, and Technician Utilities.">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/nextgen_style.css?v=11.0">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="css/nextgen_style.css?v=12.0">
 </head>
 <body>
 
@@ -17,166 +16,196 @@
       <i class="fa-solid fa-shield-halved"></i>
       <span>IT Utility Vault</span>
     </a>
-    <div style="display: flex; gap: 1rem; align-items: center;">
+    
+    <div style="display: flex; gap: 0.85rem; align-items: center;">
       <div id="passcode-status-pill" style="display: none;" class="tag cyan">
         <i class="fa-solid fa-key"></i> <span id="active-passcode-label">Master Tech</span>
       </div>
-      <a href="/admin" class="tab-link" style="text-decoration: none; padding: 0.5rem 1rem;">
-        <i class="fa-solid fa-user-gear"></i> Admin Dashboard
-      </a>
+
+      <!-- Light / Dark Mode Toggle Button -->
+      <button onclick="toggleTheme()" class="btn-secondary" title="Toggle Light/Dark Theme">
+        <i id="theme-icon" class="fa-solid fa-sun"></i> <span id="theme-text">Light Mode</span>
+      </button>
+
+      <!-- Client Logout Button -->
+      <button onclick="clientLogout()" class="btn-secondary" style="border-color: var(--rose); color: var(--rose);" title="Lock Vault & Logout">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
+      </button>
     </div>
   </nav>
 
-  <!-- Passcode Overlay Modal -->
-  <div id="passcode-modal" class="card-item" style="position: fixed; inset: 0; margin: auto; max-width: 440px; height: fit-content; padding: 2.5rem; z-index: 10000; text-align: center; border-color: var(--cyan-accent); background: #161b22;">
-    <div class="card-icon" style="margin: 0 auto 1.5rem; width: 60px; height: 60px; font-size: 1.6rem;">
-      <i class="fa-solid fa-lock"></i>
-    </div>
-    <h2 style="margin-bottom: 0.5rem; font-size: 1.5rem; color: #fff;">Vault Passcode Required</h2>
-    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Enter Technician Passcode (<code>tech2026</code>) or Guest Passcode to unlock files.</p>
-    
-    <form id="passcode-form">
-      <div class="search-box" style="margin-bottom: 1.25rem;">
-        <i class="fa-solid fa-key"></i>
-        <input type="password" id="passcode-input" placeholder="Enter Vault Passcode..." required style="padding-left: 2.75rem; text-align: center; letter-spacing: 2px;">
+  <!-- Passcode Authorization Modal -->
+  <div id="passcode-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="text-align: center;">
+      <div class="card-icon" style="margin: 0 auto 1.25rem; width: 56px; height: 56px; font-size: 1.5rem;">
+        <i class="fa-solid fa-lock"></i>
       </div>
-      <button type="submit" class="btn-download"><i class="fa-solid fa-unlock"></i> Unlock Utility Vault</button>
-    </form>
-    <div id="passcode-error" style="color: var(--rose-accent); margin-top: 1rem; font-size: 0.88rem; display: none;"></div>
+      <h2 style="margin-bottom: 0.5rem; font-size: 1.4rem;">Vault Passcode Required</h2>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.35rem;">Enter Technician Passcode (<code>tech2026</code>) or Guest Passcode to access vault tools.</p>
+      
+      <form id="passcode-form">
+        <div class="search-box" style="margin-bottom: 1rem;">
+          <i class="fa-solid fa-key"></i>
+          <input type="password" id="passcode-input" placeholder="Enter Vault Passcode..." required style="padding-left: 2.75rem; text-align: center; letter-spacing: 2px;">
+        </div>
+        <button type="submit" class="btn-download" style="background: var(--primary);"><i class="fa-solid fa-unlock"></i> Unlock Utility Vault</button>
+      </form>
+      <div id="passcode-error" style="color: var(--rose); margin-top: 1rem; font-size: 0.85rem; display: none;"></div>
+    </div>
   </div>
 
-  <!-- Main Container -->
-  <main class="container">
-    <div class="hero-header">
-      <h1>IT Troubleshooting & Repair Vault</h1>
-      <p>Enterprise diagnostic software, printer drivers, and technician utilities. Fast 1-click direct downloads.</p>
-    </div>
-
-    <!-- Search Box -->
-    <div class="search-box">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="main-search-input" placeholder="Search 58+ tools by name, model, or category...">
-    </div>
-
-    <!-- Navigation Tabs -->
-    <div class="tab-navigation">
-      <button class="tab-link active" onclick="switchTab('tools')"><i class="fa-solid fa-toolbox"></i> IT Tools</button>
-      <button class="tab-link" onclick="switchTab('favorites')"><i class="fa-solid fa-star"></i> ⭐ Favorites (<span id="fav-count">0</span>)</button>
-      <button class="tab-link" onclick="switchTab('checklist')"><i class="fa-solid fa-list-check"></i> 📋 Repair Checklist</button>
-      <button class="tab-link" onclick="switchTab('diag')"><i class="fa-solid fa-microchip"></i> 🛠️ Hardware Diagnostics</button>
-      <button class="tab-link" onclick="switchTab('batch')"><i class="fa-solid fa-bolt"></i> Batch Script Gen</button>
-      <button class="tab-link" onclick="switchTab('scripts')"><i class="fa-solid fa-terminal"></i> CMD Commands</button>
-    </div>
-
-    <!-- Tab 1: IT Tools & Hierarchical Category Explorer -->
-    <section id="tab-tools">
+  <!-- App Layout Grid (Left Sidebar + Main Content) -->
+  <div class="app-layout">
+    
+    <!-- Left Navigation Sidebar (Categories & Subfolders Explorer) -->
+    <aside class="left-sidebar">
+      <div class="sidebar-title"><i class="fa-solid fa-folder-tree"></i> Categories Explorer</div>
       
-      <!-- Main Category Selector Grid -->
-      <div style="margin-bottom: 1.5rem;">
-        <h4 style="color: var(--text-muted); font-size: 0.88rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.85rem;"><i class="fa-solid fa-folder-tree"></i> Main Categories</h4>
-        <div id="main-category-grid" style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
-          <!-- Main Categories populated via JS -->
-        </div>
+      <div id="sidebar-categories-menu" class="sidebar-menu">
+        <!-- Sidebar items populated via JS -->
+      </div>
+    </aside>
+
+    <!-- Main Content Container -->
+    <main class="main-content">
+
+      <!-- Search Box -->
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="main-search-input" placeholder="Search 58+ tools by file name, driver model, or keyword...">
       </div>
 
-      <!-- Subcategory Bar (Shows when a Main Category with subfolders is selected) -->
-      <div id="subcategory-wrapper" style="display: none; background: #161b22; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.75rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-          <h4 id="subcategory-title" style="font-size: 1rem; color: var(--cyan-accent);"><i class="fa-solid fa-folder-open"></i> Subcategories</h4>
-          <span style="font-size: 0.8rem; color: var(--text-muted);" id="subcategory-count-label">Select subfolder</span>
-        </div>
-        <div id="subcategory-pills" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <!-- Subcategories populated via JS -->
-        </div>
+      <!-- Navigation Tabs -->
+      <div class="tab-navigation">
+        <button class="tab-link active" onclick="switchTab('tools')"><i class="fa-solid fa-toolbox"></i> IT Tools</button>
+        <button class="tab-link" onclick="switchTab('favorites')"><i class="fa-solid fa-star"></i> ⭐ Favorites (<span id="fav-count">0</span>)</button>
+        <button class="tab-link" onclick="switchTab('checklist')"><i class="fa-solid fa-list-check"></i> 📋 Repair Checklist</button>
+        <button class="tab-link" onclick="switchTab('diag')"><i class="fa-solid fa-microchip"></i> 🛠️ Hardware Diagnostics</button>
+        <button class="tab-link" onclick="switchTab('batch')"><i class="fa-solid fa-bolt"></i> Batch Script Gen</button>
+        <button class="tab-link" onclick="switchTab('scripts')"><i class="fa-solid fa-terminal"></i> CMD Commands</button>
       </div>
 
-      <!-- Tools Grid -->
-      <div id="tools-grid" class="cards-grid">
-        <!-- Tool Cards populated via JS -->
+      <!-- Active Category Header Banner -->
+      <div id="active-category-banner" style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+        <h3 id="current-category-label" style="font-size: 1.2rem; font-weight: 700;"><i class="fa-solid fa-layer-group" style="color: var(--primary);"></i> All Vault Tools</h3>
+        <span class="tag cyan" id="current-category-count">58 Tools</span>
       </div>
-    </section>
 
-    <!-- Tab 2: Favorites -->
-    <section id="tab-favorites" style="display: none;">
-      <h3 style="margin-bottom: 1.25rem; font-size: 1.25rem;"><i class="fa-solid fa-star" style="color: var(--amber-accent);"></i> Starred Quick Access Tools</h3>
-      <div id="favorites-grid" class="cards-grid">
-        <!-- Starred cards populated via JS -->
-      </div>
-    </section>
+      <!-- Tab 1: IT Tools Grid -->
+      <section id="tab-tools">
+        <div id="tools-grid" class="cards-grid">
+          <!-- Tool Cards populated via JS -->
+        </div>
+      </section>
 
-    <!-- Tab 3: Onsite Repair Checklist -->
-    <section id="tab-checklist" style="display: none;" class="card-item">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-        <h3 style="color: #fff;"><i class="fa-solid fa-list-check" style="color: var(--cyan-accent);"></i> Technician Onsite Repair Checklist</h3>
-        <button class="tab-link" onclick="resetChecklist()" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;"><i class="fa-solid fa-rotate-left"></i> Reset Checklist</button>
-      </div>
-      <div id="checklist-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <!-- Checklist items -->
-      </div>
-    </section>
+      <!-- Tab 2: Favorites -->
+      <section id="tab-favorites" style="display: none;">
+        <div id="favorites-grid" class="cards-grid">
+          <!-- Starred cards -->
+        </div>
+      </section>
 
-    <!-- Tab 4: Diagnostics Panel -->
-    <section id="tab-diag" style="display: none;">
-      <h3 style="margin-bottom: 1.25rem; color: #fff;"><i class="fa-solid fa-microchip" style="color: var(--cyan-accent);"></i> Client Hardware & Network Diagnostics</h3>
-      <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
-        <div class="card-item">
-          <div style="color: var(--text-muted); font-size: 0.85rem;">Operating System</div>
-          <div style="font-size: 1.25rem; font-weight: 700; color: var(--cyan-accent); margin-top: 0.25rem;" id="diag-os">Detecting...</div>
+      <!-- Tab 3: Onsite Repair Checklist -->
+      <section id="tab-checklist" style="display: none;" class="card-item">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+          <h3><i class="fa-solid fa-list-check" style="color: var(--primary);"></i> Technician Onsite Repair Checklist</h3>
+          <button class="btn-secondary" onclick="resetChecklist()" style="font-size: 0.8rem;"><i class="fa-solid fa-rotate-left"></i> Reset Checklist</button>
         </div>
-        <div class="card-item">
-          <div style="color: var(--text-muted); font-size: 0.85rem;">Browser Engine</div>
-          <div style="font-size: 1.25rem; font-weight: 700; color: var(--cyan-accent); margin-top: 0.25rem;" id="diag-browser">Detecting...</div>
+        <div id="checklist-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <!-- Checklist items -->
         </div>
-        <div class="card-item">
-          <div style="color: var(--text-muted); font-size: 0.85rem;">Screen Resolution</div>
-          <div style="font-size: 1.25rem; font-weight: 700; color: var(--cyan-accent); margin-top: 0.25rem;" id="diag-screen">Detecting...</div>
-        </div>
-        <div class="card-item">
-          <div style="color: var(--text-muted); font-size: 0.85rem;">Network Latency</div>
-          <div style="font-size: 1.25rem; font-weight: 700; color: var(--cyan-accent); margin-top: 0.25rem;" id="diag-ping">Measuring...</div>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Tab 5: Batch Script Generator -->
-    <section id="tab-batch" style="display: none;" class="card-item">
-      <h3 style="margin-bottom: 0.5rem; color: #fff;"><i class="fa-solid fa-bolt" style="color: var(--cyan-accent);"></i> Automated Windows Repair Batch Script Generator</h3>
-      <p style="color: var(--text-muted); margin-bottom: 1.25rem; font-size: 0.9rem;">Select automated troubleshooting tasks to compile a single 1-click `.bat` repair script.</p>
-      
-      <form id="batch-form" onsubmit="generateBatchScript(event)">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
-          <label class="card-item" style="padding: 1rem; display: flex; gap: 0.75rem; align-items: center; cursor: pointer;">
-            <input type="checkbox" name="tasks" value="sfc" checked style="width: 18px; height: 18px; accent-color: var(--primary-accent);">
-            <div><strong style="color: #fff;">SFC & DISM Repair</strong><br><small style="color: var(--text-muted);">Scans & fixes system file corruption</small></div>
-          </label>
-          <label class="card-item" style="padding: 1rem; display: flex; gap: 0.75rem; align-items: center; cursor: pointer;">
-            <input type="checkbox" name="tasks" value="network" checked style="width: 18px; height: 18px; accent-color: var(--primary-accent);">
-            <div><strong style="color: #fff;">Network Reset</strong><br><small style="color: var(--text-muted);">Flushes DNS & resets Winsock/IP</small></div>
-          </label>
-          <label class="card-item" style="padding: 1rem; display: flex; gap: 0.75rem; align-items: center; cursor: pointer;">
-            <input type="checkbox" name="tasks" value="temp" style="width: 18px; height: 18px; accent-color: var(--primary-accent);">
-            <div><strong style="color: #fff;">Clear Temp Files</strong><br><small style="color: var(--text-muted);">Deletes %temp% and Prefetch junk</small></div>
-          </label>
-          <label class="card-item" style="padding: 1rem; display: flex; gap: 0.75rem; align-items: center; cursor: pointer;">
-            <input type="checkbox" name="tasks" value="power" style="width: 18px; height: 18px; accent-color: var(--primary-accent);">
-            <div><strong style="color: #fff;">Ultimate Power Plan</strong><br><small style="color: var(--text-muted);">Unlocks high performance power mode</small></div>
-          </label>
+      <!-- Tab 4: Diagnostics Panel -->
+      <section id="tab-diag" style="display: none;">
+        <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+          <div class="card-item">
+            <div style="color: var(--text-muted); font-size: 0.85rem;">Operating System</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-top: 0.25rem;" id="diag-os">Detecting...</div>
+          </div>
+          <div class="card-item">
+            <div style="color: var(--text-muted); font-size: 0.85rem;">Browser Engine</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-top: 0.25rem;" id="diag-browser">Detecting...</div>
+          </div>
+          <div class="card-item">
+            <div style="color: var(--text-muted); font-size: 0.85rem;">Screen Resolution</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-top: 0.25rem;" id="diag-screen">Detecting...</div>
+          </div>
+          <div class="card-item">
+            <div style="color: var(--text-muted); font-size: 0.85rem;">Network Latency</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-top: 0.25rem;" id="diag-ping">Measuring...</div>
+          </div>
         </div>
-        <button type="submit" class="btn-download"><i class="fa-solid fa-download"></i> Download IT_Vault_Custom_Repair.bat</button>
+      </section>
+
+      <!-- Tab 5: Batch Script Generator -->
+      <section id="tab-batch" style="display: none;" class="card-item">
+        <h3 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-bolt" style="color: var(--primary);"></i> Automated Windows Repair Batch Script Generator</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1.25rem; font-size: 0.9rem;">Select automated troubleshooting tasks to compile a single 1-click `.bat` repair script.</p>
+        
+        <form id="batch-form" onsubmit="generateBatchScript(event)">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+            <label class="card-item" style="padding: 1rem; display: flex; gap: 0.75rem; align-items: center; cursor: pointer;">
+              <input type="checkbox" name="tasks" value="sfc" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
+              <div><strong>SFC & DISM Repair</strong><br><small style="color: var(--text-muted);">Scans & fixes system file corruption</small></div>
+            </label>
+            <label class="card-item" style="padding: 1rem; display: flex; gap: 0.75rem; align-items: center; cursor: pointer;">
+              <input type="checkbox" name="tasks" value="network" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
+              <div><strong>Network Reset</strong><br><small style="color: var(--text-muted);">Flushes DNS & resets Winsock/IP</small></div>
+            </label>
+            <label class="card-item" style="padding: 1rem; display: flex; gap: 0.75rem; align-items: center; cursor: pointer;">
+              <input type="checkbox" name="tasks" value="temp" style="width: 18px; height: 18px; accent-color: var(--primary);">
+              <div><strong>Clear Temp Files</strong><br><small style="color: var(--text-muted);">Deletes %temp% and Prefetch junk</small></div>
+            </label>
+            <label class="card-item" style="padding: 1rem; display: flex; gap: 0.75rem; align-items: center; cursor: pointer;">
+              <input type="checkbox" name="tasks" value="power" style="width: 18px; height: 18px; accent-color: var(--primary);">
+              <div><strong>Ultimate Power Plan</strong><br><small style="color: var(--text-muted);">Unlocks high performance power mode</small></div>
+            </label>
+          </div>
+          <button type="submit" class="btn-download" style="background: var(--primary);"><i class="fa-solid fa-download"></i> Download IT_Vault_Custom_Repair.bat</button>
+        </form>
+      </section>
+
+      <!-- Tab 6: CMD Scripts -->
+      <section id="tab-scripts" style="display: none;">
+        <div id="cmd-scripts-container" style="display: flex; flex-direction: column; gap: 1rem;">
+          <!-- CMD Scripts -->
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- File Comments & Feedback Modal -->
+  <div id="comments-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 id="comment-modal-title" style="font-size: 1.15rem; color: var(--text-main);"><i class="fa-solid fa-comments" style="color: var(--primary);"></i> File Comments & Feedback</h3>
+        <button onclick="closeCommentsModal()" class="btn-secondary" style="padding: 0.25rem 0.65rem;">&times;</button>
+      </div>
+
+      <div id="comments-list" style="max-height: 240px; overflow-y: auto; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.6rem;">
+        <!-- Comments populated via JS -->
+      </div>
+
+      <form id="comment-form" onsubmit="submitFileComment(event)">
+        <input type="hidden" id="comment-file-id">
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+          <select id="comment-status-select" style="padding: 0.5rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.85rem; outline: none;">
+            <option value="working">✅ File Working Great</option>
+            <option value="issue">⚠️ Issue / Corrupted</option>
+          </select>
+          <input type="text" id="comment-author-input" placeholder="Your Name / Tech ID..." required style="flex: 1; padding: 0.5rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.85rem; outline: none;">
+        </div>
+        <textarea id="comment-text-input" placeholder="Add a comment or report feedback..." required style="width: 100%; height: 70px; padding: 0.55rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem; outline: none; margin-bottom: 0.85rem; resize: none;"></textarea>
+        <button type="submit" class="btn-download" style="background: var(--primary);"><i class="fa-solid fa-paper-plane"></i> Post Comment</button>
       </form>
-    </section>
-
-    <!-- Tab 6: CMD Scripts -->
-    <section id="tab-scripts" style="display: none;">
-      <h3 style="margin-bottom: 1.25rem; color: #fff;"><i class="fa-solid fa-terminal" style="color: var(--cyan-accent);"></i> Quick Technician Command Library</h3>
-      <div id="cmd-scripts-container" style="display: flex; flex-direction: column; gap: 1rem;">
-        <!-- Scripts populated via JS -->
-      </div>
-    </section>
-  </main>
+    </div>
+  </div>
 
   <div id="toast-box" class="toast-box"></div>
 
-  <script src="js/script.js?v=11.0"></script>
+  <!-- JavaScript Application Logic -->
+  <script src="js/script.js?v=12.0"></script>
 </body>
 </html>
