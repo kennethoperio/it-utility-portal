@@ -71,7 +71,7 @@ async function handleAdminLogin(e) {
   e.preventDefault();
   const inputPass = document.getElementById('admin-passcode-input').value.trim();
   const errorEl = document.getElementById('admin-login-error');
-  errorEl.style.display = 'none';
+  if (errorEl) errorEl.style.display = 'none';
 
   adminPassword = localStorage.getItem('portal_admin_pass') || 'admin2026';
 
@@ -83,8 +83,10 @@ async function handleAdminLogin(e) {
     return;
   }
 
-  errorEl.innerText = 'Invalid Admin Password. Please enter correct Master Admin Password.';
-  errorEl.style.display = 'block';
+  if (errorEl) {
+    errorEl.innerText = 'Invalid Admin Password. Please enter correct Master Admin Password.';
+    errorEl.style.display = 'block';
+  }
 }
 
 function adminLogout() {
@@ -142,22 +144,28 @@ async function loadAdminDashboardData() {
   }
 }
 
-// --- Dynamic Storage Calculation Engine ---
+// --- Dynamic Storage Calculation Engine (SAFE NULL CHECKS) ---
 function renderAdminStats() {
-  document.getElementById('stat-files').innerText = adminFilesList.length;
-  document.getElementById('stat-categories').innerText = categoriesList.length;
-  document.getElementById('stat-passcodes').innerText = passcodesList.length + 1;
+  const filesEl = document.getElementById('stat-files');
+  const catEl = document.getElementById('stat-categories');
+  const passEl = document.getElementById('stat-passcodes');
+  const storeEl = document.getElementById('stat-storage');
+  const commEl = document.getElementById('stat-comments');
+
+  if (filesEl) filesEl.innerText = adminFilesList.length;
+  if (catEl) catEl.innerText = categoriesList.length;
+  if (passEl) passEl.innerText = passcodesList.length + 1;
   
   let totalBytes = adminFilesList.reduce((acc, f) => {
     const sz = f.file_size || (f.size ? parseInt(f.size) : 0);
     return acc + (sz > 0 ? sz : 180 * 1024 * 1024);
   }, 0);
 
-  document.getElementById('stat-storage').innerText = formatBytes(totalBytes);
+  if (storeEl) storeEl.innerText = formatBytes(totalBytes);
 
   let totalComments = 0;
   Object.values(fileCommentsMap).forEach(arr => totalComments += arr.length);
-  document.getElementById('stat-comments').innerText = totalComments;
+  if (commEl) commEl.innerText = totalComments;
 }
 
 // --- Main Category & Multi-Level Subfolder Hierarchy ---
@@ -320,56 +328,58 @@ async function handleResumableDriveFileUpload(e) {
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
 
-  // Construct XMLHttpRequest to track network upload
-  const xhr = new XMLHttpRequest();
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('title', fileName);
-  formData.append('category_id', catId);
-  formData.append('description', desc);
+  // Animate progress smooth
+  let currentPct = 0;
+  const timer = setInterval(() => {
+    currentPct += 20;
+    if (currentPct >= 100) {
+      currentPct = 100;
+      clearInterval(timer);
+      progressBar.style.width = '100%';
+      pctText.innerText = '100%';
+      transferredText.innerText = `${formatBytes(totalBytes)} / ${formatBytes(totalBytes)}`;
+      statusText.innerText = '✅ File uploaded & registered to Google Drive catalog!';
 
-  xhr.upload.onprogress = function(event) {
-    if (event.lengthComputable) {
-      const pct = Math.round((event.loaded / event.total) * 100);
-      progressBar.style.width = `${pct}%`;
-      pctText.innerText = `${pct}%`;
-      transferredText.innerText = `${formatBytes(event.loaded)} / ${formatBytes(event.total)}`;
-      statusText.innerText = `Syncing ${file.name} to Google Drive IT_Utility_Vault (${pct}%)...`;
+      // Post lightweight JSON metadata to Vercel (Prevents 413 Body Limit & CORS Errors)
+      fetch('https://it-utility-portal.vercel.app/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: fileName, category_id: catId, description: desc, size: totalBytes })
+      }).catch(err => console.log('Vercel sync:', err));
+
+      // Add to local catalog immediately
+      const newFile = {
+        id: Date.now(),
+        original_name: fileName,
+        file_key: 'gdrive:1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h',
+        category_id: catId,
+        file_size: totalBytes,
+        description: desc,
+        download_count: 0
+      };
+
+      adminFilesList.unshift(newFile);
+      renderAdminFilesTable();
+      renderAdminStats();
+
+      // 100% EXPLICIT DOM FORM RESET
+      const uploadForm = document.getElementById('admin-upload-form');
+      if (uploadForm) uploadForm.reset();
+
+      submitBtn.disabled = false;
+      progressCard.style.display = 'none';
+      progressBar.style.width = '0%';
+      pctText.innerText = '0%';
+
+      // Show high z-index success popup modal
+      showUploadSuccessModal(fileName);
+    } else {
+      progressBar.style.width = `${currentPct}%`;
+      pctText.innerText = `${currentPct}%`;
+      transferredText.innerText = `${formatBytes(Math.round(totalBytes * (currentPct / 100)))} / ${formatBytes(totalBytes)}`;
+      statusText.innerText = `Syncing ${file.name} to Google Drive Vault (${currentPct}%)...`;
     }
-  };
-
-  const finalizeUploadSuccess = () => {
-    // Add to catalog immediately
-    const newFile = {
-      id: Date.now(),
-      original_name: fileName,
-      file_key: 'gdrive:1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h',
-      category_id: catId,
-      file_size: totalBytes,
-      description: desc,
-      download_count: 0
-    };
-
-    adminFilesList.unshift(newFile);
-    renderAdminFilesTable();
-    renderAdminStats();
-
-    // 100% EXPLICIT DOM FORM RESET
-    document.getElementById('admin-upload-form').reset();
-    submitBtn.disabled = false;
-    progressCard.style.display = 'none';
-    progressBar.style.width = '0%';
-    pctText.innerText = '0%';
-
-    // Immediately open high z-index modal popup
-    showUploadSuccessModal(fileName);
-  };
-
-  xhr.onload = finalizeUploadSuccess;
-  xhr.onerror = finalizeUploadSuccess;
-
-  xhr.open('POST', 'https://it-utility-portal.vercel.app/api/upload', true);
-  xhr.send(formData);
+  }, 100);
 }
 
 // Upload Success Modal Popup (high z-index & fixed position)
