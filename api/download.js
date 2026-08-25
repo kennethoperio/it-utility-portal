@@ -11,42 +11,27 @@ module.exports = async (req, res) => {
   }
 
   const fileId = req.query.fileId || req.query.id;
-  const fileName = req.query.fileName || req.query.name || 'installer.exe';
+  const fileName = req.query.fileName || req.query.name || 'software_installer.exe';
 
   if (!fileId) {
     return res.status(400).json({ error: 'Missing fileId parameter' });
   }
 
-  const gdriveUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
-
-  // Set Attachment Header so Browser saves directly into Downloads folder without opening any pages!
   const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9_.-]/g, '_');
+  
+  // Set headers for automatic direct browser binary download
   res.setHeader('Content-Type', 'application/octet-stream');
   res.setHeader('Content-Disposition', `attachment; filename="${sanitizedFileName}"`);
 
-  https.get(gdriveUrl, (gRes) => {
-    // Handle Google Drive Redirects (302/303) automatically on Vercel backend
-    if (gRes.statusCode === 302 || gRes.statusCode === 301 || gRes.statusCode === 303) {
-      const redirectUrl = gRes.headers.location;
-      if (redirectUrl) {
-        const client = redirectUrl.startsWith('https') ? https : http;
-        client.get(redirectUrl, (finalRes) => {
-          if (finalRes.headers['content-length']) {
-            res.setHeader('Content-Length', finalRes.headers['content-length']);
-          }
-          finalRes.pipe(res);
-        }).on('error', (err) => {
-          res.status(500).json({ error: 'Error streaming from Google Drive' });
-        });
-        return;
-      }
-    }
+  // Direct binary stream from Google Drive usercontent endpoint
+  const directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&authuser=0`;
 
+  https.get(directUrl, (gRes) => {
     if (gRes.headers['content-length']) {
       res.setHeader('Content-Length', gRes.headers['content-length']);
     }
     gRes.pipe(res);
   }).on('error', (err) => {
-    res.status(500).json({ error: 'Serverless streaming error: ' + err.message });
+    res.status(500).send('Streaming error: ' + err.message);
   });
 };
