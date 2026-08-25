@@ -278,6 +278,7 @@ async function syncRealGDriveStructureDirect() {
       if (!pageToken) break;
     }
 
+    let modifiedCount = 0;
     gFiles.forEach(gf => {
       if (gf.name.endsWith('.db') || gf.name.endsWith('.json')) return;
 
@@ -285,7 +286,13 @@ async function syncRealGDriveStructureDirect() {
       const matchingCat = categoriesList.find(c => c.gdrive_folder_id === parentId);
       const catId = matchingCat ? matchingCat.id : 1;
 
-      if (!adminFilesList.some(f => (f.file_key || '').includes(gf.id) || f.original_name === gf.name)) {
+      const existing = adminFilesList.find(f => (f.file_key || '').includes(gf.id) || f.original_name === gf.name);
+      if (existing) {
+        if (matchingCat && existing.category_id !== matchingCat.id) {
+          existing.category_id = matchingCat.id; // Update folder category if moved in GDrive!
+          modifiedCount++;
+        }
+      } else {
         let desc = `Google Drive Vault File (${gf.name})`;
         const nl = gf.name.toLowerCase();
         if (nl.endsWith('.rar') || nl.endsWith('.zip') || nl.endsWith('.7z')) desc = 'Compressed Archive Utility / Resetter Package';
@@ -300,10 +307,16 @@ async function syncRealGDriveStructureDirect() {
           description: desc,
           download_count: 0
         });
+        modifiedCount++;
       }
     });
 
     populateCategoryFilterDropdown();
+    if (modifiedCount > 0) {
+      renderAdminFilesTable();
+      renderAdminCategoriesHierarchy();
+      renderAdminStats();
+    }
   } catch (err) {}
 }
 
