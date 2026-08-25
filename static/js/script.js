@@ -73,7 +73,7 @@ function clientLogout() {
   showToast('Vault Locked. Logged out successfully.');
 }
 
-// --- FULL BINARY INVISIBLE STREAM DOWNLOAD ENGINE ---
+// --- UNIVERSAL DIRECT BINARY DOWNLOAD ENGINE ---
 function triggerDirectDownload(fileId, fileName) {
   // Increment Download Counter
   const fileObj = allFilesList.find(f => (f.file_key || '').includes(fileId) || f.id == fileId);
@@ -114,7 +114,7 @@ function openDownloadBypassModal(fileId, fileName) {
       <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.35rem;">Download full uncorrupted file directly to your PC.</p>
 
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <!-- Option 1: Direct Full Binary File Download via Invisible Stream Frame -->
+        <!-- Option 1: Direct Full Binary Download Engine -->
         <button onclick="saveFileImmediately('${fileId}', '${escapeHtml(fileName)}')" class="btn-download" style="background: var(--primary); text-align: center; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">
           <i class="fa-solid fa-download"></i> Click Here to Save File Immediately
         </button>
@@ -135,20 +135,19 @@ function closeDownloadBypassModal() {
   if (modal) modal.style.display = 'none';
 }
 
-// Option 1: Direct full binary file download via invisible frame WITHOUT page redirect or CSS breaks
+// Option 1: Direct full binary stream download that starts 100% instantly
 function saveFileImmediately(fileId, fileName) {
-  showToast(`🚚 Direct downloading ${fileName}...`);
+  showToast(`🚚 Starting direct download for ${fileName}...`);
 
   const directBinaryUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t&authuser=0`;
 
-  let frame = document.getElementById('hidden-download-iframe');
-  if (!frame) {
-    frame = document.createElement('iframe');
-    frame.id = 'hidden-download-iframe';
-    frame.style.display = 'none';
-    document.body.appendChild(frame);
+  // Universal browser download trigger
+  const win = window.open(directBinaryUrl, '_blank');
+  if (win) {
+    setTimeout(() => {
+      try { win.close(); } catch(e){}
+    }, 2000);
   }
-  frame.src = directBinaryUrl;
 
   closeDownloadBypassModal();
 }
