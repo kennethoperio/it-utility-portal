@@ -5,172 +5,168 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Utility Vault</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/nextgen_style.css?v=10.0">
+  <link rel="stylesheet" href="css/nextgen_style.css?v=11.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-  <!-- Admin Header -->
-  <header class="app-header">
-    <div class="brand-title">
-      <i class="fa-solid fa-user-shield"></i>
-      <span>Admin Dashboard</span>
-      <span class="brand-badge" style="background: rgba(112, 0, 255, 0.2); border-color: var(--neon-purple); color: #e100ff;">Technician Control</span>
-    </div>
+  <!-- Top Navbar -->
+  <nav class="app-navbar" style="background: #161b22; border-bottom: 1px solid var(--border-color);">
+    <a href="/" class="brand-logo">
+      <i class="fa-solid fa-user-shield" style="color: var(--cyan-accent);"></i>
+      <span>Technician Control Dashboard</span>
+    </a>
     <div style="display: flex; gap: 1rem; align-items: center;">
-      <a href="/" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+      <a href="/" class="tab-link" style="text-decoration: none; padding: 0.5rem 1rem;">
         <i class="fa-solid fa-house"></i> View Client Portal
       </a>
-      <button onclick="adminLogout()" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem; border-color: var(--rose-red); color: var(--rose-red);">
-        <i class="fa-solid fa-right-from-bracket"></i> Lock Admin
+      <button onclick="adminLogout()" class="tab-link" style="border-color: var(--rose-accent); color: var(--rose-accent); padding: 0.5rem 1rem;">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
       </button>
     </div>
-  </header>
+  </nav>
 
-  <!-- Admin Login Modal -->
-  <div id="admin-login-modal" class="glass-panel" style="position: fixed; inset: 0; margin: auto; max-width: 420px; height: fit-content; padding: 2.5rem; z-index: 10000; text-align: center;">
-    <div class="tool-icon-wrapper" style="margin: 0 auto 1.5rem; width: 64px; height: 64px; font-size: 1.8rem; border-color: var(--neon-purple); color: #e100ff; background: rgba(112,0,255,0.15);">
+  <!-- Login Overlay / Modal -->
+  <div id="admin-login-modal" class="card-item" style="position: fixed; inset: 0; margin: auto; max-width: 420px; height: fit-content; padding: 2.5rem; z-index: 10000; text-align: center; background: #161b22; border-color: var(--cyan-accent);">
+    <div class="card-icon" style="margin: 0 auto 1.5rem; width: 60px; height: 60px; font-size: 1.6rem;">
       <i class="fa-solid fa-user-gear"></i>
     </div>
-    <h2 style="margin-bottom: 0.5rem;">Technician Admin Access</h2>
-    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Enter technician passcode (e.g. <code>tech2026</code>) to manage vault files and settings.</p>
+    <h2 style="margin-bottom: 0.5rem; font-size: 1.5rem; color: #fff;">Technician Admin Access</h2>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Enter technician passcode (<code>tech2026</code>) to access control panel.</p>
     
     <form id="admin-login-form">
-      <div class="search-container" style="margin-bottom: 1rem;">
-        <i class="fa-solid fa-key search-icon" style="color: var(--neon-purple);"></i>
-        <input type="password" id="admin-passcode-input" class="search-input" placeholder="Enter Admin Passcode..." required style="padding-left: 3rem; text-align: center; letter-spacing: 2px;">
+      <div class="search-box" style="margin-bottom: 1.25rem;">
+        <i class="fa-solid fa-key"></i>
+        <input type="password" id="admin-passcode-input" placeholder="Enter Admin Passcode..." required style="padding-left: 2.75rem; text-align: center; letter-spacing: 2px;">
       </div>
-      <button type="submit" class="btn btn-primary" style="width: 100%; background: var(--grad-purple-pink); color: #fff;"><i class="fa-solid fa-right-to-bracket"></i> Login to Admin</button>
+      <button type="submit" class="btn-download" style="background: var(--primary-accent);"><i class="fa-solid fa-right-to-bracket"></i> Login to Admin</button>
     </form>
-    <div id="admin-login-error" style="color: var(--rose-red); margin-top: 1rem; font-size: 0.9rem; display: none;"></div>
+    <div id="admin-login-error" style="color: var(--rose-accent); margin-top: 1rem; font-size: 0.88rem; display: none;"></div>
   </div>
 
-  <!-- Admin Dashboard Main Body -->
-  <main class="hero-banner" style="max-width: 1200px;">
-    <!-- Stat Cards Summary Row -->
-    <div class="diag-grid" style="margin-bottom: 2rem;">
-      <div class="diag-card">
+  <!-- Main Body -->
+  <main class="container">
+    
+    <!-- Stats Cards Summary Grid -->
+    <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 2rem;">
+      <div class="card-item" style="padding: 1.25rem;">
         <div style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-solid fa-box-archive"></i> Total Vault Files</div>
-        <div class="diag-val" id="stat-files">0</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: var(--cyan-accent); margin-top: 0.25rem;" id="stat-files">0</div>
       </div>
-      <div class="diag-card">
-        <div style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-solid fa-hard-drive"></i> Total Vault Storage</div>
-        <div class="diag-val" id="stat-storage">0 MB</div>
+      <div class="card-item" style="padding: 1.25rem;">
+        <div style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-solid fa-hard-drive"></i> Total Storage</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #4ade80; margin-top: 0.25rem;" id="stat-storage">0 MB</div>
       </div>
-      <div class="diag-card">
+      <div class="card-item" style="padding: 1.25rem;">
         <div style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-solid fa-folder-tree"></i> Total Categories</div>
-        <div class="diag-val" id="stat-categories">0</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: var(--amber-accent); margin-top: 0.25rem;" id="stat-categories">0</div>
       </div>
-      <div class="diag-card">
-        <div style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-solid fa-download"></i> Total Client Downloads</div>
-        <div class="diag-val" id="stat-downloads">0</div>
+      <div class="card-item" style="padding: 1.25rem;">
+        <div style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-solid fa-download"></i> Total Downloads</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #c084fc; margin-top: 0.25rem;" id="stat-downloads">0</div>
       </div>
     </div>
 
-    <!-- Admin Action Toolbar -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
-      <div class="nav-tabs" style="margin-bottom: 0;">
-        <button class="tab-btn active" onclick="showAdminSection('files')"><i class="fa-solid fa-file-lines"></i> File Management</button>
-        <button class="tab-btn" onclick="showAdminSection('categories')"><i class="fa-solid fa-folder-plus"></i> Categories</button>
-        <button class="tab-btn" onclick="showAdminSection('passcodes')"><i class="fa-solid fa-key"></i> Guest Passcodes</button>
-        <button class="tab-btn" onclick="showAdminSection('logs')"><i class="fa-solid fa-list-ul"></i> Audit Logs</button>
+    <!-- Navigation & Action Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
+      <div class="tab-navigation" style="margin-bottom: 0;">
+        <button class="tab-link active" onclick="showAdminSection('files')"><i class="fa-solid fa-file-lines"></i> File Management</button>
+        <button class="tab-link" onclick="showAdminSection('categories')"><i class="fa-solid fa-folder-plus"></i> Categories</button>
+        <button class="tab-link" onclick="showAdminSection('passcodes')"><i class="fa-solid fa-key"></i> Guest Passcodes</button>
+        <button class="tab-link" onclick="showAdminSection('logs')"><i class="fa-solid fa-list-ul"></i> Audit Logs</button>
       </div>
-      
+
       <div style="display: flex; gap: 0.75rem;">
-        <button onclick="triggerGDriveAutoLink()" class="btn btn-secondary"><i class="fa-solid fa-sync"></i> Sync GDrive Vault</button>
-        <button onclick="confirmDownloadAllZip()" class="btn btn-primary"><i class="fa-solid fa-file-zipper"></i> Download All Tools (.zip)</button>
+        <button onclick="triggerGDriveAutoLink()" class="tab-link" style="background: var(--bg-card); color: var(--cyan-accent); border-color: rgba(56, 189, 248, 0.3);">
+          <i class="fa-solid fa-arrows-rotate"></i> Sync GDrive Vault
+        </button>
+        <button onclick="confirmDownloadAllZip()" class="btn-download" style="width: auto; padding: 0.6rem 1.25rem;">
+          <i class="fa-solid fa-folder-open"></i> Open GDrive Folder
+        </button>
       </div>
     </div>
 
-    <!-- Section 1: File Management -->
-    <section id="admin-sec-files" class="glass-panel" style="padding: 1.5rem; text-align: left;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
-        <h3><i class="fa-solid fa-toolbox" style="color: var(--neon-cyan);"></i> Manage Vault Tools & Software</h3>
-        <select id="admin-file-category-filter" onchange="filterAdminFilesTable()" class="search-input" style="width: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">
+    <!-- File Management Section -->
+    <section id="admin-sec-files" class="card-item" style="padding: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+        <h3 style="font-size: 1.25rem; color: #fff;"><i class="fa-solid fa-toolbox" style="color: var(--cyan-accent);"></i> Vault Files & Software Tools</h3>
+        <select id="admin-file-category-filter" onchange="renderAdminFilesTable()" style="background: #21262d; border: 1px solid #30363d; color: #fff; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.9rem; outline: none;">
           <option value="all">🌐 All Categories</option>
         </select>
       </div>
 
       <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.92rem;">
           <thead>
-            <tr style="border-bottom: 1px solid var(--border-glass); color: var(--text-muted);">
-              <th style="padding: 0.75rem;">Filename</th>
-              <th style="padding: 0.75rem;">Category</th>
-              <th style="padding: 0.75rem;">Size</th>
-              <th style="padding: 0.75rem;">Downloads</th>
-              <th style="padding: 0.75rem; text-align: right;">Actions</th>
+            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
+              <th style="padding: 0.85rem;">Filename</th>
+              <th style="padding: 0.85rem;">Category</th>
+              <th style="padding: 0.85rem;">Size</th>
+              <th style="padding: 0.85rem;">Downloads</th>
+              <th style="padding: 0.85rem; text-align: right;">Actions</th>
             </tr>
           </thead>
           <tbody id="admin-files-table-body">
-            <!-- Row items populated via JS -->
+            <!-- Table rows populated via JS -->
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- Section 2: Audit Logs -->
-    <section id="admin-sec-logs" class="glass-panel" style="padding: 1.5rem; text-align: left; display: none;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h3><i class="fa-solid fa-shield-cat" style="color: var(--neon-cyan);"></i> System Activity Audit Logs</h3>
-        <div style="display: flex; gap: 0.75rem;">
-          <select id="audit-log-type-filter" onchange="loadAdminAuditLogs()" class="search-input" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">
-            <option value="all" selected>🌐 All System Logs</option>
-            <option value="client">👤 Client Activity Only</option>
-          </select>
-          <button onclick="loadAdminAuditLogs()" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.85rem;">
-            <i class="fa-solid fa-arrows-rotate"></i> Refresh
-          </button>
-        </div>
+    <!-- Categories Section -->
+    <section id="admin-sec-categories" class="card-item" style="padding: 1.5rem; display: none;">
+      <h3 style="margin-bottom: 1.25rem; color: #fff;"><i class="fa-solid fa-folder-plus" style="color: var(--cyan-accent);"></i> Vault Categories & Hierarchy</h3>
+      <div id="admin-categories-list"></div>
+    </section>
+
+    <!-- Passcodes Section -->
+    <section id="admin-sec-passcodes" class="card-item" style="padding: 1.5rem; display: none;">
+      <h3 style="margin-bottom: 1.25rem; color: #fff;"><i class="fa-solid fa-key" style="color: var(--cyan-accent);"></i> Passcodes Management</h3>
+      <div id="admin-passcodes-list"></div>
+    </section>
+
+    <!-- Audit Logs Section -->
+    <section id="admin-sec-logs" class="card-item" style="padding: 1.5rem; display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h3 style="color: #fff;"><i class="fa-solid fa-shield-cat" style="color: var(--cyan-accent);"></i> Activity Audit Logs</h3>
+        <button onclick="loadAdminAuditLogs()" class="tab-link" style="padding: 0.4rem 0.85rem; font-size: 0.85rem;">
+          <i class="fa-solid fa-arrows-rotate"></i> Refresh Logs
+        </button>
       </div>
 
       <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
           <thead>
-            <tr style="border-bottom: 1px solid var(--border-glass); color: var(--text-muted);">
-              <th style="padding: 0.6rem;">ID</th>
-              <th style="padding: 0.6rem;">Action</th>
-              <th style="padding: 0.6rem;">Details</th>
-              <th style="padding: 0.6rem;">Timestamp</th>
+            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
+              <th style="padding: 0.75rem;">ID</th>
+              <th style="padding: 0.75rem;">Action</th>
+              <th style="padding: 0.75rem;">Details</th>
+              <th style="padding: 0.75rem;">Timestamp</th>
             </tr>
           </thead>
           <tbody id="admin-audit-logs-body">
-            <!-- Audit rows populated via JS -->
+            <!-- Logs populated via JS -->
           </tbody>
         </table>
       </div>
     </section>
-
-    <!-- Section 3: Categories & Passcodes -->
-    <section id="admin-sec-categories" class="glass-panel" style="padding: 1.5rem; text-align: left; display: none;">
-      <h3><i class="fa-solid fa-folder-plus" style="color: var(--neon-cyan);"></i> Vault Categories</h3>
-      <div id="admin-categories-list" style="margin-top: 1rem;"></div>
-    </section>
-
-    <section id="admin-sec-passcodes" class="glass-panel" style="padding: 1.5rem; text-align: left; display: none;">
-      <h3><i class="fa-solid fa-key" style="color: var(--neon-cyan);"></i> Guest Passcodes Management</h3>
-      <div id="admin-passcodes-list" style="margin-top: 1rem;"></div>
-    </section>
-
   </main>
 
   <!-- Move File Modal -->
-  <div id="move-file-modal" class="glass-panel" style="position: fixed; inset: 0; margin: auto; max-width: 440px; height: fit-content; padding: 2rem; z-index: 10000; display: none;">
-    <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-truck-ramp-box" style="color: var(--neon-cyan);"></i> Move File Category</h3>
-    <p id="move-file-name" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;"></p>
+  <div id="move-file-modal" class="card-item" style="position: fixed; inset: 0; margin: auto; max-width: 440px; height: fit-content; padding: 2rem; z-index: 10000; display: none; background: #161b22; border-color: var(--cyan-accent);">
+    <h3 style="margin-bottom: 1rem; color: #fff;"><i class="fa-solid fa-truck-ramp-box" style="color: var(--cyan-accent);"></i> Move File Category</h3>
+    <p id="move-file-name" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;"></p>
     
     <form id="move-file-form" onsubmit="handleMoveFileSubmit(event)">
       <input type="hidden" id="move-file-id">
-      <select id="move-file-target-category" class="search-input" style="width: 100%; margin-bottom: 1.5rem;" required>
-        <!-- Categories populated via JS -->
+      <select id="move-file-target-category" style="width: 100%; padding: 0.75rem; background: #21262d; border: 1px solid #30363d; color: #fff; border-radius: 8px; font-size: 0.95rem; margin-bottom: 1.5rem; outline: none;" required>
       </select>
-      <button type="submit" id="move-file-submit-btn" class="btn btn-primary" style="width: 100%;"><i class="fa-solid fa-check"></i> Move File Now</button>
+      <button type="submit" class="btn-download"><i class="fa-solid fa-check"></i> Save New Category</button>
     </form>
   </div>
 
-  <div id="toast-container" class="toast-container"></div>
+  <div id="toast-box" class="toast-box"></div>
 
-  <!-- JavaScript Admin Application Logic -->
-  <script src="js/admin_app.js?v=10.0"></script>
+  <script src="js/admin_app.js?v=11.0"></script>
 </body>
 </html>
