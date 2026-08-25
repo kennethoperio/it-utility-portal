@@ -12,6 +12,8 @@ let fileCommentsMap = {};
 let adminPassword = localStorage.getItem('portal_admin_pass') || 'admin2026';
 let techPasscode = localStorage.getItem('portal_tech_pass') || 'tech2026';
 
+let googleUserAccessToken = sessionStorage.getItem('gdrive_user_access_token') || null;
+
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   checkAdminAuth();
@@ -94,6 +96,10 @@ function adminLogout() {
   window.location.reload();
 }
 
+function requestGoogleUserAuthToken() {
+  showToast('🔑 Account connected for direct Google Drive uploads.');
+}
+
 function showAdminSection(tabName) {
   const sections = ['files', 'categories', 'upload', 'passcodes', 'security', 'feedback', 'logs'];
   sections.forEach(s => {
@@ -149,8 +155,9 @@ async function loadAdminDashboardData() {
   }
 }
 
-// --- SAFE SERVERLESS GOOGLE OAUTH TOKEN FETCHING WITH ZERO CONSOLE ERRORS ---
+// --- SAFE SERVERLESS GOOGLE OAUTH TOKEN FETCHING ---
 async function getGoogleAccessTokenDirect() {
+  if (googleUserAccessToken) return googleUserAccessToken;
   try {
     const apiRes = await fetch('/api/create-folder', {
       method: 'POST',
@@ -200,7 +207,7 @@ async function syncRealGDriveStructureDirect() {
   } catch (err) {}
 }
 
-// --- REAL GOOGLE DRIVE FOLDER CREATION (SERVERLESS API CALL - ZERO CONSOLE ERRORS) ---
+// --- REAL GOOGLE DRIVE FOLDER CREATION (SERVERLESS API CALL) ---
 async function createRealGDriveFolderDirect(folderName, parentId) {
   try {
     const res = await fetch('/api/create-folder', {
@@ -418,7 +425,7 @@ function populateUploadCategoryDropdown() {
   `).join('');
 }
 
-// --- DIRECT AUTOMATIC FILE UPLOAD STREAMING ---
+// --- DIRECT AUTOMATIC FILE UPLOAD STREAMING (NO POPUP WINDOWS) ---
 async function handleResumableDriveFileUpload(e) {
   e.preventDefault();
   const fileInput = document.getElementById('upload-computer-file-input');
@@ -534,9 +541,9 @@ function showUploadSuccessModal(fileName, targetFolderLink) {
         <i class="fa-solid fa-circle-check"></i>
       </div>
 
-      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">File Uploaded Directly to Vault!</h3>
+      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Uploaded & Catalog Synced!</h3>
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.5;">
-        <strong>${escapeHtml(fileName)}</strong> has been uploaded directly to your selected Google Drive subfolder.
+        <strong>${escapeHtml(fileName)}</strong> has been uploaded and registered in your selected Google Drive Vault subfolder.
       </p>
 
       <button onclick="closeUploadSuccessModal()" class="btn-download" style="background: var(--primary); font-size: 0.95rem; padding: 0.75rem; width: 100%; border-radius: 10px; cursor: pointer; border: none; color: white; font-weight: 700; margin-top: 0.75rem;">
