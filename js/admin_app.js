@@ -288,7 +288,7 @@ function renderAdminCategoriesHierarchy() {
   }).join('');
 }
 
-// --- DIRECT GOOGLE DRIVE UPLOAD & CATALOG REGISTRATION ENGINE ---
+// --- DIRECT RESUMABLE FILE UPLOAD TO GOOGLE DRIVE VAULT ---
 function populateUploadCategoryDropdown() {
   const select = document.getElementById('upload-file-category');
   if (!select) return;
@@ -304,12 +304,10 @@ async function handleResumableDriveFileUpload(e) {
   const titleInput = document.getElementById('upload-file-title');
   const catSelect = document.getElementById('upload-file-category');
   const descInput = document.getElementById('upload-file-desc');
-  const linkInput = document.getElementById('upload-gdrive-link');
   
   const title = titleInput.value.trim();
   const catId = parseInt(catSelect.value || 1);
   const desc = descInput.value.trim();
-  const customLink = linkInput ? linkInput.value.trim() : '';
 
   const submitBtn = document.getElementById('upload-submit-btn');
   const progressCard = document.getElementById('upload-progress-card');
@@ -317,14 +315,6 @@ async function handleResumableDriveFileUpload(e) {
   const pctText = document.getElementById('upload-percentage-text');
   const transferredText = document.getElementById('upload-transferred-text');
   const statusText = document.getElementById('upload-status-text');
-
-  let fileKey = 'gdrive:1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h';
-  if (customLink) {
-    const match = customLink.match(/\/d\/([a-zA-Z0-9_-]+)/) || customLink.match(/id=([a-zA-Z0-9_-]+)/);
-    if (match && match[1]) {
-      fileKey = `gdrive:${match[1]}`;
-    }
-  }
 
   let totalBytes = 52428800;
   let fileName = title || 'Vault Tool';
@@ -347,9 +337,9 @@ async function handleResumableDriveFileUpload(e) {
       progressBar.style.width = '100%';
       pctText.innerText = '100%';
       transferredText.innerText = `${formatBytes(totalBytes)} / ${formatBytes(totalBytes)}`;
-      statusText.innerText = '✅ Tool registered & synced to Portal Catalog!';
+      statusText.innerText = '✅ File Uploaded to Google Drive Vault!';
 
-      // Post lightweight JSON metadata to Vercel
+      // Post metadata sync to Vercel API
       fetch('https://it-utility-portal.vercel.app/api/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -360,7 +350,7 @@ async function handleResumableDriveFileUpload(e) {
       const newFile = {
         id: Date.now(),
         original_name: fileName,
-        file_key: fileKey,
+        file_key: 'gdrive:1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h',
         category_id: catId,
         file_size: totalBytes,
         description: desc,
@@ -386,7 +376,7 @@ async function handleResumableDriveFileUpload(e) {
       progressBar.style.width = `${currentPct}%`;
       pctText.innerText = `${currentPct}%`;
       transferredText.innerText = `${formatBytes(Math.round(totalBytes * (currentPct / 100)))} / ${formatBytes(totalBytes)}`;
-      statusText.innerText = `Syncing ${fileName} to Catalog (${currentPct}%)...`;
+      statusText.innerText = `Uploading ${fileName} to Google Drive Vault (${currentPct}%)...`;
     }
   }, 80);
 }
@@ -407,16 +397,12 @@ function showUploadSuccessModal(fileName) {
         <i class="fa-solid fa-circle-check"></i>
       </div>
 
-      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Uploaded & Registered Successfully!</h3>
+      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Uploaded Successfully!</h3>
       <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
-        <strong>${escapeHtml(fileName)}</strong> has been added to your Vault catalog. Click below to view inside your Google Drive.
+        <strong>${escapeHtml(fileName)}</strong> has been uploaded to your Google Drive Vault and listed in the Portal.
       </p>
 
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <a href="https://drive.google.com" target="_blank" class="btn-secondary" style="text-decoration: none; padding: 0.75rem; text-align: center; justify-content: center; font-size: 0.92rem;">
-          <i class="fa-brands fa-google-drive" style="color: #4285F4;"></i> View Google Drive
-        </a>
-
         <button onclick="closeUploadSuccessModal()" class="btn-download" style="background: var(--primary); font-size: 1rem; padding: 0.75rem; width: 100%; border-radius: 10px; cursor: pointer; border: none; color: white; font-weight: 700;">
           <i class="fa-solid fa-plus"></i> Upload Another File
         </button>
