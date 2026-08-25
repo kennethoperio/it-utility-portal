@@ -154,13 +154,8 @@ async function loadAdminDashboardData() {
       cmdScriptsList = data.cmd_scripts || [];
     }
 
-    // Merge saved custom files and categories from localStorage
-    const savedCustomFiles = JSON.parse(localStorage.getItem('portal_custom_files') || '[]');
-    savedCustomFiles.forEach(sf => {
-      if (!adminFilesList.some(f => f.id === sf.id || f.original_name === sf.original_name)) {
-        adminFilesList.unshift(sf);
-      }
-    });
+    // Clear legacy test uploads from localStorage to ensure 100% exact parity with Client & GDrive
+    localStorage.removeItem('portal_custom_files');
 
     const savedCustomCats = JSON.parse(localStorage.getItem('portal_custom_categories') || '[]');
     savedCustomCats.forEach(sc => {
@@ -785,8 +780,6 @@ function finalizeUploadSuccess(fileName, gdriveId, catId, fileSize, desc, target
   };
 
   adminFilesList.unshift(newFile);
-  localStorage.setItem('portal_custom_files', JSON.stringify(adminFilesList));
-
   populateCategoryFilterDropdown();
   renderAdminFilesTable();
   renderAdminStats();
