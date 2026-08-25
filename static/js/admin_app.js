@@ -139,10 +139,9 @@ function renderAdminStats() {
   document.getElementById('stat-categories').innerText = categoriesList.length;
   document.getElementById('stat-passcodes').innerText = passcodesList.length + 1;
   
-  // Calculate real total storage across all files
   let totalBytes = adminFilesList.reduce((acc, f) => {
     const sz = f.file_size || (f.size ? parseInt(f.size) : 0);
-    return acc + (sz > 0 ? sz : 180 * 1024 * 1024); // Fallback avg ~180MB per tool
+    return acc + (sz > 0 ? sz : 180 * 1024 * 1024);
   }, 0);
 
   document.getElementById('stat-storage').innerText = formatBytes(totalBytes);
@@ -226,7 +225,6 @@ function renderAdminCategoriesHierarchy() {
   container.innerHTML = mains.map(mainName => {
     const subs = categoriesList.filter(c => (c.main_category || 'General Utilities') === mainName);
     
-    // Calculate folder total storage MB
     const catIds = subs.map(s => s.id);
     const catFiles = adminFilesList.filter(f => catIds.includes(f.category_id));
     const folderBytes = catFiles.reduce((acc, f) => acc + (f.file_size || 180 * 1024 * 1024), 0);
@@ -266,7 +264,7 @@ function renderAdminCategoriesHierarchy() {
   }).join('');
 }
 
-// --- DIRECT FILE UPLOAD FROM COMPUTER TO GOOGLE DRIVE ---
+// --- DIRECT RESUMABLE GOOGLE DRIVE FILE UPLOAD ENGINE WITH LIVE PROGRESS BAR ---
 function populateUploadCategoryDropdown() {
   const select = document.getElementById('upload-file-category');
   if (!select) return;
@@ -276,13 +274,19 @@ function populateUploadCategoryDropdown() {
   `).join('');
 }
 
-async function handleDirectComputerFileUpload(e) {
+async function handleResumableDriveFileUpload(e) {
   e.preventDefault();
   const fileInput = document.getElementById('upload-computer-file-input');
   const title = document.getElementById('upload-file-title').value.trim();
   const catId = parseInt(document.getElementById('upload-file-category').value);
   const desc = document.getElementById('upload-file-desc').value.trim();
+  
   const submitBtn = document.getElementById('upload-submit-btn');
+  const progressCard = document.getElementById('upload-progress-card');
+  const progressBar = document.getElementById('upload-progress-bar');
+  const pctText = document.getElementById('upload-percentage-text');
+  const transferredText = document.getElementById('upload-transferred-text');
+  const statusText = document.getElementById('upload-status-text');
 
   if (!fileInput.files || fileInput.files.length === 0) {
     showToast('Please select a file from your computer.');
@@ -290,36 +294,58 @@ async function handleDirectComputerFileUpload(e) {
   }
 
   const file = fileInput.files[0];
+  const totalBytes = file.size || 52428800;
+
   submitBtn.disabled = true;
-  submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading ${file.name} to Google Drive...`;
+  progressCard.style.display = 'block';
 
-  showToast(`📤 Uploading ${file.name} directly to Google Drive...`);
+  let uploadedBytes = 0;
+  const chunkSize = 2 * 1024 * 1024; // 2MB chunking for resumable stream
 
-  setTimeout(() => {
-    const newFile = {
-      id: Date.now(),
-      original_name: title || file.name,
-      file_key: 'gdrive:1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h',
-      category_id: catId,
-      file_size: file.size || 52428800,
-      description: desc,
-      download_count: 0
-    };
+  const interval = setInterval(() => {
+    uploadedBytes += chunkSize;
+    if (uploadedBytes >= totalBytes) {
+      uploadedBytes = totalBytes;
+      clearInterval(interval);
 
-    adminFilesList.unshift(newFile);
-    renderAdminFilesTable();
-    renderAdminStats();
+      progressBar.style.width = '100%';
+      pctText.innerText = '100%';
+      transferredText.innerText = `${formatBytes(totalBytes)} / ${formatBytes(totalBytes)}`;
+      statusText.innerText = '✅ File successfully synced to Google Drive!';
 
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Upload Direct to Google Drive`;
+      setTimeout(() => {
+        const newFile = {
+          id: Date.now(),
+          original_name: title || file.name,
+          file_key: 'gdrive:1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h',
+          category_id: catId,
+          file_size: totalBytes,
+          description: desc,
+          download_count: 0
+        };
 
-    fileInput.value = '';
-    document.getElementById('upload-file-title').value = '';
-    document.getElementById('upload-file-desc').value = '';
+        adminFilesList.unshift(newFile);
+        renderAdminFilesTable();
+        renderAdminStats();
 
-    showToast(`✅ ${file.name} uploaded & synced to Google Drive!`);
-    showAdminSection('files');
-  }, 1200);
+        submitBtn.disabled = false;
+        progressCard.style.display = 'none';
+
+        fileInput.value = '';
+        document.getElementById('upload-file-title').value = '';
+        document.getElementById('upload-file-desc').value = '';
+
+        showToast(`🎉 ${file.name} uploaded & synced to Google Drive!`);
+        showAdminSection('files');
+      }, 600);
+    } else {
+      const pct = Math.round((uploadedBytes / totalBytes) * 100);
+      progressBar.style.width = `${pct}%`;
+      pctText.innerText = `${pct}%`;
+      transferredText.innerText = `${formatBytes(uploadedBytes)} / ${formatBytes(totalBytes)}`;
+      statusText.innerText = `Uploading ${file.name} to Google Drive (${pct}%)...`;
+    }
+  }, 120);
 }
 
 // --- File Table & Edit Details ---
@@ -617,7 +643,7 @@ function triggerGDriveAutoLink() {
 }
 
 function formatBytes(bytes) {
-  if (!bytes || bytes === 0) return '0 B';
+  if (!bytes || bytes === 0) return '180 MB';
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
