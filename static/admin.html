@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Utility Vault</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/nextgen_style.css?v=22.0">
+  <link rel="stylesheet" href="css/nextgen_style.css?v=23.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -156,6 +156,24 @@
 
     <!-- Section 3: DIRECT FILE UPLOAD TO GOOGLE DRIVE VAULT -->
     <section id="admin-sec-upload" class="card-item" style="padding: 1.5rem; display: none;">
+      
+      <!-- Google Drive Service Account Sharing Setup Banner -->
+      <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3); padding: 1.25rem; border-radius: 12px; margin-bottom: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+          <i class="fa-brands fa-google-drive" style="font-size: 1.8rem; color: #4285F4;"></i>
+          <h4 style="font-size: 1.05rem; color: var(--text-main); margin: 0;">1-Step Setup: Authorize Direct Upload to Your Google Drive Vault</h4>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 0.85rem;">
+          To allow files to upload directly into your Google Drive Vault folder (<strong>1nJeuVgvxJ-fKY4eLRxaMSGENb4236gtu</strong>), open your Google Drive, right-click your folder, click <strong>Share</strong>, and add this Service Account email as an <strong>Editor</strong>:
+        </p>
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.6rem 1rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+          <code id="sa-email-text" style="color: var(--primary); font-size: 0.88rem; font-weight: 700; word-break: break-all;">it-portal-storage@fluid-arc-506004-a6.iam.gserviceaccount.com</code>
+          <button onclick="copySaEmail()" class="btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; white-space: nowrap;">
+            <i class="fa-solid fa-copy"></i> Copy Email
+          </button>
+        </div>
+      </div>
+
       <h3 style="margin-bottom: 0.4rem;"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Direct Resumable Upload to Google Drive Vault</h3>
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Select any file from your computer (.exe, .zip, .iso, .msi, .rar) to upload directly to your Google Drive Vault.</p>
 
@@ -415,6 +433,13 @@
 
   <div id="toast-box" class="toast-box"></div>
 
-  <script src="js/admin_app.js?v=22.0"></script>
+  <script>
+    function copySaEmail() {
+      const emailText = document.getElementById('sa-email-text').innerText;
+      navigator.clipboard.writeText(emailText);
+      showToast('📋 Service Account Email copied to clipboard!');
+    }
+  </script>
+  <script src="js/admin_app.js?v=23.0"></script>
 </body>
 </html>
