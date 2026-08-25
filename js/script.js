@@ -253,7 +253,7 @@ async function syncRealGDriveStructureClient() {
     if (!token) return;
 
     // Fetch Folders
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,parents,webViewLink)&pageSize=100`, {
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,parents,webViewLink)&pageSize=1000`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
@@ -281,7 +281,7 @@ async function syncRealGDriveStructureClient() {
     }
 
     // Fetch Files
-    const filesRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType!='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,size,parents,webViewLink)&pageSize=100`, {
+    const filesRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType!='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,size,parents,webViewLink)&pageSize=1000`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const filesData = await filesRes.json();
@@ -331,7 +331,7 @@ function renderLeftSidebar() {
 
     if (totalFilesCount > 0) {
       const isMainActive = activeMainCategory === mainName;
-      const isExpanded = expandedSidebarMenus[mainName] || isMainActive;
+      const isExpanded = expandedSidebarMenus[mainName] || false;
       const hasSubfolders = matchingCats.length > 1;
 
       let icon = 'folder';
@@ -386,8 +386,13 @@ function renderLeftSidebar() {
   container.innerHTML = html;
 }
 
+// --- ACCORDION SIDEBAR EXPANSION: CLOSE ALL OTHER CATEGORIES WHEN ANOTHER IS CLICKED ---
 function toggleSidebarMenu(mainName) {
-  expandedSidebarMenus[mainName] = !expandedSidebarMenus[mainName];
+  if (expandedSidebarMenus[mainName]) {
+    expandedSidebarMenus = {};
+  } else {
+    expandedSidebarMenus = { [mainName]: true };
+  }
   selectMainCategory(mainName);
 }
 
