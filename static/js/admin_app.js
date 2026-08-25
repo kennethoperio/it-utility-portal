@@ -300,7 +300,7 @@ async function handleResumableDriveFileUpload(e) {
   progressCard.style.display = 'block';
 
   let uploadedBytes = 0;
-  const chunkSize = 2 * 1024 * 1024; // 2MB chunking for resumable stream
+  const chunkSize = 2 * 1024 * 1024;
 
   const interval = setInterval(() => {
     uploadedBytes += chunkSize;
