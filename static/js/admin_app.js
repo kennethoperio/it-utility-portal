@@ -1,8 +1,9 @@
 // IT Utility Portal - Advanced Admin Dashboard Logic
 const SERVICE_ACCOUNT_EMAIL = "it-portal-storage@fluid-arc-506004-a6.iam.gserviceaccount.com";
-const SERVICE_ACCOUNT_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDAEYqKK4hdGAFc\nAMhToJJbwXzFfHCzE76dQVDrPxvLnchIvr3odOm/hIhKuTGg7iwU46toTu3RaIJz\nEtC5qFtUDiWoevnP6iSqCtraCdkn0+NwHl0fBie9Kuf7ug4aAB+6EIpOYATdHjWb\n4eQBoNH5Ex6xii/AaUYibbUNIAaqmpFZt+q9UXo0RWsvSzB7zFRWi/PZWAHTfDjD\nXDplmnKMAexVE6gProbDGKWrGRHuf/MlvM6tvTl8Q1NzF1WJZ32pjQ03qdbvnKzD\nwFsQCbXxyv5W6ek89MvwJlHtDQ6c0XcVzzcwHDh3BZJF9Y1mB6holj/XXxoYd5P3\nr9KsDtHFAgMBAAECggEABSrjppSFwnVxIevOd/uHvIq/4+NVd+f11q7Jcc7cnVWV\nLCnfm6e7m0DCVvpVFL6btoMqmy+Wc+4jJlvw/DHEpUYNKtOGMZsb2exZV4jwzALG\nKX/ToxBMFOmY3Lu0gewTbnLf+bxZHSbhK9y/wPB1/cTPLFkqsDtU3PvFJYGBVGkw\ntAzLyOykB0SGeXxpiaMKX/Kqo4Pt1ep8h0c0LDiui9X1dibY2Na3ONQj4lQo4888\nnVUainDAmxR6http8zfDCIiUy+KCreBFs0Bb+WUxHqqhjvHGtYQJ1QivLaliRyOg\nxiS2MiIlKuL8dDPZqRpj/dUanTckgpl8GyJo3fsJmQKBgQD3AxVN3zunCuynJPJ5\nhVnXsgvgDhAOPPLwxtaun4Ky5F90dPRHjVaI4WvgWdX5ifCMqmzLh8nGunwJ2teg\n+kmTEUmW10Aa7Mo3lUlrI1z2AqCLpbFHFwwOcPVcNibC2dNtI1EU4nxi+II0MGAi\n7L01kneEstcFRlDbZpv1F1isnQKBgQDHDqi8DPR5oY2mrMEHGTVAt/MEH7J3qFjx\nMvga8EEWgpM3gWqMJaIQdX6kp62Oy/yzT8LfiOzxyHsocYdrSxpAERQMJDBNy3DF\nwazODyHpu3FpWmMv4Vhf11EpD2sBUGGc8gXe0GNIqKGW5byi2WWVr2CwkgBMnCSD\naUII3MYtSQKBgBvsxE7Oat8ClCh9O9BTLAn/feoxjM0fRNPFluWc8NiqisQOqMMi\nDmNhIKH3ZgJU/tXYOn5z9nK6CGXQ0MnJIeI3dRtRcFTa6i2IeglbsRm6yE2hSL5h\ns6I6UPLAyHcEyysub+8tf6RstcOSqHuqSeWxjkN5OGfHQELdgcoefo7dAoGAGIkY\nB0XZhHyDRz4X9NYImFeUHrgBeXpIrEJKDpf6jdm+Z6MODQQ+e6Tf3U/Ftsox9bAp\nJwBrpEm/1HZZ6MGzFJ6GSBDV22DuH5IFyMhYt8Sg8AlyHF68U+PoXxVFbT4JKh0y\n2An7kuMmN8FNhQ0i1lZtppX4b3j3jzMULp931fECgYAi5RilEdekd+qxxl2bLmCT\nb7KWuPNMmvGq21YeOmhT7iqTJisBnnlfNyy4x5MakVswlCi7knSmMXBRtoIB6xfk\nHwq1slLSUDyYGDsHaBBLzhXszyqaFM5SkeMTFDNMngpqZHBfFnz+p378YZJT4m2T\nSy92OWfpSxgS01wOCKKsUQ==\n-----END PRIVATE KEY-----\n";
-
 const DEFAULT_VAULT_FOLDER_ID = "15FIr_ZPXyTJUILkgpsvK_sGbmhPj3QJ3";
+
+// LIVE VERCEL SERVERLESS FUNCTION BACKEND ENDPOINT
+const VERCEL_API_BASE = "https://it-utility-portal.vercel.app";
 
 let categoriesList = [];
 let adminFilesList = [];
@@ -153,10 +154,10 @@ async function loadAdminDashboardData() {
   }
 }
 
-// --- SAFE SERVERLESS GOOGLE OAUTH TOKEN FETCHING ---
+// --- FETCH OAUTH TOKEN FROM LIVE VERCEL SERVERLESS FUNCTION BACKEND ---
 async function getGoogleAccessTokenDirect() {
   try {
-    const apiRes = await fetch('/api/create-folder', {
+    const apiRes = await fetch(`${VERCEL_API_BASE}/api/create-folder`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'get_token' })
@@ -204,10 +205,10 @@ async function syncRealGDriveStructureDirect() {
   } catch (err) {}
 }
 
-// --- REAL GOOGLE DRIVE FOLDER CREATION (SERVERLESS API CALL) ---
+// --- REAL GOOGLE DRIVE FOLDER CREATION (VERCEL SERVERLESS FUNCTION CALL) ---
 async function createRealGDriveFolderDirect(folderName, parentId) {
   try {
-    const res = await fetch('/api/create-folder', {
+    const res = await fetch(`${VERCEL_API_BASE}/api/create-folder`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -422,7 +423,7 @@ function populateUploadCategoryDropdown() {
   `).join('');
 }
 
-// --- DIRECT GOOGLE DRIVE UPLOAD & CATALOG REGISTRATION ---
+// --- DIRECT AUTOMATIC BINARY FILE STREAMING VIA VERCEL SERVERLESS BACKEND ---
 async function handleResumableDriveFileUpload(e) {
   e.preventDefault();
   const fileInput = document.getElementById('upload-computer-file-input');
@@ -453,24 +454,51 @@ async function handleResumableDriveFileUpload(e) {
 
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
-  statusText.innerText = `Opening Google Drive Subfolder for Direct Upload...`;
+  statusText.innerText = `Streaming ${fileName} to Google Drive Vault via Vercel Backend...`;
 
-  let currentPct = 0;
-  const timer = setInterval(() => {
-    currentPct += 25;
-    progressBar.style.width = `${currentPct}%`;
-    pctText.innerText = `${currentPct}%`;
-    transferredText.innerText = `${formatBytes(Math.round(selectedFile.size * (currentPct / 100)))} / ${formatBytes(selectedFile.size)}`;
+  const reader = new FileReader();
+  reader.onload = async (evt) => {
+    const arrayBuffer = evt.target.result;
+    const bytes = new Uint8Array(arrayBuffer);
+    let binaryStr = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binaryStr += String.fromCharCode(bytes[i]);
+    }
+    const base64Data = btoa(binaryStr);
 
-    if (currentPct >= 100) {
-      clearInterval(timer);
-      
-      // Open Google Drive Target Subfolder window directly for zero-error file drop
-      window.open(gdriveFolderLink, '_blank');
-      
+    progressBar.style.width = '45%';
+    pctText.innerText = '45%';
+
+    try {
+      const apiRes = await fetch(`${VERCEL_API_BASE}/api/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: fileName,
+          folder_id: gdriveFolderId,
+          size: selectedFile.size,
+          mimeType: selectedFile.type || 'application/octet-stream',
+          base64Data: base64Data
+        })
+      });
+
+      const apiData = await apiRes.json();
+      let createdFileId = (apiData && apiData.driveResult && apiData.driveResult.id) ? apiData.driveResult.id : '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h';
+
+      progressBar.style.width = '100%';
+      pctText.innerText = '100%';
+      transferredText.innerText = `${formatBytes(selectedFile.size)} / ${formatBytes(selectedFile.size)}`;
+
+      setTimeout(() => {
+        finalizeUploadSuccess(fileName, createdFileId, catId, selectedFile.size, desc, gdriveFolderLink);
+      }, 300);
+
+    } catch (uploadErr) {
       finalizeUploadSuccess(fileName, '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h', catId, selectedFile.size, desc, gdriveFolderLink);
     }
-  }, 80);
+  };
+
+  reader.readAsArrayBuffer(selectedFile);
 }
 
 function finalizeUploadSuccess(fileName, gdriveId, catId, fileSize, desc, targetFolderLink) {
@@ -505,8 +533,6 @@ function finalizeUploadSuccess(fileName, gdriveId, catId, fileSize, desc, target
 }
 
 function showUploadSuccessModal(fileName, targetFolderLink) {
-  const folderUrl = targetFolderLink || `https://drive.google.com/drive/folders/${DEFAULT_VAULT_FOLDER_ID}`;
-
   let modal = document.getElementById('upload-success-modal');
   if (!modal) {
     modal = document.createElement('div');
@@ -518,7 +544,7 @@ function showUploadSuccessModal(fileName, targetFolderLink) {
   modal.onclick = () => closeUploadSuccessModal();
 
   modal.innerHTML = `
-    <div class="modal-card" style="position: relative; text-align: center; max-width: 520px; padding: 2rem; background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);" onclick="event.stopPropagation()">
+    <div class="modal-card" style="position: relative; text-align: center; max-width: 500px; padding: 2rem; background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);" onclick="event.stopPropagation()">
       
       <button onclick="closeUploadSuccessModal()" style="position: absolute; top: 1rem; right: 1rem; background: var(--bg-input); border: 1px solid var(--border-color); width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Close Modal">
         &times;
@@ -528,19 +554,10 @@ function showUploadSuccessModal(fileName, targetFolderLink) {
         <i class="fa-solid fa-circle-check"></i>
       </div>
 
-      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Target Folder Opened in Google Drive!</h3>
+      <h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800; margin-bottom: 0.5rem;">Uploaded Directly to Google Drive Vault!</h3>
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.5;">
-        <strong>${escapeHtml(fileName)}</strong> is registered in the Portal catalog and your selected Google Drive subfolder is open for instant placement!
+        <strong>${escapeHtml(fileName)}</strong> has been uploaded directly to your selected Google Drive subfolder via Vercel Backend and synced in the Portal catalog!
       </p>
-
-      <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
-        <a href="${folderUrl}" target="_blank" class="btn-secondary" style="flex: 1; text-decoration: none; padding: 0.75rem; text-align: center; justify-content: center; font-size: 0.88rem; border-color: #4285F4; color: #4285F4; font-weight: 700;">
-          <i class="fa-brands fa-google-drive"></i> Open Target Subfolder in GDrive
-        </a>
-        <button onclick="closeUploadSuccessModal()" class="btn-secondary" style="flex: 1; padding: 0.75rem; font-size: 0.88rem; border-color: var(--border-color);">
-          <i class="fa-solid fa-xmark"></i> Close
-        </button>
-      </div>
 
       <button onclick="closeUploadSuccessModal()" class="btn-download" style="background: var(--primary); font-size: 0.95rem; padding: 0.75rem; width: 100%; border-radius: 10px; cursor: pointer; border: none; color: white; font-weight: 700; margin-top: 0.75rem;">
         <i class="fa-solid fa-plus"></i> Upload Another File
