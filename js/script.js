@@ -73,21 +73,32 @@ function clientLogout() {
   showToast('Vault Locked. Logged out successfully.');
 }
 
-// --- Direct Download Engine (ZERO BLANK TABS / ZERO 403 ERRORS) ---
+// --- 100% RELIABLE DIRECT DOWNLOAD ENGINE FOR ALL BROWSERS ---
 function triggerDirectDownload(fileId, fileName) {
-  showToast(`🚚 Starting download for ${fileName}...`);
+  showToast(`🚚 Starting direct download for ${fileName}...`);
 
-  let frame = document.getElementById('hidden-download-iframe');
-  if (!frame) {
-    frame = document.createElement('iframe');
-    frame.id = 'hidden-download-iframe';
-    frame.style.display = 'none';
-    document.body.appendChild(frame);
+  // 1. Increment Download Counter
+  const fileObj = allFilesList.find(f => (f.file_key || '').includes(fileId) || f.id == fileId);
+  if (fileObj) {
+    fileObj.download_count = (fileObj.download_count || 0) + 1;
+    renderToolsGrid();
   }
 
-  // Direct download URL for public Google Drive files
+  // 2. Direct Download Link
   const directUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
-  frame.src = directUrl;
+  
+  // Create direct download anchor
+  const a = document.createElement('a');
+  a.href = directUrl;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  
+  setTimeout(() => {
+    a.remove();
+    // Fallback if browser blocked anchor click
+    window.location.href = directUrl;
+  }, 300);
 }
 
 // --- Passcode Authorization Logic ---
@@ -184,8 +195,8 @@ function renderLeftSidebar() {
       let icon = 'folder';
       const nl = mainName.toLowerCase();
       if (nl.includes('printer') || nl.includes('driver')) icon = 'print';
-      else if (nl.includes('graphic') || nl.includes('design') || nl.includes('photo')) icon = 'image';
-      else if (nl.includes('video')) icon = 'video';
+      else if (nl.includes('photo') || nl.includes('graphic') || nl.includes('design')) icon = 'palette';
+      else if (nl.includes('video')) icon = 'film';
       else if (nl.includes('diagnostic') || nl.includes('hardware')) icon = 'microchip';
       else if (nl.includes('iso') || nl.includes('windows')) icon = 'compact-disc';
 
@@ -284,7 +295,7 @@ function switchTab(tabId) {
   if (tabId === 'favorites') renderFavoritesGrid();
 }
 
-// --- Tools Grid Rendering ---
+// --- Tools Grid Rendering with Custom Category Icons & Download Counter ---
 function renderToolsGrid() {
   const grid = document.getElementById('tools-grid');
   if (!grid) return;
@@ -329,17 +340,40 @@ function createToolCardHtml(f) {
   const gId = (f.file_key || '').replace('gdrive:', '');
   const cat = categoriesList.find(c => c.id === f.category_id);
   const catName = cat ? (cat.subcategory || cat.name) : 'Utility';
+  const mainCatName = cat ? (cat.main_category || '').toLowerCase() : '';
+
+  // Custom Vibrant Category Icon
+  let customIcon = 'file-zipper';
+  let iconColor = 'var(--primary)';
+  if (mainCatName.includes('printer') || catName.toLowerCase().includes('epson') || catName.toLowerCase().includes('canon') || catName.toLowerCase().includes('brother')) {
+    customIcon = 'print';
+    iconColor = '#06b6d4'; // Cyan
+  } else if (mainCatName.includes('graphic') || mainCatName.includes('photo') || mainCatName.includes('design')) {
+    customIcon = 'palette';
+    iconColor = '#a855f7'; // Purple
+  } else if (mainCatName.includes('video')) {
+    customIcon = 'film';
+    iconColor = '#ec4899'; // Pink
+  } else if (mainCatName.includes('diagnostic') || mainCatName.includes('hardware')) {
+    customIcon = 'microchip';
+    iconColor = '#10b981'; // Emerald
+  } else if (mainCatName.includes('iso') || mainCatName.includes('windows')) {
+    customIcon = 'compact-disc';
+    iconColor = '#3b82f6'; // Blue
+  } else if (mainCatName.includes('resetter') || mainCatName.includes('activator')) {
+    customIcon = 'key';
+    iconColor = '#f59e0b'; // Amber
+  }
 
   const comments = fileCommentsMap[f.id] || [];
-  const workingCount = comments.filter(c => c.status === 'working').length;
-  const issueCount = comments.filter(c => c.status === 'issue').length;
+  const downloadsCount = f.download_count || 0;
 
   return `
     <div class="card-item">
       <div>
         <div class="card-head">
-          <div class="card-icon">
-            <i class="fa-solid fa-file-zipper"></i>
+          <div class="card-icon" style="color: ${iconColor}; background: rgba(59, 130, 246, 0.1);">
+            <i class="fa-solid fa-${customIcon}"></i>
           </div>
           <button class="star-icon ${isStarred ? 'starred' : ''}" onclick="toggleStar(${f.id})" title="Star / Favorite">
             <i class="fa-${isStarred ? 'solid' : 'regular'} fa-star"></i>
@@ -354,10 +388,9 @@ function createToolCardHtml(f) {
         <div class="card-tags">
           <span class="tag cyan"><i class="fa-solid fa-folder"></i> ${escapeHtml(catName)}</span>
           <span class="tag green"><i class="fa-solid fa-hard-drive"></i> ${formattedSize}</span>
+          <span class="tag" title="Total Times Downloaded"><i class="fa-solid fa-download" style="color: var(--primary);"></i> ${downloadsCount} Downloads</span>
           <button onclick="openCommentsModal(${f.id}, '${escapeHtml(f.original_name)}')" class="tag" style="cursor: pointer; background: var(--bg-card-hover);">
             <i class="fa-solid fa-comments" style="color: var(--primary);"></i> 💬 Feedback (${comments.length})
-            ${workingCount > 0 ? `<span style="color: var(--success);">+${workingCount}</span>` : ''}
-            ${issueCount > 0 ? `<span style="color: var(--rose); font-size: 0.7rem;">!${issueCount}</span>` : ''}
           </button>
         </div>
 
@@ -396,7 +429,9 @@ function renderCommentsList(fileId) {
     <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
         <strong style="color: var(--text-main);">${escapeHtml(c.author || 'Technician')}</strong>
-        <span class="tag ${c.status === 'working' ? 'green' : 'cyan'}" style="font-size: 0.7rem;">${c.status === 'working' ? '✅ Working 100%' : '⚠️ Issue Reported'}</span>
+        <span class="tag ${c.status === 'solved' ? 'green' : (c.status === 'working' ? 'cyan' : 'rose')}" style="font-size: 0.7rem;">
+          ${c.status === 'solved' ? '✅ Solved' : (c.status === 'working' ? '✅ Working 100%' : '⚠️ Issue Reported')}
+        </span>
       </div>
       <p style="color: var(--text-muted);">${escapeHtml(c.text)}</p>
       <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.35rem;">${escapeHtml(c.date)}</div>
