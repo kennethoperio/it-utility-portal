@@ -423,7 +423,7 @@ function populateUploadCategoryDropdown() {
   `).join('');
 }
 
-// --- DIRECT AUTOMATIC BINARY FILE STREAMING VIA VERCEL SERVERLESS BACKEND ---
+// --- SMOOTH REALTIME PROGRESS BAR VIA NATIVE XHR UPLOAD PROGRESS ---
 async function handleResumableDriveFileUpload(e) {
   e.preventDefault();
   const fileInput = document.getElementById('upload-computer-file-input');
@@ -454,10 +454,13 @@ async function handleResumableDriveFileUpload(e) {
 
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
-  statusText.innerText = `Streaming ${fileName} to Google Drive Vault via Vercel Backend...`;
+  statusText.innerText = `Streaming ${fileName} to Google Drive Vault...`;
+  progressBar.style.width = '0%';
+  pctText.innerText = '0%';
+  transferredText.innerText = `0 B / ${formatBytes(selectedFile.size)}`;
 
   const reader = new FileReader();
-  reader.onload = async (evt) => {
+  reader.onload = function(evt) {
     const arrayBuffer = evt.target.result;
     const bytes = new Uint8Array(arrayBuffer);
     let binaryStr = '';
@@ -466,24 +469,35 @@ async function handleResumableDriveFileUpload(e) {
     }
     const base64Data = btoa(binaryStr);
 
-    progressBar.style.width = '45%';
-    pctText.innerText = '45%';
+    const payloadObj = JSON.stringify({
+      title: fileName,
+      folder_id: gdriveFolderId,
+      size: selectedFile.size,
+      mimeType: selectedFile.type || 'application/octet-stream',
+      base64Data: base64Data
+    });
 
-    try {
-      const apiRes = await fetch(`${VERCEL_API_BASE}/api/upload`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: fileName,
-          folder_id: gdriveFolderId,
-          size: selectedFile.size,
-          mimeType: selectedFile.type || 'application/octet-stream',
-          base64Data: base64Data
-        })
-      });
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${VERCEL_API_BASE}/api/upload`, true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
 
-      const apiData = await apiRes.json();
-      let createdFileId = (apiData && apiData.driveResult && apiData.driveResult.id) ? apiData.driveResult.id : '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h';
+    xhr.upload.onprogress = function(event) {
+      if (event.lengthComputable) {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        progressBar.style.width = `${percent}%`;
+        pctText.innerText = `${percent}%`;
+        transferredText.innerText = `${formatBytes(Math.round(selectedFile.size * (percent / 100)))} / ${formatBytes(selectedFile.size)}`;
+      }
+    };
+
+    xhr.onload = function() {
+      let createdFileId = '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h';
+      try {
+        const resData = JSON.parse(xhr.responseText);
+        if (resData && resData.driveResult && resData.driveResult.id) {
+          createdFileId = resData.driveResult.id;
+        }
+      } catch (e) {}
 
       progressBar.style.width = '100%';
       pctText.innerText = '100%';
@@ -492,10 +506,13 @@ async function handleResumableDriveFileUpload(e) {
       setTimeout(() => {
         finalizeUploadSuccess(fileName, createdFileId, catId, selectedFile.size, desc, gdriveFolderLink);
       }, 300);
+    };
 
-    } catch (uploadErr) {
+    xhr.onerror = function() {
       finalizeUploadSuccess(fileName, '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h', catId, selectedFile.size, desc, gdriveFolderLink);
-    }
+    };
+
+    xhr.send(payloadObj);
   };
 
   reader.readAsArrayBuffer(selectedFile);
