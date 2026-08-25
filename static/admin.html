@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Utility Vault</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/nextgen_style.css?v=14.0">
+  <link rel="stylesheet" href="css/nextgen_style.css?v=15.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -73,14 +73,14 @@
       </div>
     </div>
 
-    <!-- Navigation & Action Bar -->
+    <!-- Navigation Bar -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
       <div class="tab-navigation" style="margin-bottom: 0;">
         <button class="tab-link active" onclick="showAdminSection('files')"><i class="fa-solid fa-file-lines"></i> File Management</button>
-        <button class="tab-link" onclick="showAdminSection('feedback')"><i class="fa-solid fa-comments"></i> Client Feedback</button>
-        <button class="tab-link" onclick="showAdminSection('upload')"><i class="fa-solid fa-cloud-arrow-up"></i> Upload New Tool</button>
+        <button class="tab-link" onclick="showAdminSection('categories')"><i class="fa-solid fa-folder-plus"></i> Folders & Subfolders</button>
+        <button class="tab-link" onclick="showAdminSection('upload')"><i class="fa-solid fa-cloud-arrow-up"></i> Direct File Upload</button>
         <button class="tab-link" onclick="showAdminSection('passcodes')"><i class="fa-solid fa-key"></i> Passcode Manager</button>
-        <button class="tab-link" onclick="showAdminSection('categories')"><i class="fa-solid fa-folder-plus"></i> Categories & Folders</button>
+        <button class="tab-link" onclick="showAdminSection('feedback')"><i class="fa-solid fa-comments"></i> Client Feedback</button>
         <button class="tab-link" onclick="showAdminSection('logs')"><i class="fa-solid fa-list-ul"></i> Audit Logs</button>
       </div>
 
@@ -121,51 +121,73 @@
       </div>
     </section>
 
-    <!-- Section 2: Client Feedback Manager (FILTER, DELETE, MARK SOLVED) -->
-    <section id="admin-sec-feedback" class="card-item" style="padding: 1.5rem; display: none;">
+    <!-- Section 2: Folder & Subfolder Creator Architecture -->
+    <section id="admin-sec-categories" class="card-item" style="padding: 1.5rem; display: none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
-        <h3 style="font-size: 1.2rem;"><i class="fa-solid fa-comments" style="color: var(--primary);"></i> Client & Technician Feedback Manager</h3>
-        <select id="feedback-filter-select" onchange="renderAdminFeedback()" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.88rem; outline: none;">
-          <option value="all">🌐 All Feedback</option>
-          <option value="issue">⚠️ Pending Issues Only</option>
-          <option value="solved">✅ Solved Feedback Only</option>
-        </select>
+        <div>
+          <h3 style="font-size: 1.2rem;"><i class="fa-solid fa-folder-tree" style="color: var(--primary);"></i> Main Category & Subfolder Manager</h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2rem;">Create Main Categories first, then add Subfolders inside each Main Category.</p>
+        </div>
+        <button onclick="toggleMainCategoryForm()" class="btn-download" style="width: auto; padding: 0.55rem 1.15rem; background: var(--primary);">
+          <i class="fa-solid fa-folder-plus"></i> Create New Main Category
+        </button>
       </div>
-      
-      <div id="admin-feedback-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <!-- Feedback items -->
+
+      <!-- Create Main Category Form -->
+      <div id="add-main-cat-form-container" style="display: none; background: var(--bg-input); border: 1px solid var(--border-color); padding: 1.25rem; border-radius: 10px; margin-bottom: 1.5rem;">
+        <h4 style="margin-bottom: 0.85rem; color: var(--primary); font-size: 1rem;"><i class="fa-solid fa-folder-plus"></i> Create New Main Category Folder</h4>
+        <form onsubmit="handleCreateMainCategorySubmit(event)">
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Main Category Name</label>
+            <input type="text" id="new-main-cat-name" placeholder="e.g. Network & Connectivity Utilities" required style="width: 100%; padding: 0.65rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.9rem;">
+          </div>
+          <div style="display: flex; gap: 0.75rem;">
+            <button type="button" onclick="toggleMainCategoryForm()" class="btn-secondary" style="flex: 1; padding: 0.65rem;">Cancel</button>
+            <button type="submit" class="btn-download" style="flex: 2; background: var(--primary);"><i class="fa-solid fa-check"></i> Save Main Category</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Categories & Nested Subfolders List -->
+      <div id="admin-categories-hierarchy-list" style="display: flex; flex-direction: column; gap: 1rem;">
+        <!-- Categories hierarchy -->
       </div>
     </section>
 
-    <!-- Section 3: Upload New Tool File -->
+    <!-- Section 3: DIRECT FILE UPLOAD FROM COMPUTER TO GOOGLE DRIVE -->
     <section id="admin-sec-upload" class="card-item" style="padding: 1.5rem; display: none;">
-      <h3 style="margin-bottom: 0.5rem;"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Upload New Software Tool to Vault</h3>
-      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Add a new utility file or driver. Files automatically sync across client portal and Google Drive.</p>
+      <h3 style="margin-bottom: 0.4rem;"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Direct File Upload to Google Drive</h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Select any file from your computer (.exe, .zip, .iso, .rar). It uploads directly into Google Drive and syncs automatically!</p>
 
-      <form id="admin-upload-form" onsubmit="handleAdminFileUpload(event)">
+      <form id="admin-upload-form" onsubmit="handleDirectComputerFileUpload(event)">
+        
+        <!-- File Picker Input -->
+        <div style="margin-bottom: 1.25rem; background: var(--bg-input); border: 2px dashed var(--border-color); padding: 1.5rem; border-radius: 10px; text-align: center;">
+          <i class="fa-solid fa-file-arrow-up" style="font-size: 2.2rem; color: var(--primary); margin-bottom: 0.75rem;"></i>
+          <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-main);">Choose File from Your Computer</label>
+          <input type="file" id="upload-computer-file-input" required style="display: block; margin: 0 auto; color: var(--text-muted); font-size: 0.9rem;">
+        </div>
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
           <div>
-            <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">File Name / Display Title</label>
-            <input type="text" id="upload-file-title" placeholder="e.g. Epson_L3210_Driver_x64.exe" required style="width: 100%; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.9rem;">
+            <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">Tool Display Title</label>
+            <input type="text" id="upload-file-title" placeholder="Auto-filled from filename..." required style="width: 100%; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.9rem;">
           </div>
           <div>
-            <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">Target Category / Subfolder</label>
+            <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">Target Subfolder / Category</label>
             <select id="upload-file-category" style="width: 100%; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.9rem;" required>
             </select>
           </div>
         </div>
 
-        <div style="margin-bottom: 1rem;">
-          <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">Google Drive File ID or Download Link</label>
-          <input type="text" id="upload-file-gkey" placeholder="e.g. 1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h or full GDrive URL" required style="width: 100%; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.9rem;">
-        </div>
-
         <div style="margin-bottom: 1.25rem;">
-          <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">Tool Description & Instructions</label>
-          <textarea id="upload-file-desc" placeholder="Provide helpful description, OS compatibility, or usage instructions..." required style="width: 100%; height: 80px; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.9rem; resize: none;"></textarea>
+          <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">Tool Description & Technician Notes</label>
+          <textarea id="upload-file-desc" placeholder="Provide helpful description, driver compatibility, or installation steps..." required style="width: 100%; height: 80px; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 0.9rem; resize: none;"></textarea>
         </div>
 
-        <button type="submit" class="btn-download" style="background: var(--primary);"><i class="fa-solid fa-plus"></i> Add Tool to Vault Now</button>
+        <button type="submit" id="upload-submit-btn" class="btn-download" style="background: var(--primary); padding: 0.85rem; font-size: 1rem;">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Upload Direct to Google Drive
+        </button>
       </form>
     </section>
 
@@ -219,31 +241,20 @@
       </div>
     </section>
 
-    <!-- Section 5: Categories & Folders -->
-    <section id="admin-sec-categories" class="card-item" style="padding: 1.5rem; display: none;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-        <h3><i class="fa-solid fa-folder-plus" style="color: var(--primary);"></i> Vault Categories & Subfolders</h3>
-        <button onclick="toggleAddCategoryForm()" class="btn-secondary"><i class="fa-solid fa-folder-plus"></i> Create New Folder / Category</button>
+    <!-- Section 5: Client Feedback -->
+    <section id="admin-sec-feedback" class="card-item" style="padding: 1.5rem; display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+        <h3 style="font-size: 1.2rem;"><i class="fa-solid fa-comments" style="color: var(--primary);"></i> Client & Technician Feedback Manager</h3>
+        <select id="feedback-filter-select" onchange="renderAdminFeedback()" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.88rem; outline: none;">
+          <option value="all">🌐 All Feedback</option>
+          <option value="issue">⚠️ Pending Issues Only</option>
+          <option value="solved">✅ Solved Feedback Only</option>
+        </select>
       </div>
-
-      <div id="add-category-form-container" style="display: none; background: var(--bg-input); border: 1px solid var(--border-color); padding: 1.25rem; border-radius: 10px; margin-bottom: 1.5rem;">
-        <h4 style="margin-bottom: 0.85rem; color: var(--primary); font-size: 1rem;"><i class="fa-solid fa-folder-plus"></i> Create New Category Folder</h4>
-        <form onsubmit="handleCreateCategorySubmit(event)">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1rem;">
-            <div>
-              <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Main Category Name</label>
-              <input type="text" id="new-cat-main" placeholder="e.g. Printers & Drivers" required style="width: 100%; padding: 0.55rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem;">
-            </div>
-            <div>
-              <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Subfolder Name</label>
-              <input type="text" id="new-cat-sub" placeholder="e.g. Epson L3210" required style="width: 100%; padding: 0.55rem; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.88rem;">
-            </div>
-          </div>
-          <button type="submit" class="btn-download" style="background: var(--primary);"><i class="fa-solid fa-check"></i> Create Folder Category</button>
-        </form>
+      
+      <div id="admin-feedback-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <!-- Feedback items -->
       </div>
-
-      <div id="admin-categories-list"></div>
     </section>
 
     <!-- Section 6: Audit Logs -->
@@ -272,6 +283,31 @@
       </div>
     </section>
   </main>
+
+  <!-- Add Subfolder Modal -->
+  <div id="add-subfolder-modal" class="modal-overlay" style="display: none;" onclick="closeAddSubfolderModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="font-size: 1.15rem; color: var(--text-main);"><i class="fa-solid fa-folder-plus" style="color: var(--primary);"></i> Create New Subfolder</h3>
+        <button onclick="closeAddSubfolderModal(event)" class="btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 1.1rem; border: none;">&times;</button>
+      </div>
+      
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1rem;">Parent Main Category: <strong id="subfolder-parent-name" style="color: var(--primary);"></strong></p>
+      
+      <form onsubmit="handleCreateSubfolderSubmit(event)">
+        <input type="hidden" id="subfolder-parent-main">
+        <div style="margin-bottom: 1.25rem;">
+          <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Subfolder Name</label>
+          <input type="text" id="new-subfolder-name" placeholder="e.g. Epson L3210 Resetters" required style="width: 100%; padding: 0.65rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-size: 0.9rem;">
+        </div>
+
+        <div style="display: flex; gap: 0.75rem;">
+          <button type="button" onclick="closeAddSubfolderModal(event)" class="btn-secondary" style="flex: 1; padding: 0.75rem;">Cancel</button>
+          <button type="submit" class="btn-download" style="flex: 2; background: var(--primary);"><i class="fa-solid fa-check"></i> Add Subfolder</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Move File Modal -->
   <div id="move-file-modal" class="modal-overlay" style="display: none;" onclick="closeMoveFileModal(event)">
@@ -327,6 +363,6 @@
 
   <div id="toast-box" class="toast-box"></div>
 
-  <script src="js/admin_app.js?v=14.0"></script>
+  <script src="js/admin_app.js?v=15.0"></script>
 </body>
 </html>
