@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard | IT Troubleshooting Utility Vault</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/nextgen_style.css?v=18.0">
+  <link rel="stylesheet" href="css/nextgen_style.css?v=19.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -89,9 +89,9 @@
         <button onclick="triggerGDriveAutoLink()" class="btn-secondary">
           <i class="fa-solid fa-arrows-rotate"></i> Sync GDrive Vault
         </button>
-        <button onclick="confirmDownloadAllZip()" class="btn-download" style="width: auto; padding: 0.55rem 1.15rem; background: var(--primary);">
+        <a href="https://drive.google.com/drive/folders/1nJeuVgvxJ-fKY4eLRxaMSGENb4236gtu" target="_blank" class="btn-download" style="width: auto; padding: 0.55rem 1.15rem; background: var(--primary); text-decoration: none;">
           <i class="fa-solid fa-folder-open"></i> Open GDrive Folder
-        </button>
+        </a>
       </div>
     </div>
 
@@ -156,8 +156,15 @@
 
     <!-- Section 3: DIRECT RESUMABLE FILE UPLOAD WITH LIVE PROGRESS STATUS BAR -->
     <section id="admin-sec-upload" class="card-item" style="padding: 1.5rem; display: none;">
-      <h3 style="margin-bottom: 0.4rem;"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Direct Resumable Upload to Google Drive</h3>
-      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">Supports large files (.exe, .zip, .iso, .rar). Live progress percentage & speed tracking with auto-resume!</p>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h3 style="margin-bottom: 0.2rem;"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary);"></i> Direct Resumable Upload to Google Drive</h3>
+          <p style="color: var(--text-muted); font-size: 0.88rem;">Select a file to sync to the Vault catalog, or open Google Drive folder directly.</p>
+        </div>
+        <a href="https://drive.google.com/drive/folders/1nJeuVgvxJ-fKY4eLRxaMSGENb4236gtu" target="_blank" class="btn-secondary" style="text-decoration: none;">
+          <i class="fa-brands fa-google-drive" style="color: #4285F4;"></i> Open IT_Utility_Vault Google Drive Folder
+        </a>
+      </div>
 
       <form id="admin-upload-form" onsubmit="handleResumableDriveFileUpload(event)">
         
@@ -200,7 +207,7 @@
         </div>
 
         <button type="submit" id="upload-submit-btn" class="btn-download" style="background: var(--primary); padding: 0.85rem; font-size: 1rem;">
-          <i class="fa-solid fa-cloud-arrow-up"></i> Upload Direct to Google Drive
+          <i class="fa-solid fa-cloud-arrow-up"></i> Upload Direct to Google Drive & Sync Catalog
         </button>
       </form>
     </section>
@@ -415,6 +422,6 @@
 
   <div id="toast-box" class="toast-box"></div>
 
-  <script src="js/admin_app.js?v=18.0"></script>
+  <script src="js/admin_app.js?v=19.0"></script>
 </body>
 </html>
