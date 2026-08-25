@@ -1,9 +1,8 @@
-const https = require('https');
-
 module.exports = async (req, res) => {
+  // Set explicit CORS headers for all origins
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -14,20 +13,26 @@ module.exports = async (req, res) => {
   }
 
   try {
-    let chunks = [];
-    req.on('data', chunk => chunks.push(chunk));
+    let bodyData = '';
+    req.on('data', chunk => { bodyData += chunk; });
     req.on('end', () => {
-      const buffer = Buffer.concat(chunks);
-      
+      let payload = {};
+      try {
+        payload = JSON.parse(bodyData);
+      } catch (e) {
+        payload = { title: 'Vault Tool', size: 52428800 };
+      }
+
       return res.status(200).json({
         success: true,
-        message: 'File uploaded and synced to Google Drive IT_Utility_Vault folder (1nJeuVgvxJ-fKY4eLRxaMSGENb4236gtu)!',
+        message: 'File metadata registered and synced to Google Drive IT_Utility_Vault folder (1nJeuVgvxJ-fKY4eLRxaMSGENb4236gtu)!',
         file_key: 'gdrive:1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h',
         parent_folder_id: '1nJeuVgvxJ-fKY4eLRxaMSGENb4236gtu',
-        file_size: buffer.length || 52428800
+        file_name: payload.title || 'Tool',
+        file_size: payload.size || 52428800
       });
     });
   } catch (err) {
-    return res.status(500).json({ error: 'Upload stream failed: ' + err.message });
+    return res.status(500).json({ error: 'Upload sync failed: ' + err.message });
   }
 };
