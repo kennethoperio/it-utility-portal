@@ -141,7 +141,8 @@ function closeDownloadBypassModal() {
 function saveFileImmediately(fileId, fileName) {
   showToast(`🚚 Starting direct download for ${fileName}...`);
 
-  const downloadUrl = `${VERCEL_API_BASE}/api/files/download/${fileId}`;
+  const currentPasscode = sessionStorage.getItem('vault_passcode') || localStorage.getItem('vault_passcode') || 'tech2026';
+  const downloadUrl = `${VERCEL_API_BASE}/api/files/download/${fileId}?passcode=${encodeURIComponent(currentPasscode)}`;
   window.location.href = downloadUrl;
 
   closeDownloadBypassModal();
