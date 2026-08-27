@@ -172,7 +172,7 @@ async function loadAdminDashboardData() {
     });
 
     try {
-      await syncRealGDriveStructureDirect();
+      
     } catch (gErr) {}
 
     renderAdminStats();
@@ -204,56 +204,6 @@ function populateCategoryFilterDropdown() {
 
   filterSelect.innerHTML = html;
 }
-
-// --- FETCH OAUTH TOKEN FROM LIVE VERCEL SERVERLESS FUNCTION BACKEND ---
-async function getGoogleAccessTokenDirect() {
-  try {
-    const apiRes = await fetch(`${VERCEL_API_BASE}/api/create-folder`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'get_token' })
-    });
-    if (apiRes.ok) {
-      const apiData = await apiRes.json();
-      if (apiData.access_token) return apiData.access_token;
-    }
-  } catch (err) {}
-  return null;
-}
-
-// --- DYNAMICALLY PULL ALL REAL GOOGLE DRIVE SUBFOLDERS & ALL FILES (.rar, .zip, .iso, .exe, .7z) ---
-async function syncRealGDriveStructureDirect() {
-  try {
-    const token = await getGoogleAccessTokenDirect();
-    if (!token) return;
-
-    // Fetch Folders
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,parents,webViewLink)&pageSize=1000`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await res.json();
-    const gFolders = data.files || [];
-
-    if (gFolders.length > 0) {
-      gFolders.forEach(gf => {
-        const existing = categoriesList.find(c => (c.name || '').toLowerCase() === gf.name.toLowerCase() || (c.subcategory || '').toLowerCase() === gf.name.toLowerCase());
-        if (existing) {
-          existing.gdrive_folder_id = gf.id;
-          existing.gdrive_link = gf.webViewLink || `https://drive.google.com/drive/folders/${gf.id}`;
-        } else {
-          categoriesList.push({
-            id: Date.now() + Math.floor(Math.random() * 1000),
-            main_category: gf.name,
-            subcategory: gf.name,
-            name: gf.name,
-            icon: 'folder',
-            display_order: categoriesList.length + 1,
-            gdrive_folder_id: gf.id,
-            gdrive_link: gf.webViewLink || `https://drive.google.com/drive/folders/${gf.id}`
-          });
-        }
-      });
-    }
 
     // Fetch Files
     let gFiles = [];
@@ -318,7 +268,7 @@ async function syncRealGDriveStructureDirect() {
 // --- AUTOMATED GDRIVE SYNC BUTTON HANDLER ---
 async function triggerAutomatedGDriveSync() {
   showToast('🔄 Auto-scanning Google Drive Vault for new files and subfolders...');
-  await syncRealGDriveStructureDirect();
+  
   populateCategoryFilterDropdown();
   renderAdminFilesTable();
   renderAdminCategoriesHierarchy();
@@ -688,7 +638,6 @@ function getUserGDriveToken() {
   return localStorage.getItem('gdrive_user_access_token') || null;
 }
 
-// --- SMOOTH REAL-TIME ACCURATE UPLOAD PROGRESS BAR (ZERO 413 & ZERO CORS ERRORS) ---
 async function handleResumableDriveFileUpload(e) {
   e.preventDefault();
   const fileInput = document.getElementById('upload-computer-file-input');
@@ -700,15 +649,15 @@ async function handleResumableDriveFileUpload(e) {
     showToast('⚠️ Please select a file from your computer to upload.');
     return;
   }
+  if (!catSelect.value) {
+    showToast('⚠️ Please select a target category/folder.');
+    return;
+  }
 
   const selectedFile = fileInput.files[0];
   const fileName = titleInput.value.trim() || selectedFile.name;
   const catId = parseInt(catSelect.value || 1);
   const desc = descInput.value.trim();
-
-  const selectedCat = categoriesList.find(c => c.id === catId);
-  const gdriveFolderId = selectedCat ? (selectedCat.gdrive_folder_id || DEFAULT_VAULT_FOLDER_ID) : DEFAULT_VAULT_FOLDER_ID;
-  const gdriveFolderLink = selectedCat ? (selectedCat.gdrive_link || `https://drive.google.com/drive/folders/${gdriveFolderId}`) : `https://drive.google.com/drive/folders/${DEFAULT_VAULT_FOLDER_ID}`;
 
   const submitBtn = document.getElementById('upload-submit-btn');
   const progressCard = document.getElementById('upload-progress-card');
@@ -719,109 +668,131 @@ async function handleResumableDriveFileUpload(e) {
 
   submitBtn.disabled = true;
   progressCard.style.display = 'block';
-  statusText.innerText = `Connecting to 5 TB Google Drive Vault...`;
-  progressBar.style.width = '10%';
-  pctText.innerText = '10%';
+  statusText.innerText = 'Initiating 10 MB Chunked Resumable Session...';
+  progressBar.style.width = '0%';
+  pctText.innerText = '0%';
 
   try {
-    let token = getUserGDriveToken();
-    if (!token) {
-      const tokenRes = await fetch(`${VERCEL_API_BASE}/api/create-folder`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'get_token' })
-      });
-      const tokenData = await tokenRes.json();
-      token = tokenData.access_token;
+    // Step 1: Init Resumable Upload Session
+    const initRes = await fetch(`${VERCEL_API_BASE}/api/files/upload/init-resumable`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: fileName,
+        file_size: selectedFile.size,
+        category_id: catId
+      })
+    });
+    const initData = await initRes.json();
+
+    if (!initRes.ok || !initData.resumable_url) {
+      showToast(initData.error || 'Failed initiating resumable upload.');
+      submitBtn.disabled = false;
+      return;
     }
 
-    statusText.innerText = `Initializing Google Drive upload session...`;
-    progressBar.style.width = '30%';
-    pctText.innerText = '30%';
+    const resumableUrl = initData.resumable_url;
+    const chunkSize = 10 * 1024 * 1024; // 10 MB per chunk
+    const totalChunks = Math.ceil(selectedFile.size / chunkSize);
+    let uploadedBytes = 0;
+    let finalGdriveId = null;
 
-    let initRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
+    // Step 2: Upload Chunks Sequentially
+    for (let chunkIdx = 0; chunkIdx < totalChunks; chunkIdx++) {
+      const start = chunkIdx * chunkSize;
+      const end = Math.min(start + chunkSize, selectedFile.size);
+      const chunkBlob = selectedFile.slice(start, end);
+      const contentRange = `bytes ${start}-${end - 1}/${selectedFile.size}`;
+
+      let chunkSuccess = false;
+      let retries = 0;
+
+      while (!chunkSuccess && retries < 5) {
+        try {
+          const currentMB = (end / (1024 * 1024)).toFixed(1);
+          const totalMB = (selectedFile.size / (1024 * 1024)).toFixed(1);
+          statusText.innerText = `Uploading Chunk ${chunkIdx + 1}/${totalChunks} (${currentMB} MB / ${totalMB} MB)...`;
+
+          const chunkRes = await fetch(`${VERCEL_API_BASE}/api/files/upload/chunk-proxy`, {
+            method: 'POST',
+            headers: {
+              'X-Resumable-Url': resumableUrl,
+              'Content-Range': contentRange,
+              'Content-Type': 'application/octet-stream'
+            },
+            body: chunkBlob
+          });
+
+          const chunkData = await chunkRes.json();
+
+          if (chunkRes.ok && chunkData.success) {
+            chunkSuccess = true;
+            uploadedBytes = end;
+            const percent = Math.round((uploadedBytes / selectedFile.size) * 100);
+            progressBar.style.width = `${percent}%`;
+            pctText.innerText = `${percent}%`;
+            transferredText.innerText = `${currentMB} MB / ${totalMB} MB`;
+
+            if (chunkData.completed && chunkData.file_id) {
+              finalGdriveId = chunkData.file_id;
+            }
+          } else {
+            retries++;
+            statusText.innerText = `Retrying Chunk ${chunkIdx + 1} (Attempt ${retries}/5)...`;
+            await new Promise(r => setTimeout(r, 2000));
+          }
+        } catch (err) {
+          retries++;
+          statusText.innerText = `Network retry Chunk ${chunkIdx + 1} (Attempt ${retries}/5)...`;
+          await new Promise(r => setTimeout(r, 2000));
+        }
+      }
+
+      if (!chunkSuccess) {
+        showToast(`Upload paused at chunk ${chunkIdx + 1} due to network timeout. Please try again.`);
+        submitBtn.disabled = false;
+        return;
+      }
+    }
+
+    // Step 3: Finalize DB Registration
+    statusText.innerText = 'Finalizing file registration in vault...';
+    const finalRes = await fetch(`${VERCEL_API_BASE}/api/files/upload/finalize-resumable`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json; charset=UTF-8',
-        'X-Upload-Content-Type': selectedFile.type || 'application/octet-stream'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: fileName,
-        parents: [gdriveFolderId]
+        gdrive_id: finalGdriveId,
+        filename: fileName,
+        category_id: catId,
+        file_size: selectedFile.size,
+        description: desc,
+        version: "1.0"
       })
     });
 
-    let locationUrl = initRes.headers.get('Location');
+    const finalData = await finalRes.json();
+    submitBtn.disabled = false;
 
-    if (locationUrl) {
-      statusText.innerText = `Streaming ${fileName} to 5 TB Google Drive...`;
+    if (finalRes.ok && finalData.success) {
+      showToast(finalData.message || 'File uploaded successfully!');
       
-      const xhr = new XMLHttpRequest();
-      xhr.open('PUT', locationUrl, true);
-      xhr.setRequestHeader('Content-Type', selectedFile.type || 'application/octet-stream');
-
-      xhr.upload.onprogress = (evt) => {
-        if (evt.lengthComputable) {
-          const pct = Math.round((evt.loaded / evt.total) * 100);
-          progressBar.style.width = `${pct}%`;
-          pctText.innerText = `${pct}%`;
-          transferredText.innerText = `${formatBytes(evt.loaded)} / ${formatBytes(evt.total)}`;
-        }
-      };
-
-      xhr.onload = () => {
-        let responseObj = {};
-        try { responseObj = JSON.parse(xhr.responseText); } catch(e) {}
-        const realGdriveId = responseObj.id || '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h';
-
-        progressBar.style.width = '100%';
-        pctText.innerText = '100%';
-        statusText.innerText = `Upload Complete & Vault Synced!`;
-
-        setTimeout(() => {
-          submitBtn.disabled = false;
-          progressCard.style.display = 'none';
-          fileInput.value = '';
-          titleInput.value = '';
-          descInput.value = '';
-
-          finalizeUploadSuccess(fileName, realGdriveId, catId, selectedFile.size, desc, gdriveFolderLink);
-          showToast(`🚀 Successfully uploaded "${fileName}" to 5 TB Google Drive! Synced live across Admin & Client.`);
-        }, 300);
-      };
-
-      xhr.onerror = () => {
-        finishRegistrationFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
-      };
-
-      xhr.send(selectedFile);
-
-    } else {
-      finishRegistrationFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
-    }
-
-  } catch (err) {
-    finishRegistrationFallback(fileName, catId, selectedFile.size, desc, gdriveFolderLink);
-  }
-
-  function finishRegistrationFallback(fName, cId, fSize, fDesc, fLink) {
-    progressBar.style.width = '100%';
-    pctText.innerText = '100%';
-    statusText.innerText = `Vault Registered & Synced!`;
-
-    const realGdriveId = '1g7bdymVDeyeYT1gK5MAyu8VtMTWA3M2h';
-
-    setTimeout(() => {
-      submitBtn.disabled = false;
-      progressCard.style.display = 'none';
       fileInput.value = '';
       titleInput.value = '';
       descInput.value = '';
+      
+      progressCard.style.display = 'none';
+      
+      const selectedCat = categoriesList.find(c => c.id === catId);
+      const gdriveFolderLink = selectedCat ? (selectedCat.gdrive_link) : '';
+      finalizeUploadSuccess(fileName, finalGdriveId, catId, selectedFile.size, desc, gdriveFolderLink);
 
-      finalizeUploadSuccess(fName, realGdriveId, cId, fSize, fDesc, fLink);
-      showToast(`✅ Successfully registered "${fName}" into 5 TB Vault! Synced live across Admin & Client.`);
-    }, 300);
+    } else {
+      showToast(finalData.error || 'Failed finalizing file registration.');
+    }
+
+  } catch (err) {
+    submitBtn.disabled = false;
+    showToast(`Upload exception: ${err.message}`);
   }
 }
 
