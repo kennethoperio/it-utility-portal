@@ -205,66 +205,6 @@ function populateCategoryFilterDropdown() {
   filterSelect.innerHTML = html;
 }
 
-    // Fetch Files
-    let gFiles = [];
-    let pageToken = null;
-
-    while (true) {
-      let filesUrl = `https://www.googleapis.com/drive/v3/files?q=trashed=false+and+mimeType!='application/vnd.google-apps.folder'&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=nextPageToken,files(id,name,size,parents,webViewLink)&pageSize=1000`;
-      if (pageToken) filesUrl += `&pageToken=${pageToken}`;
-
-      const filesRes = await fetch(filesUrl, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const filesData = await filesRes.json();
-      const pageFiles = filesData.files || [];
-      gFiles = gFiles.concat(pageFiles);
-      pageToken = filesData.nextPageToken;
-      if (!pageToken) break;
-    }
-
-    let modifiedCount = 0;
-    gFiles.forEach(gf => {
-      if (gf.name.endsWith('.db') || gf.name.endsWith('.json')) return;
-
-      const parentId = (gf.parents && gf.parents[0]) ? gf.parents[0] : DEFAULT_VAULT_FOLDER_ID;
-      const matchingCat = categoriesList.find(c => c.gdrive_folder_id === parentId);
-      const catId = matchingCat ? matchingCat.id : 1;
-
-      const existing = adminFilesList.find(f => (f.file_key || '').includes(gf.id) || f.original_name === gf.name);
-      if (existing) {
-        if (matchingCat && existing.category_id !== matchingCat.id) {
-          existing.category_id = matchingCat.id; // Update folder category if moved in GDrive!
-          modifiedCount++;
-        }
-      } else {
-        let desc = `Google Drive Vault File (${gf.name})`;
-        const nl = gf.name.toLowerCase();
-        if (nl.endsWith('.rar') || nl.endsWith('.zip') || nl.endsWith('.7z')) desc = 'Compressed Archive Utility / Resetter Package';
-        else if (nl.endsWith('.iso')) desc = 'Windows Installation ISO Image';
-
-        adminFilesList.unshift({
-          id: Date.now() + Math.floor(Math.random() * 1000),
-          original_name: gf.name,
-          file_key: `gdrive:${gf.id}`,
-          category_id: catId,
-          file_size: gf.size ? parseInt(gf.size) : 180 * 1024 * 1024,
-          description: desc,
-          download_count: 0
-        });
-        modifiedCount++;
-      }
-    });
-
-    populateCategoryFilterDropdown();
-    if (modifiedCount > 0) {
-      renderAdminFilesTable();
-      renderAdminCategoriesHierarchy();
-      renderAdminStats();
-    }
-  } catch (err) {}
-}
-
 // --- AUTOMATED GDRIVE SYNC BUTTON HANDLER ---
 async function triggerAutomatedGDriveSync() {
   showToast('🔄 Auto-scanning Google Drive Vault for new files and subfolders...');
