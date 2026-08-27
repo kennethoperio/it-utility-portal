@@ -141,15 +141,8 @@ function closeDownloadBypassModal() {
 function saveFileImmediately(fileId, fileName) {
   showToast(`🚚 Starting direct download for ${fileName}...`);
 
-  const vercelStreamUrl = `${VERCEL_API_BASE}/api/download?fileId=${fileId}&fileName=${encodeURIComponent(fileName)}`;
-
-  const a = document.createElement('a');
-  a.style.display = 'none';
-  a.href = vercelStreamUrl;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => a.remove(), 400);
+  const downloadUrl = `${VERCEL_API_BASE}/api/files/download/${fileId}`;
+  window.location.href = downloadUrl;
 
   closeDownloadBypassModal();
 }
@@ -575,7 +568,7 @@ function createToolCardHtml(f) {
           </button>
         </div>
 
-        <button class="btn-download" onclick="triggerDirectDownload('${gId}', '${escapeHtml(f.original_name)}')">
+        <button class="btn-download" onclick="triggerDirectDownload('${f.id}', '${escapeHtml(f.original_name)}')">
           <i class="fa-solid fa-download"></i> Direct Download
         </button>
       </div>
