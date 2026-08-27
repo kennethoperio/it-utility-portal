@@ -1822,9 +1822,9 @@ def force_sync_database():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/files/download/<int:file_id>', methods=['GET'])
+@app.route('/api/files/download/<path:file_id_or_key>', methods=['GET'])
 @passcode_required
-def download_file(file_id):
+def download_file(file_id_or_key):
     try:
         conn = get_db()
         
@@ -1849,9 +1849,25 @@ def download_file(file_id):
             conn.execute('UPDATE guest_passcodes SET current_uses = ? WHERE id = ?', (new_uses, g_id))
             conn.commit()
 
-        file_record = conn.execute('SELECT * FROM files WHERE id = ?', (file_id,)).fetchone()
+        file_record = None
+        file_id = None
+        if str(file_id_or_key).isdigit():
+            file_id = int(file_id_or_key)
+            file_record = conn.execute('SELECT * FROM files WHERE id = ?', (file_id,)).fetchone()
         
         if not file_record:
+            clean_search = str(file_id_or_key).replace('gdrive:', '').strip()
+            file_record = conn.execute('SELECT * FROM files WHERE file_key LIKE ? OR file_key = ? OR original_name = ?', 
+                                      (f"%{clean_search}%", str(file_id_or_key), str(file_id_or_key))).fetchone()
+            if file_record:
+                file_id = file_record['id']
+
+        if not file_record:
+            clean_gdrive = str(file_id_or_key).replace('gdrive:', '').strip()
+            if len(clean_gdrive) > 5:
+                conn.close()
+                log_audit('FILE_DOWNLOAD', f"Direct Google Drive download fallback for ID '{clean_gdrive}'")
+                return redirect(f"https://drive.google.com/uc?export=download&id={clean_gdrive}&confirm=t")
             conn.close()
             return jsonify({'error': 'Requested file does not exist.'}), 404
 
