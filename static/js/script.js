@@ -569,7 +569,7 @@ function createToolCardHtml(f) {
           </button>
         </div>
 
-        <button class="btn-download" onclick="triggerDirectDownload('${f.id}', '${escapeHtml(f.original_name)}')">
+        <button class="btn-download" onclick="triggerDirectDownload('${(f.file_key || f.gdrive_id || f.id).toString().replace('gdrive:', '')}', '${escapeHtml(f.original_name)}')">
           <i class="fa-solid fa-download"></i> Direct Download
         </button>
       </div>
