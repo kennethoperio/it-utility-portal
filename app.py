@@ -91,7 +91,28 @@ def apply_security_headers(response):
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
+
+    # Universal CORS Headers
+    origin = request.headers.get('Origin')
+    if origin:
+        response.headers['Access-Control-Allow-Origin'] = origin
+    else:
+        response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Passcode, X-Requested-With'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
     return response
+
+@app.route('/<path:dummy>', methods=['OPTIONS'])
+@app.route('/api/<path:dummy>', methods=['OPTIONS'])
+def handle_global_options(dummy=None):
+    res = make_response('', 200)
+    origin = request.headers.get('Origin') or '*'
+    res.headers['Access-Control-Allow-Origin'] = origin
+    res.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    res.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Passcode, X-Requested-With'
+    res.headers['Access-Control-Allow-Credentials'] = 'true'
+    return res
 
 # Credentials Environment Settings
 S3_ENDPOINT = os.environ.get('S3_ENDPOINT')
