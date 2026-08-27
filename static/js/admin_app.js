@@ -613,10 +613,15 @@ async function handleResumableDriveFileUpload(e) {
   pctText.innerText = '0%';
 
   try {
+    const adminPass = localStorage.getItem('portal_admin_pass') || 'admin2026';
+
     // Step 1: Init Resumable Upload Session
     const initRes = await fetch(`${VERCEL_API_BASE}/api/files/upload/init-resumable`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Passcode': adminPass
+      },
       body: JSON.stringify({
         filename: fileName,
         file_size: selectedFile.size,
@@ -658,7 +663,8 @@ async function handleResumableDriveFileUpload(e) {
             headers: {
               'X-Resumable-Url': resumableUrl,
               'Content-Range': contentRange,
-              'Content-Type': 'application/octet-stream'
+              'Content-Type': 'application/octet-stream',
+              'X-Admin-Passcode': adminPass
             },
             body: chunkBlob
           });
@@ -699,7 +705,10 @@ async function handleResumableDriveFileUpload(e) {
     statusText.innerText = 'Finalizing file registration in vault...';
     const finalRes = await fetch(`${VERCEL_API_BASE}/api/files/upload/finalize-resumable`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Passcode': adminPass
+      },
       body: JSON.stringify({
         gdrive_id: finalGdriveId,
         filename: fileName,
